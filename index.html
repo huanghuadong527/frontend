@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<link rel="icon" type="image/x-icon" href="./favicon.ico">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>蓝辰商铺</title>
+		<style>
+			.mes-loading {
+				position: fixed;
+				top: 0;
+				right: 0;
+				bottom: 0;
+				left: 0;
+			}
+
+      .content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+
+			.preloader {
+				position: relative;
+				width: 42px;
+				height: 42px;
+				animation: preloader_6 5s infinite linear;
+			}
+
+			.preloader span {
+				width: 20px;
+				height: 20px;
+				position: absolute;
+				background: red;
+				display: block;
+				animation: preloader_6_span 1s infinite linear;
+			}
+
+			.preloader span:nth-child(1) {
+				background: #2ecc71;
+			}
+
+			.preloader span:nth-child(2) {
+				left: 22px;
+				background: #9b59b6;
+				animation-delay: 0.2s;
+			}
+
+			.preloader span:nth-child(3) {
+				top: 22px;
+				background: #3498db;
+				animation-delay: 0.4s;
+			}
+
+			.preloader span:nth-child(4) {
+				top: 22px;
+				left: 22px;
+				background: #f1c40f;
+				animation-delay: 0.6s;
+			}
+
+      @keyframes preloader_6 {
+				from {
+					-webkit-transform: rotate(0deg);
+				}
+				to {
+					-webkit-transform: rotate(360deg);
+				}
+			}
+
+			@keyframes preloader_6_span {
+				0% {
+					-webkit-transform: scale(1);
+				}
+				50% {
+					-webkit-transform: scale(0.5);
+				}
+				100% {
+					-webkit-transform: scale(1);
+				}
+			}
+
+			@-webkit-keyframes preloader_6 {
+				from {
+					-webkit-transform: rotate(0deg);
+				}
+				to {
+					-webkit-transform: rotate(360deg);
+				}
+			}
+
+			@-webkit-keyframes preloader_6_span {
+				0% {
+					-webkit-transform: scale(1);
+				}
+				50% {
+					-webkit-transform: scale(0.5);
+				}
+				100% {
+					-webkit-transform: scale(1);
+				}
+			}
+
+			@-moz-keyframes preloader_6 {
+				from {
+					-moz-transform: rotate(0deg);
+				}
+				to {
+					-moz-transform: rotate(360deg);
+				}
+			}
+
+			@-moz-keyframes preloader_6_span {
+				0% {
+					-moz-transform: scale(1);
+				}
+				50% {
+					-moz-transform: scale(0.5);
+				}
+				100% {
+					-moz-transform: scale(1);
+				}
+			}
+
+			@-ms-keyframes preloader_6 {
+				from {
+					-ms-transform: rotate(0deg);
+				}
+				to {
+					-ms-transform: rotate(360deg);
+				}
+			}
+
+			@-ms-keyframes preloader_6_span {
+				0% {
+					-ms-transform: scale(1);
+				}
+				50% {
+					-ms-transform: scale(0.5);
+				}
+				100% {
+					-ms-transform: scale(1);
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<div id="root" class="container">
+			<div class="mes-loading content">
+        <div class="preloader">
+          <span></span>
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </div>
+		</div>
+		<script type="module" src="/src/main.tsx"></script>
+	</body>
+</html>
