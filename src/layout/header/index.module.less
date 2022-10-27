@@ -1,0 +1,35 @@
+@import '@/assets/styles/global_styles/mixin.less';
+
+.layoutHeader {
+	height: 50px;
+	line-height: 50px;
+  justify-content: space-between;
+	.display_flex(row);
+
+	:global {
+		.ant-btn {
+      flex: 0 0 50px;
+			height: 50px;
+			line-height: 50px;
+			border-radius: 0;
+			border-width: 0;
+			background-color: transparent;
+			color: #ffffff;
+
+      &:hover, &:focus {
+				background-color: rgba(0, 0, 0, 0.1);
+			}
+		}
+	}
+}
+
+.layoutHeaderHandle {
+	padding: 0 15px;
+	display: block;
+	color: #ffffff;
+
+	&:hover {
+		color: #ffffff;
+		background-color: rgba(0, 0, 0, 0.1);
+	}
+}

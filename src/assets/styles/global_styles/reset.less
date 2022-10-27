@@ -1,4 +1,6 @@
+@import 'antd/es/style/themes/default.less';
 @import 'antd/lib/style/color/colorPalette';
+@import 'antd/lib/button/style/mixin.less';
 @import './mixin.less';
 
 @share-base: #01D97E;
@@ -219,4 +221,15 @@
 			}
 		}
 	}
+}
+
+.ant-layout-sider {
+	background: #FFFFFF;
+}
+
+.ant-layout-header {
+	height: 50px;
+	line-height: 50px;
+	padding: 0 15px;
+	background: var(--ant-primary-color);
 }

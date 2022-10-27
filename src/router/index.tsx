@@ -2,9 +2,9 @@ import { lazy, Suspense, useEffect } from 'react';
 import { useRoutes, useNavigate, RouteObject } from 'react-router-dom';
 import { Loading } from '@/components';
 import { useSelector } from 'react-redux';
-import { UseStore } from '@/store';
+import { useAppSelector } from '@/store';
 
-import Home from '@/views/home';
+import Layout from '@/layout';
 import Login from '@/views/login';
 
 /**
@@ -24,7 +24,7 @@ function SysRouter() {
 			path: '/index',
 			element: (
 				<BeforeEach>
-					<Home />
+					<Layout />
 				</BeforeEach>
 			),
 			children: AppRouter,
@@ -105,7 +105,7 @@ const AppRouter: RouteObject[] = [
 	{
 		path: '/index/character',
 		element: (
-			<Lazy template={() => import('@/views/page/shopping/Character')} />
+			<Lazy template={() => import('@/views/page/shopping/character/index')} />
 		),
 	},
 	{
@@ -127,20 +127,20 @@ const AppRouter: RouteObject[] = [
 	{
 		path: '/index/wm-player-role',
 		element: (
-			<Lazy template={() => import('@/views/page/shopping/WmPlayerRole')} />
+			<Lazy template={() => import('@/views/page/shopping/wm-player-role/index')} />
 		),
 	},
 	{
 		path: '/index/wm-current-price',
 		element: (
-			<Lazy template={() => import('@/views/page/shopping/WmCurrentPrice')} />
+			<Lazy template={() => import('@/views/page/shopping/wm-current-price')} />
 		),
 		children: [
 			{
 				path: '',
 				element: (
 					<Lazy
-						template={() => import('@/views/page/shopping/WmCurrentPrice/Type')}
+						template={() => import('@/views/page/shopping/wm-current-price/Type')}
 					/>
 				),
 			},
@@ -148,7 +148,7 @@ const AppRouter: RouteObject[] = [
 				path: '/index/wm-current-price/list/:id',
 				element: (
 					<Lazy
-						template={() => import('@/views/page/shopping/WmCurrentPrice/List')}
+						template={() => import('@/views/page/shopping/wm-current-price/List')}
 					/>
 				),
 			},
@@ -176,7 +176,7 @@ function Lazy({ template }: { template: () => Promise<any> }) {
  * @param props 指定路由
  */
 function BeforeEach({ children }: { children: JSX.Element }) {
-	const { token } = useSelector((state: UseStore) => state.common);
+	const token = useAppSelector((state) => state.token);
 	return token ? children : <Redirect to='/login'></Redirect>;
 }
 

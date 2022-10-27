@@ -9,7 +9,6 @@ import { message } from 'antd';
 import { SY_KEY, TOKEN_COOKIE_KEY } from '@/core';
 import { SY_CONFIG } from '@/core/config';
 import nProgress from 'nprogress';
-import { useNavigate } from 'react-router-dom';
 
 export interface AxiosConfig extends AxiosRequestConfig {
 	code?: string;
@@ -19,8 +18,8 @@ export interface AxiosConfig extends AxiosRequestConfig {
 axios.interceptors.request.use((request) => {
 	if (store) {
 		const state = store.getState();
-		if (state.common && state.common.token) {
-			request.headers![TOKEN_COOKIE_KEY] = `Bearer ${state.common.token}`;
+		if (state && state.token) {
+			request.headers![TOKEN_COOKIE_KEY] = `Bearer ${state.token}`;
 		}
 	}
 	return request;

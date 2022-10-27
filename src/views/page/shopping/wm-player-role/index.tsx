@@ -27,6 +27,8 @@ import {
 } from '@/service';
 import { PlusOutlined } from '@ant-design/icons';
 
+import style from './index.module.less';
+
 const WmPlayerRole = () => {
 	const [visible, setVisible] = useState(false);
 	const [editId, setEditId] = useState('');
@@ -429,7 +431,7 @@ const WmPlayerRole = () => {
 								onRemove={onRemoveFile}
 							>
 								{fileList.length >= 8 ? null : (
-									<div className='sy-update--picture'>
+									<div className={style.updatePicture}>
 										<PlusOutlined />
 										<div style={{ marginTop: 8 }}>点击上传</div>
 									</div>

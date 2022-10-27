@@ -28,8 +28,9 @@ import { MenuInfo } from 'rc-menu/lib/interface';
 import { useNavigate } from 'react-router-dom';
 import { useCommon } from '@/core';
 import { useEffect, useState } from 'react';
-import { useSelector } from 'react-redux';
-import { State, UseStore } from '@/store';
+import { useAppSelector } from '@/store';
+
+import style from './index.module.less';
 
 function header(props: AppIndexProps) {
 	const navigate = useNavigate();
@@ -37,7 +38,7 @@ function header(props: AppIndexProps) {
 	const [psdVisible, setPsdVisible] = useState(false);
 	const [isScreenfull, setIsScreenfull] = useState(false);
 	const { logout } = useCommon();
-	const { user } = useSelector<UseStore, State>((state) => state.common);
+	const { user } = useAppSelector((state) => state);
 
 	const onSelectHandleItem = ({ key }: MenuInfo) => {
 		switch (key) {
@@ -93,45 +94,40 @@ function header(props: AppIndexProps) {
 
 	const onScreenfull = () => {
 		if (!screenfull.isEnabled) {
-      message.warning('你的浏览器不支持全屏');
-      return;
-    }
-    screenfull.toggle();
-	}
+			message.warning('你的浏览器不支持全屏');
+			return;
+		}
+		screenfull.toggle();
+	};
 
 	const onSaveUserSetting = () => {};
 
 	const onSavePsd = () => {};
 
-	const onChangeScreenfull = () =>{
-    if (screenfull.isEnabled) {
-      setIsScreenfull(screenfull.isFullscreen);
-    }
-  }
+	const onChangeScreenfull = () => {
+		if (screenfull.isEnabled) {
+			setIsScreenfull(screenfull.isFullscreen);
+		}
+	};
 
 	useEffect(() => {
 		if (screenfull.isEnabled) {
-      screenfull.on('change', onChangeScreenfull);
-    }
+			screenfull.on('change', onChangeScreenfull);
+		}
 	}, []);
 
 	return (
-		<div className='mes-header'>
-			<Button
-				className='mes-flexible'
-				icon={<MenuUnfoldOutlined />}
-				onClick={onCollapse}
-			/>
-			<div className='flex-1'></div>
+		<div className={style.layoutHeader}>
+			<Button icon={<MenuUnfoldOutlined />} onClick={onCollapse} />
 			<Space>
-				<a className='mes-header--handle'>
+				<a className={style.layoutHeaderHandle}>
 					<SearchOutlined /> 搜索
 				</a>
-				<a className='mes-header--handle' onClick={onScreenfull}>
+				<a className={style.layoutHeaderHandle} onClick={onScreenfull}>
 					<ExpandOutlined /> 全屏
 				</a>
 				<Dropdown overlay={handle}>
-					<a className='mes-header--handle'>
+					<a className={style.layoutHeaderHandle}>
 						<Avatar
 							src='https://demo.leanfocus.com.cn/static/img/profile.473f5971.jpg'
 							icon={<UserOutlined />}
@@ -183,12 +179,14 @@ function header(props: AppIndexProps) {
 					</Form.Item>
 				</Form>
 			</Modal>
-			<Modal title='修改密码'
+			<Modal
+				title='修改密码'
 				width={450}
 				open={psdVisible}
 				onOk={onSavePsd}
-				onCancel={() => setPsdVisible(false)}>
-				<Form autoComplete='off' labelCol={{span: 4}}>
+				onCancel={() => setPsdVisible(false)}
+			>
+				<Form autoComplete='off' labelCol={{ span: 4 }}>
 					<Form.Item label='原密码'>
 						<Input.Password placeholder='请输入原密码' />
 					</Form.Item>

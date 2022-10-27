@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { Button, Dropdown, Menu, Form, Input, Checkbox } from 'antd';
 import { KeyOutlined, UserOutlined } from '@ant-design/icons';
 import { login } from '@/service';
@@ -6,6 +6,8 @@ import { useDispatch } from 'react-redux';
 import { setToken } from '@/store';
 import { useCommon } from '@/core';
 import { useNavigate } from 'react-router-dom';
+
+import style from './index.module.less';
 
 interface UserInterface {
 	username: string;
@@ -48,17 +50,17 @@ function LoginComponent() {
 	};
 
 	return (
-		<div className='container sy-login'>
-			<div className='sy-login--decorate'></div>
-			<div className='sy-login--panel'>
-				<div className='sy-login--left flex'></div>
-				<div className='flex'>
-					<div className='sy-login--right'>
-						<div className='sy-login--i18n text-right'>
+		<div className={style.login}>
+			<div className={style.loginDecorate}></div>
+			<div className={style.loginPanel}>
+				<div className={style.loginLeft}></div>
+				<div className={style.loginRight}>
+					<div className={style.loginRightBody}>
+						<div className={style.loginI18n}>
 							<Dropdown.Button overlay={menuI18nItem}>En</Dropdown.Button>
 						</div>
-						<div className='sy-login--form'>
-							<div className='sy-login--label'>
+						<div className={style.loginForm}>
+							<div className={style.loginLabel}>
 								<label>后台管理系统</label>
 							</div>
 							<Form form={userForm}>

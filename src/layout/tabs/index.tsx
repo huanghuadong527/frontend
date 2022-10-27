@@ -6,18 +6,18 @@ import {
 	ReloadOutlined,
 	SwapOutlined,
 } from '@ant-design/icons';
-import { useDispatch, useSelector } from 'react-redux';
-import { MenuProps, setSelectable, setTabs, UseStore } from '@/store';
+import { useDispatch } from 'react-redux';
+import { MenuProps, setSelectable, setTabs, useAppSelector } from '@/store';
 import { findTree } from 'xe-utils';
 import { useNavigate } from 'react-router-dom';
+
+import style from './index.module.less';
 
 function TabsComponent() {
 	const dispatch = useDispatch();
 	const navigate = useNavigate();
 
-	const { tabs, selectable, menus } = useSelector(
-		(state: UseStore) => state.common
-	);
+	const { tabs, selectable, menus } = useAppSelector((state) => state);
 
 	const $tabs: (MenuProps | null)[] = useMemo(() => {
 		if (tabs && menus && menus.length > 0) {
@@ -113,7 +113,7 @@ function TabsComponent() {
 	);
 
 	return (
-		<div className='mes-tabs'>
+		<div className={style.layoutTabs}>
 			<Tabs
 				size='small'
 				activeKey={selectable}

@@ -25,10 +25,6 @@ export interface State {
 	tabs: TabsProps[];
 }
 
-export interface UseStore {
-	common: State;
-}
-
 export const FETCH_RESOURCE = 'FETCH_RESOURCE';
 
 export const FETCH_ERROR = 'FETCH_ERROR';

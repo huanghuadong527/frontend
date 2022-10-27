@@ -4,6 +4,7 @@ import { Layout } from 'antd';
 import { useDispatch } from 'react-redux';
 import { FETCH_RESOURCE } from '@/store';
 
+import style from './index.module.less';
 import Header from './header';
 import Sider from './sider';
 import Tabs from './tabs';
@@ -30,13 +31,13 @@ function home() {
 	return (
 		<Layout className='container'>
 			<Layout.Sider
-				className='mes-layout--sider'
+				className={style.layoutSider}
 				collapsible
 				trigger={null}
 				collapsed={collapsed}>
 				<Sider collapsed={collapsed} />
 			</Layout.Sider>
-			<Layout className='mes-layout-body'>
+			<Layout className={style.layoutBody}>
 				<Layout.Header>
 					<Header
 						collapsed={collapsed}
@@ -44,7 +45,7 @@ function home() {
 				</Layout.Header>
 				<Tabs />
 				<Layout.Content>
-					<div className='mes-layout-content'>
+					<div className={style.layoutContent}>
 						<Outlet />
 					</div>
 				</Layout.Content>

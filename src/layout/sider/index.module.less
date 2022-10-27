@@ -1,0 +1,29 @@
+@import '@/assets/styles/global_styles/mixin.less';
+
+.layoutSider {
+	.content_cover();
+	.display_flex(column);
+}
+
+.layoutSiderTop {
+	margin-bottom: 15px;
+	text-align: center;
+}
+
+.layoutSiderBody {
+	height: 0;
+	flex: 1;
+	overflow-x: hidden;
+	overflow-y: auto;
+
+	:global {
+		.ant-menu {
+			background: transparent;
+		}
+
+		.ant-menu-inline,
+		.ant-menu-vertical {
+			border-right-color: transparent;
+		}
+	}
+}

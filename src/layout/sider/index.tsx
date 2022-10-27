@@ -3,8 +3,10 @@ import { Image, Menu } from 'antd';
 import { MenuInfo } from 'rc-menu/lib/interface';
 import { findTree } from 'xe-utils';
 import { useNavigate } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import { setSelectable, setTabs, UseStore } from '@/store';
+import { useDispatch } from 'react-redux';
+import { setSelectable, setTabs, useAppSelector } from '@/store';
+
+import style from './index.module.less';
 
 import logo from '@/assets/image/default_logo.png';
 import logoMini from '@/assets/image/default_logo_mini.png';
@@ -13,9 +15,7 @@ function Sider(props: AppIndexProps) {
 	const navigate = useNavigate();
 	const dispatch = useDispatch();
 
-	const { tabs, selectable, menus } = useSelector(
-		(state: UseStore) => state.common
-	);
+	const { tabs, selectable, menus } = useAppSelector((state) => state);
 
 	const [openKeys, setOpenKeys] = useState([selectable ?? '']);
 
@@ -77,15 +77,15 @@ function Sider(props: AppIndexProps) {
 	}, [selectable, menus]);
 
 	return (
-		<div className='mes-sider'>
-			<div className='mes-sider--top'>
+		<div className={style.layoutSider}>
+			<div className={style.layoutSiderTop}>
 				<Image
 					src={props.collapsed ? logoMini : logo}
 					height={50}
 					preview={false}
 				/>
 			</div>
-			<div className='mes-sider--body'>{initMenuEle}</div>
+			<div className={style.layoutSiderBody}>{initMenuEle}</div>
 		</div>
 	);
 }

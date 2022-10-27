@@ -1,12 +1,10 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { createEpicMiddleware } from 'redux-observable';
 import { TypedUseSelectorHook, useSelector } from 'react-redux';
-import { UseStore } from './types';
+import { State } from './types';
 
 import epics from './epics';
-import * as common from '@/store/modules';
-export * from './reducers';
-export * from './types';
+import reducers from './reducers';
 
 const epicmiddleware = createEpicMiddleware();
 
@@ -22,10 +20,13 @@ const thunkMiddleware =
 	};
 
 export default configureStore({
-	reducer: common,
+	reducer: reducers,
 	middleware: [epicmiddleware, thunkMiddleware],
 });
 
 epicmiddleware.run(epics);
 
-export const useAppSelector: TypedUseSelectorHook<UseStore> = useSelector;
+export * from './reducers';
+export * from './types';
+
+export const useAppSelector: TypedUseSelectorHook<State> = useSelector;

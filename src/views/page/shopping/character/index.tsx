@@ -25,6 +25,8 @@ import {
 import { Key, useState } from 'react';
 import { PlusOutlined } from '@ant-design/icons';
 
+import style from './index.module.less';
+
 const Character = () => {
 	const [visible, setVisible] = useState(false);
 	const [editId, setEditId] = useState('');
@@ -298,7 +300,7 @@ const Character = () => {
 							onRemove={onRemoveFile}
 						>
 							{fileList.length >= 8 ? null : (
-								<div className='sy-update--picture'>
+								<div className={style.updatePicture}>
 									<PlusOutlined />
 									<div style={{ marginTop: 8 }}>点击上传</div>
 								</div>

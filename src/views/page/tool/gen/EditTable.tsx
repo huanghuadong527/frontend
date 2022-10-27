@@ -15,10 +15,9 @@ import {
 } from 'antd';
 import { getDictSelectOptionData, getGenTableInfo } from '@/service';
 import { LG_FORM_LAYOUT } from '@/core';
-import { useSelector } from 'react-redux';
-import { UseStore } from '@/store';
 import { mapTree } from 'xe-utils';
 import { SyncOutlined } from '@ant-design/icons';
+import { useAppSelector } from '@/store';
 
 interface EditTableProps extends ModalProps {
 	id: string;
@@ -34,7 +33,7 @@ const EditTable = (props: EditTableProps) => {
 	const [dataSource, setDataSource] = useState([]);
 	const [selectOption, setSelectOption] = useState<DictSelectOption[]>([]);
 
-	const { menus } = useSelector((state: UseStore) => state.common);
+	const { menus } = useAppSelector((state) => state);
 
 	const treeNodes = mapTree(menus, (item) => ({
 		value: item.key,
