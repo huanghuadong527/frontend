@@ -1,5 +1,5 @@
 import { MouseEvent, useMemo } from 'react';
-import { Dropdown, Menu, Tabs } from 'antd';
+import { Dropdown, Tabs, theme } from 'antd';
 import {
 	CloseOutlined,
 	ColumnWidthOutlined,
@@ -7,19 +7,22 @@ import {
 	SwapOutlined,
 } from '@ant-design/icons';
 import { useDispatch } from 'react-redux';
-import { MenuProps, setSelectable, setTabs, useAppSelector } from '@/store';
+import { MenuProp, setSelectable, setTabs, useAppSelector } from '@/store';
 import { findTree } from 'xe-utils';
 import { useNavigate } from 'react-router-dom';
+import type { MenuProps } from 'antd';
 
 import style from './index.module.less';
+
+const { useToken } = theme;
 
 function TabsComponent() {
 	const dispatch = useDispatch();
 	const navigate = useNavigate();
-
+	const { token } = useToken();
 	const { tabs, selectable, menus } = useAppSelector((state) => state);
 
-	const $tabs: (MenuProps | null)[] = useMemo(() => {
+	const $tabs: (MenuProp | null)[] = useMemo(() => {
 		if (tabs && menus && menus.length > 0) {
 			const t = tabs.map((tab) => {
 				const mi = findTree(menus, (v) => v.key == tab.key);
@@ -33,7 +36,7 @@ function TabsComponent() {
 		return [];
 	}, [tabs, menus]);
 
-	const onCloseTabsItem = (e: MouseEvent, { key }: MenuProps) => {
+	const onCloseTabsItem = (e: MouseEvent, { key }: MenuProp) => {
 		e.stopPropagation();
 		let activeKey = selectable;
 		if (key === selectable) {
@@ -71,39 +74,41 @@ function TabsComponent() {
 		}
 	};
 
-	const menu = (
-		<Menu
-			items={[
-				{
-					label: '刷新页面',
-					key: '1',
-					icon: <ReloadOutlined />,
-				},
-				{
-					type: 'divider',
-				},
-				{
-					label: '关闭当前',
-					key: '2',
-					icon: <CloseOutlined />,
-				},
-				{
-					label: '关闭其他',
-					key: '3',
-					icon: <SwapOutlined />,
-				},
-				{
-					label: '关闭所有',
-					key: '4',
-					icon: <ColumnWidthOutlined />,
-				},
-			]}
-		/>
-	);
+	const items: MenuProps['items'] = [
+		{
+			key: '1',
+			label: '刷新页面',
+			icon: <ReloadOutlined />,
+		},
+		{
+			type: 'divider',
+		},
+		{
+			key: '2',
+			label: '关闭当前',
+			icon: <CloseOutlined />,
+		},
+		{
+			key: '3',
+			label: '关闭其他',
+			icon: <SwapOutlined />,
+		},
+		{
+			key: '4',
+			label: '关闭所有',
+			icon: <ColumnWidthOutlined />,
+		},
+	];
 
-	const tabPane = (item: MenuProps) => (
-		<Dropdown overlay={menu} trigger={['contextMenu']}>
-			<div className='mes-tabs--item'>
+	const tabPane = (item: MenuProp) => (
+		<Dropdown menu={{ items }} trigger={['contextMenu']}>
+			<div
+				className='mes-tabs--item'
+				style={{
+					borderColor: item.key == selectable ? token.colorPrimary : '',
+					backgroundColor: item.key == selectable ? token.colorPrimary : '',
+				}}
+			>
 				<span>{item.label}</span>
 				<a onClick={(e) => onCloseTabsItem(e, item)}>
 					<CloseOutlined />
@@ -121,7 +126,19 @@ function TabsComponent() {
 					{
 						key: 'index',
 						label: (
-							<div className='mes-tabs--item'>
+							<div
+								className='mes-tabs--item'
+								style={{
+									borderColor:
+										'index' == selectable || !selectable
+											? token.colorPrimary
+											: '',
+									backgroundColor:
+										'index' == selectable || !selectable
+											? token.colorPrimary
+											: '',
+								}}
+							>
 								<span>首页</span>
 							</div>
 						),

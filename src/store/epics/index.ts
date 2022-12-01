@@ -20,14 +20,11 @@ const getResourceData = () =>
 	);
 
 const epic: Epic = (action$: any) => {
-	console.log(0);
 	return action$.pipe(
 		ofType(FETCH_RESOURCE),
 		mergeMap(() => {
-			console.log(1);
 			return getResourceData().pipe(
 				map((result) => {
-					console.log(3);
 					const menuTree = toArrayTree(result.data);
 					let formatTree = mapTree(menuTree, (item) => {
 						const params = {

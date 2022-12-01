@@ -121,7 +121,7 @@ const PrivateServer = () => {
 		if (selectKeys.length > 0) {
 			onDeleteData(selectKeys.join(','));
 		} else {
-			message.warn('请选择删除私服!');
+			message.warning('请选择删除私服!');
 		}
 	};
 
@@ -146,7 +146,7 @@ const PrivateServer = () => {
 				getTableData();
 			});
 		} else {
-			message.warn('请选择操作的私服!');
+			message.warning('请选择操作的私服!');
 		}
 	};
 

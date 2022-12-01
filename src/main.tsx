@@ -1,20 +1,12 @@
 import ReactDOM from 'react-dom/client';
+import RenderError from '@/error';
 import store from '@/store';
-import locale from 'antd/es/locale/zh_CN';
-import RenderError from './error';
-import { Provider } from 'react-redux';
+import App from '@/App';
 import { HashRouter as Router } from 'react-router-dom';
+import { Provider } from 'react-redux';
 import { ErrorBoundary } from '@/components';
-import { SysRouter } from '@/router';
-import { ConfigProvider } from 'antd';
 
-import './index.less';
-
-ConfigProvider.config({
-	theme: {
-		primaryColor: '#2EAFBB',
-	},
-});
+import '@/index.css';
 
 const root = document.getElementById('root');
 
@@ -25,13 +17,11 @@ try {
 			// 生产模式下生命周期不会被调用两次。
 			// <React.StrictMode>
 			<ErrorBoundary renderError={RenderError}>
-				<ConfigProvider locale={locale}>
-					<Provider store={store}>
-						<Router>
-							<SysRouter />
-						</Router>
-					</Provider>
-				</ConfigProvider>
+				<Provider store={store}>
+					<Router>
+						<App />
+					</Router>
+				</Provider>
 			</ErrorBoundary>
 			// </React.StrictMode>
 		);

@@ -1,0 +1,14 @@
+@import './assets/styles/variable.css';
+
+@import 'antd/dist/reset.css';
+
+@import 'nprogress/nprogress.css';
+
+@import './assets/styles/common.css';
+
+@import './assets/styles/custom.css';
+
+html body {
+  --antd-wave-shadow-color: transparent !important;
+}
+

@@ -5,7 +5,7 @@ import { THEME_COLOR } from '@/core';
  * 内存信息
  */
 export const MemoryInformationOption: EChartsCoreOption = {
-	color: THEME_COLOR,
+	color: [THEME_COLOR],
 	tooltip: {
 		formatter: '{b} <br/>{a} : {c}k',
 	},

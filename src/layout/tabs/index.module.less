@@ -1,5 +1,3 @@
-@import '@/assets/styles/global_styles/mixin.less';
-
 .layoutTabs {
 	min-height: 36px;
 	padding: 5px 10px;
@@ -28,16 +26,10 @@
       &.ant-tabs-small > .ant-tabs-nav .ant-tabs-tab {
         padding: 0;
   
-        &:hover {
-          color: #2EAFBB;
-        }
-  
         &.ant-tabs-tab-active {
           .ant-tabs-tab-btn {
             > .mes-tabs--item {
               color: #ffffff;
-              border-color: #2EAFBB;
-              background-color: #2EAFBB;
   
               > a {
                 color: #ffffff;
@@ -73,7 +65,8 @@
           font-size: 12px;
           align-items: center;
           transition: all 0.2s;
-          .display_flex(row);
+          display: flex;
+          flex-direction: row;
   
           > a {
             font-size: 0;

@@ -1,0 +1,68 @@
+@scroll-bar: 'http://www.xunbao178.com/wmgj/images/game/role/scroll_bar.gif';
+
+.jScroll {
+	width: 100%;
+	height: auto;
+	clear: both;
+	overflow: hidden;
+	position: relative;
+	padding: 0;
+	scrollbar-face-color: #dbebfe;
+	scrollbar-shadow-color: #b8d6fa;
+	scrollbar-highlight-color: #fff;
+	scrollbar-3dlight-color: #dbebfe;
+	scrollbar-darkshadow-color: #458ce4;
+	scrollbar-track-color: #0a6e81;
+	scrollbar-arrow-color: #458ce4;
+}
+
+.jScrollC {
+	top: 0px;
+	z-index: 9999;
+	zoom: 1;
+	position: relative;
+	float: left;
+	padding-right: 13px;
+}
+
+.jScrollE {
+	height: 100%;
+	top: 0px;
+	right: 0px;
+	position: absolute;
+	overflow: hidden;
+	z-index: 10000;
+	width: 13px;
+	background: url(@scroll-bar) right 0px repeat-y;
+}
+
+.jScrollU {
+	position: absolute;
+	top: 0px;
+	width: 100%;
+	left: 0px;
+	background: url(@scroll-bar) 0px 0px;
+	overflow: hidden;
+	height: 13px;
+}
+
+.jScrollH {
+	background: url(@scroll-bar) -16px 0px repeat-y;
+	position: absolute;
+	left: 0px;
+	margin-left: 1px;
+	top: 13px;
+	border-color: rgb(181, 181, 181);
+	width: 11px;
+	height: 10.75px;
+}
+
+.jScrollD {
+	position: absolute;
+	bottom: 0px;
+	width: 100%;
+	left: 0px;
+	background: url(@scroll-bar) 0px -18px;
+	overflow: hidden;
+	height: 14px;
+}

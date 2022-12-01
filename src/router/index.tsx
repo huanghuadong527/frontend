@@ -131,6 +131,22 @@ const AppRouter: RouteObject[] = [
 		),
 	},
 	{
+		path: '/index/xunbao',
+		element: (
+			<Lazy template={() => import('@/views/page/shopping/xun-bao/index')} />
+		),
+		children: [
+			{
+				path: '',
+				element: (
+					<Lazy
+						template={() => import('@/views/page/shopping/xun-bao/goods')}
+					/>
+				),
+			}
+		]
+	},
+	{
 		path: '/index/wm-current-price',
 		element: (
 			<Lazy template={() => import('@/views/page/shopping/wm-current-price')} />

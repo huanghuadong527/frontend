@@ -10,3 +10,4 @@ export * from './modal-draggable';
 export * from './custom-icon';
 export * from './editable-cell';
 export * from './echarts';
+export * from './scroll';

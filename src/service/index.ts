@@ -24,3 +24,4 @@ export * from './shopping/private-server';
 export * from './shopping/sy-notice';
 export * from './shopping/wm-player-role';
 export * from './shopping/wm-current-price';
+export * from './shopping/xunbao';

@@ -1,16 +1,14 @@
-@import '@/assets/styles/global_styles/mixin.less';
-
 .layoutHeader {
 	height: 50px;
 	line-height: 50px;
   justify-content: space-between;
-	.display_flex(row);
+	display: flex;
+	flex-direction: row;
 
 	:global {
 		.ant-btn {
       flex: 0 0 50px;
 			height: 50px;
-			line-height: 50px;
 			border-radius: 0;
 			border-width: 0;
 			background-color: transparent;

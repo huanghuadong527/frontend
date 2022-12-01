@@ -5,6 +5,7 @@ import { findTree } from 'xe-utils';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { setSelectable, setTabs, useAppSelector } from '@/store';
+import { SY_CONFIG } from '@/core';
 
 import style from './index.module.less';
 
@@ -15,7 +16,7 @@ function Sider(props: AppIndexProps) {
 	const navigate = useNavigate();
 	const dispatch = useDispatch();
 
-	const { tabs, selectable, menus } = useAppSelector((state) => state);
+	const { tabs, selectable, menus, config } = useAppSelector((state) => state);
 
 	const [openKeys, setOpenKeys] = useState([selectable ?? '']);
 
@@ -80,7 +81,15 @@ function Sider(props: AppIndexProps) {
 		<div className={style.layoutSider}>
 			<div className={style.layoutSiderTop}>
 				<Image
-					src={props.collapsed ? logoMini : logo}
+					src={
+						props.collapsed
+							? config
+								? `${SY_CONFIG.upload}${config.logo}`
+								: logo
+							: config
+							? `${SY_CONFIG.upload}${config.miniLogo}`
+							: logoMini
+					}
 					height={50}
 					preview={false}
 				/>

@@ -30,12 +30,16 @@ function LoginComponent() {
 		userForm.setFieldsValue(defaultUser);
 	});
 
-	const menuI18nItem = (
-		<Menu>
-			<Menu.Item>中文</Menu.Item>
-			<Menu.Item>English</Menu.Item>
-		</Menu>
-	);
+	const items = [
+		{
+			key: 'zh_cn',
+			label: '中文',
+		},
+		{
+			key: 'en',
+			label: 'English',
+		},
+	];
 
 	const onSubmit = () => {
 		userForm.validateFields().then((params) => {
@@ -57,7 +61,7 @@ function LoginComponent() {
 				<div className={style.loginRight}>
 					<div className={style.loginRightBody}>
 						<div className={style.loginI18n}>
-							<Dropdown.Button overlay={menuI18nItem}>En</Dropdown.Button>
+							<Dropdown.Button menu={{ items }}>En</Dropdown.Button>
 						</div>
 						<div className={style.loginForm}>
 							<div className={style.loginLabel}>

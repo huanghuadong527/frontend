@@ -1,9 +1,6 @@
-@import 'antd/es/style/themes/default.less';
-@import '@/assets/styles/global_styles/mixin.less';
-@import '@/assets/styles/global_styles/variable.less';
-
 .login {
-	.content_cover();
+	width: 100%;
+	height: 100%;
 	background: url('@/assets/image/login-bg.png') no-repeat;
 	background-position: center;
 	background-size: auto 100%;
@@ -29,9 +26,10 @@
 	margin-left: -512px;
 	margin-top: -300px;
 	background-color: #ffffff;
-	box-shadow: @box-shadow-base;
+	// box-shadow: @box-shadow-base;
 
-	.display_flex(row);
+	display: flex;
+	flex-direction: row;
 }
 
 .loginLeft {

@@ -4,6 +4,7 @@ interface JsonResult {
   code: string | number;
   msg: string;
   data?: any;
+  user?: object;
 }
 
 interface AppIndexProps {
