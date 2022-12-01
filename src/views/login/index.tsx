@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Button, Dropdown, Menu, Form, Input, Checkbox } from 'antd';
+import { Button, Dropdown, Form, Input, Checkbox } from 'antd';
 import { KeyOutlined, UserOutlined } from '@ant-design/icons';
 import { login } from '@/service';
 import { useDispatch } from 'react-redux';
@@ -17,7 +17,7 @@ interface UserInterface {
 function LoginComponent() {
 	const dispathch = useDispatch();
 	const navigate = useNavigate();
-	const { logout } = useCommon();
+	const { logout, setTitle } = useCommon();
 	const defaultUser: UserInterface = {
 		username: 'admin',
 		password: 'admin123',
@@ -27,6 +27,7 @@ function LoginComponent() {
 
 	useEffect(() => {
 		logout();
+		setTitle('登录');
 		userForm.setFieldsValue(defaultUser);
 	});
 
