@@ -57,23 +57,23 @@ const Server = () => {
 							{
 								id: 1,
 								attribute: '核心数',
-								value: cpu['cpuNum'],
+								value: cpu['cpuNum']
 							},
 							{
 								id: 2,
 								attribute: '用户使用率',
-								value: `${cpu['used']}%`,
+								value: `${cpu['used']}%`
 							},
 							{
 								id: 3,
 								attribute: '系统使用率',
-								value: `${cpu['sys']}%`,
+								value: `${cpu['sys']}%`
 							},
 							{
 								id: 4,
 								attribute: '核心数',
-								value: `${cpu['free']}%`,
-							},
+								value: `${cpu['free']}%`
+							}
 						]);
 					}
 					if (result.data.sys) {
@@ -82,7 +82,7 @@ const Server = () => {
 					if (result.data.jvm && result.data.sys) {
 						setJvmData({
 							...result.data.jvm,
-							...result.data.sys,
+							...result.data.sys
 						});
 					}
 					if (result.data.jvm && result.data.mem) {
@@ -93,26 +93,26 @@ const Server = () => {
 								id: 1,
 								attribute: '总内存',
 								mem: `${mem['total']}G`,
-								jvm: `${jvm['total']}M`,
+								jvm: `${jvm['total']}M`
 							},
 							{
 								id: 2,
 								attribute: '已用内存',
 								mem: `${mem['used']}G`,
-								jvm: `${jvm['used']}M`,
+								jvm: `${jvm['used']}M`
 							},
 							{
 								id: 3,
 								attribute: '剩余内存',
 								mem: `${mem['free']}G`,
-								jvm: `${jvm['free']}M`,
+								jvm: `${jvm['free']}M`
 							},
 							{
 								id: 4,
 								attribute: '使用率',
 								mem: `${mem['usage']}%`,
-								jvm: `${jvm['usage']}%`,
-							},
+								jvm: `${jvm['usage']}%`
+							}
 						]);
 					}
 					if (result.data.sysFiles) {
@@ -134,7 +134,7 @@ const Server = () => {
 					<Card
 						size='small'
 						title='CPU'
-						bodyStyle={{ padding: '1px 0 0' }}
+						styles={{ body: { padding: '1px 0 0' } }}
 						bordered={false}
 					>
 						<Table
@@ -147,21 +147,25 @@ const Server = () => {
 									title: '属性',
 									dataIndex: 'attribute',
 									width: '50%',
-									key: 'name',
+									key: 'name'
 								},
 								{
 									title: '值',
 									dataIndex: 'value',
 									width: '50%',
-									key: 'name',
-								},
+									key: 'name'
+								}
 							]}
 							dataSource={cpuData}
 						/>
 					</Card>
 				</Col>
 				<Col span={12}>
-					<Card size='small' title='内存' bodyStyle={{ padding: '1px 0 0' }}>
+					<Card
+						size='small'
+						title='内存'
+						styles={{ body: { padding: '1px 0 0' } }}
+					>
 						<Table
 							size='small'
 							rowKey='id'
@@ -172,20 +176,20 @@ const Server = () => {
 									title: '属性',
 									dataIndex: 'attribute',
 									width: '33.333333%',
-									key: 'name',
+									key: 'name'
 								},
 								{
 									title: '内存',
 									dataIndex: 'mem',
 									width: '33.333333%',
-									key: 'name',
+									key: 'name'
 								},
 								{
 									title: 'JVM',
 									dataIndex: 'jvm',
 									width: '33.333333%',
-									key: 'name',
-								},
+									key: 'name'
+								}
 							]}
 							dataSource={memData}
 						/>
@@ -195,7 +199,7 @@ const Server = () => {
 					<Card
 						size='small'
 						title='服务器信息'
-						bodyStyle={{ padding: '1px 0 0' }}
+						styles={{ body: { padding: '1px 0 0' } }}
 						bordered={false}
 					>
 						<Descriptions
@@ -224,7 +228,7 @@ const Server = () => {
 					<Card
 						size='small'
 						title='Java虚拟机信息'
-						bodyStyle={{ padding: '1px 0 0' }}
+						styles={{ body: { padding: '1px 0 0' } }}
 						bordered={false}
 					>
 						<Descriptions
@@ -262,7 +266,7 @@ const Server = () => {
 					<Card
 						size='small'
 						title='磁盘状态'
-						bodyStyle={{ padding: '1px 0 0' }}
+						styles={{ body: { padding: '1px 0 0' } }}
 						bordered={false}
 					>
 						<Table
@@ -274,32 +278,32 @@ const Server = () => {
 								{
 									title: '盘符路径',
 									dataIndex: 'dirName',
-									width: '10%',
+									width: '10%'
 								},
 								{
 									title: '文件系统',
 									dataIndex: 'sysTypeName',
-									width: '10%',
+									width: '10%'
 								},
 								{
 									title: '盘符类型',
 									dataIndex: 'typeName',
-									width: '10%',
+									width: '10%'
 								},
 								{
 									title: '总大小',
 									dataIndex: 'total',
-									width: '10%',
+									width: '10%'
 								},
 								{
 									title: '可用大小',
 									dataIndex: 'free',
-									width: '10%',
+									width: '10%'
 								},
 								{
 									title: '已用大小',
 									dataIndex: 'used',
-									width: '10%',
+									width: '10%'
 								},
 								{
 									title: '已用百分比',
@@ -307,8 +311,8 @@ const Server = () => {
 									width: '10%',
 									render: (value) => {
 										return `${value}%`;
-									},
-								},
+									}
+								}
 							]}
 							dataSource={diskData}
 						/>

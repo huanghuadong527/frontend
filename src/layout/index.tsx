@@ -48,24 +48,24 @@ function home() {
 	}, []);
 
 	return (
-		<Layout className='container'>
-			<Layout.Sider
-				collapsible
-				className={style.layoutSider}
-				trigger={null}
-				style={{ backgroundColor: '#FFFFFF' }}
-				collapsed={collapsed}
+		<Layout className={style.layoutBody}>
+			<Layout.Header
+				style={{ height: '50px', lineHeight: '50px', paddingInline: '20px' }}
 			>
-				<Sider collapsed={collapsed} />
-			</Layout.Sider>
-			<Layout className={style.layoutBody}>
-				<Layout.Header
-					style={{ height: '50px', lineHeight: '50px', paddingInline: '20px' }}
+				<Header collapsed={collapsed} onCollapse={onCollapse} />
+			</Layout.Header>
+			<Layout>
+				<Layout.Sider
+					collapsible
+					className={style.layoutSider}
+					trigger={null}
+					style={{ backgroundColor: '#FFFFFF' }}
+					collapsed={collapsed}
 				>
-					<Header collapsed={collapsed} onCollapse={onCollapse} />
-				</Layout.Header>
-				<Tabs />
-				<Layout.Content>
+					<Sider collapsed={collapsed} />
+				</Layout.Sider>
+				<Layout.Content className='flex-column'>
+					<Tabs />
 					<div className={style.layoutContent}>
 						<Outlet />
 					</div>

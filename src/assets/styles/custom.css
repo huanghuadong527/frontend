@@ -162,7 +162,7 @@
 	.ant-table
 	.ant-table-container
 	.ant-table-body {
-	height: calc(61%);
+	height: calc(100% - 39px);
 }
 
 .dynamic-table--content
@@ -176,6 +176,10 @@
 .dynamic-table--footer {
 	text-align: right;
 	margin-top: 15px;
+}
+
+.dynamic-expandable--wrapper .ant-table-cell {
+	background-color: #FFFFFF !important;
 }
 
 .ant-modal .ant-modal-content {

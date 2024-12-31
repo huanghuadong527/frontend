@@ -8,28 +8,28 @@ import {
 	Popconfirm,
 	Radio,
 	Space,
-	TreeSelect,
+	TreeSelect
 } from 'antd';
 import {
 	addGameServerData,
 	deleteGameServerData,
 	getGameServerDataById,
 	getGameServerTreeData,
-	updateGameServerData,
+	updateGameServerData
 } from '@/service';
 import { FORM_LAYOUT, useAntdTable } from '@/core';
 import { DynamicSearch, DynamicTable } from '@/components';
 import { useEffect, useState } from 'react';
-import { DefaultOptionType } from 'antd/lib/select';
 import { mapTree } from 'xe-utils';
 
 const GameServer = () => {
 	const [visible, setVisible] = useState(false);
 	const [editId, setEditId] = useState('');
-	const [serverTree, setServerTree] = useState<DefaultOptionType[]>([]);
+	const [serverTree, setServerTree] = useState<any[]>([]);
 	const [form] = Form.useForm();
 	const { dataSource, tableProps, loading, getTableData } = useAntdTable(
-		'/game/server/list', {isTreeData: true}
+		'/game/server/list',
+		{ isTreeData: true }
 	);
 
 	const onEdit = (id?: string | null, parentId?: string) => {
@@ -52,7 +52,7 @@ const GameServer = () => {
 			if (editId) {
 				updateGameServerData({
 					...values,
-					id: editId,
+					id: editId
 				}).then(() => {
 					onCancel();
 					getTableData();
@@ -91,7 +91,7 @@ const GameServer = () => {
 					mapTree(result.data, (item) => {
 						return {
 							value: item.id,
-							label: item.label,
+							label: item.label
 						};
 					})
 				);
@@ -123,7 +123,7 @@ const GameServer = () => {
 						title: '服务器名称',
 						dataIndex: 'name',
 						width: '20%',
-						ellipsis: true,
+						ellipsis: true
 					},
 					{
 						title: '服务器类型',
@@ -140,12 +140,12 @@ const GameServer = () => {
 								default:
 									return '未知';
 							}
-						},
+						}
 					},
 					{
 						title: '状态',
 						dataIndex: 'status',
-						width: '20%',
+						width: '20%'
 					},
 					{
 						title: '创建时间',
@@ -156,7 +156,7 @@ const GameServer = () => {
 								return moment(new Date(date)).format('YYYY-MM-DD HH:mm:ss');
 							}
 							return '-';
-						},
+						}
 					},
 					{
 						title: '更新时间',
@@ -167,12 +167,12 @@ const GameServer = () => {
 								return moment(new Date(date)).format('YYYY-MM-DD HH:mm:ss');
 							}
 							return '-';
-						},
+						}
 					},
 					{
 						title: '备注',
 						dataIndex: 'remark',
-						width: '20%',
+						width: '20%'
 					},
 					{
 						title: '操作',
@@ -208,8 +208,8 @@ const GameServer = () => {
 									</Popconfirm>
 								</Space>
 							);
-						},
-					},
+						}
+					}
 				]}
 				loading={loading}
 				dataSource={dataSource}

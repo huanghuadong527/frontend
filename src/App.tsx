@@ -11,16 +11,17 @@ const App = () => {
 
 	const globalThemeConfig = useMemo(() => {
 		return {
+			cssVar: true,
 			token: {
 				borderRadius: 2,
 				colorInfo: theme,
-				colorPrimary: theme,
+				colorPrimary: theme
 			},
 			components: {
 				Layout: {
-					colorBgHeader: theme,
-				},
-			},
+					headerBg: theme
+				}
+			}
 		} as ThemeConfig;
 	}, [theme]);
 

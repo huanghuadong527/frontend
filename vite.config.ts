@@ -36,13 +36,13 @@ export default defineConfig({
 			'monaco-editor/esm/vs/basic-languages/java/java.contribution',
 			'monaco-editor/esm/vs/basic-languages/javascript/javascript.contribution',
 			'monaco-editor/esm/vs/basic-languages/sql/sql.contribution',
-			'monaco-editor/esm/vs/basic-languages/xml/xml.contribution'
+			'monaco-editor/esm/vs/basic-languages/xml/xml.contribution',
 		],
 	},
 	server: {
 		proxy: {
 			'/api': {
-				target: 'http://192.168.2.121:8080',
+				target: 'http://192.168.10.227:8080',
 				changeOrigin: true,
 				rewrite: (path) => path.replace(/^\/api/, ''),
 			},

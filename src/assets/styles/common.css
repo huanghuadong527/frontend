@@ -50,6 +50,10 @@ html, body, .container {
   background-color: #FFFFFF;
 }
 
+.text-error {
+  color: var(--ant-color-error);
+}
+
 .o-x {
   overflow-x: auto;
   overflow-y: hidden;
@@ -114,6 +118,26 @@ html, body, .container {
   bottom: 0;
   left: 0;
   z-index: 11;
+}
+
+.w-0 {
+  width: 0;
+}
+
+.w-auto {
+  width: auto;
+}
+
+.h-0 {
+  height: 0;
+}
+
+.h-auto {
+  height: auto;
+}
+
+.line-normal {
+  line-height: normal;
 }
 
 .m-xs {

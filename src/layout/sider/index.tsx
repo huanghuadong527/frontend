@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Image, Menu } from 'antd';
+import { Flex, Image, Menu, Typography } from 'antd';
 import { MenuInfo } from 'rc-menu/lib/interface';
 import { findTree } from 'xe-utils';
 import { useNavigate } from 'react-router-dom';
@@ -10,7 +10,7 @@ import { SY_CONFIG } from '@/core';
 import style from './index.module.less';
 
 import logo from '@/assets/image/default_logo.png';
-import logoMini from '@/assets/image/default_logo_mini.png';
+import logoMini from '@/assets/image/logo.png';
 
 function Sider(props: AppIndexProps) {
 	const navigate = useNavigate();
@@ -79,7 +79,7 @@ function Sider(props: AppIndexProps) {
 
 	return (
 		<div className={style.layoutSider}>
-			<div className={style.layoutSiderTop}>
+			{/* <Flex align='center' gap={8} className={style.layoutSiderTop}>
 				<Image
 					src={
 						props.collapsed
@@ -93,7 +93,12 @@ function Sider(props: AppIndexProps) {
 					height={50}
 					preview={false}
 				/>
-			</div>
+				{!props.collapsed ? (
+					<Typography.Title level={4} style={{ margin: 0 }}>
+						管理系统
+					</Typography.Title>
+				) : null}
+			</Flex> */}
 			<div className={style.layoutSiderBody}>{initMenuEle}</div>
 		</div>
 	);

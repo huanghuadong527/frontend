@@ -25,3 +25,10 @@ export * from './shopping/sy-notice';
 export * from './shopping/wm-player-role';
 export * from './shopping/wm-current-price';
 export * from './shopping/xunbao';
+
+export * from './wm/career';
+export * from './wm/realm';
+export * from './wm/skills';
+export * from './wm/classify';
+export * from './wm/thing-type';
+export * from './wm/equipment';

@@ -2,7 +2,6 @@ import ImgCrop from 'antd-img-crop';
 import screenfull from 'screenfull';
 import {
 	Avatar,
-	Button,
 	Dropdown,
 	Form,
 	Input,
@@ -14,6 +13,8 @@ import {
 	Radio,
 	Descriptions,
 	theme,
+	Flex,
+	Typography
 } from 'antd';
 import {
 	CaretDownOutlined,
@@ -23,10 +24,9 @@ import {
 	LayoutOutlined,
 	LockOutlined,
 	LogoutOutlined,
-	MenuUnfoldOutlined,
 	SearchOutlined,
 	SettingOutlined,
-	UserOutlined,
+	UserOutlined
 } from '@ant-design/icons';
 import { ColorResult, SketchPicker } from 'react-color';
 import { useNavigate } from 'react-router-dom';
@@ -38,6 +38,7 @@ import type { MenuProps } from 'antd';
 import { updateSystemUserInfo, uploadImage } from '@/service';
 
 import style from './index.module.less';
+import logo from '@/assets/image/logo.png';
 
 const { useToken } = theme;
 
@@ -55,6 +56,7 @@ function header(props: AppIndexProps) {
 	const [userForm] = Form.useForm();
 	const { logout } = useCommon();
 	const { token } = useToken();
+	const { config } = useAppSelector((state) => state);
 
 	const onSelectHandleItem = (key: string) => {
 		switch (key) {
@@ -84,31 +86,31 @@ function header(props: AppIndexProps) {
 		{
 			key: 'user',
 			label: '基本资料',
-			icon: <SettingOutlined />,
+			icon: <SettingOutlined />
 		},
 		{
 			key: 'info',
 			label: '个人信息',
-			icon: <IdcardOutlined />,
+			icon: <IdcardOutlined />
 		},
 		{
 			key: 'layout',
 			label: '系统设置',
-			icon: <LayoutOutlined />,
+			icon: <LayoutOutlined />
 		},
 		{
 			key: 'password',
 			label: '修改密码',
-			icon: <LockOutlined />,
+			icon: <LockOutlined />
 		},
 		{
-			type: 'divider',
+			type: 'divider'
 		},
 		{
 			key: 'logout',
 			label: '退出登录',
-			icon: <LogoutOutlined />,
-		},
+			icon: <LogoutOutlined />
+		}
 	];
 
 	const onCollapse = () => {
@@ -143,7 +145,7 @@ function header(props: AppIndexProps) {
 				updateSystemUserInfo({
 					...values,
 					...params,
-					id: user.id,
+					id: user.id
 				}).then((result) => {
 					if (result.code == 200) {
 						message.success('已更新用户基本资料!');
@@ -185,7 +187,18 @@ function header(props: AppIndexProps) {
 
 	return (
 		<div className={style.layoutHeader}>
-			<Button icon={<MenuUnfoldOutlined />} onClick={onCollapse} />
+			<Flex align='center' gap={8} className={style.layoutSiderTop}>
+				<div className='line-normal'>
+					<Image
+						src={config ? `${SY_CONFIG.upload}${config.logo}` : logo}
+						height={40}
+						preview={false}
+					/>
+				</div>
+				<Typography.Title level={4} style={{ margin: 0, color: '#FFFFFF' }}>
+					后台管理系统
+				</Typography.Title>
+			</Flex>
 			<Space>
 				<a className={style.layoutHeaderHandle}>
 					<SearchOutlined /> 搜索
@@ -222,7 +235,7 @@ function header(props: AppIndexProps) {
 					initialValues={user}
 				>
 					<Form.Item label='用户头像'>
-						<ImgCrop grid rotate shape='rect' minZoom={0}>
+						<ImgCrop minZoom={0}>
 							<Upload.Dragger
 								listType='picture-card'
 								showUploadList={false}
@@ -353,9 +366,9 @@ function header(props: AppIndexProps) {
 								picker: {
 									boxShadow: 'none',
 									border: `1px solid ${token.colorBorder}`,
-									borderRadius: 0,
-								},
-							},
+									borderRadius: 0
+								}
+							}
 						}}
 						onChange={onChangeTheme}
 					/>

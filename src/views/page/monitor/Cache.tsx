@@ -48,14 +48,14 @@ const Cache = () => {
 							(option.series as any)[0].data = [
 								{
 									value: toNumber(data.info.used_memory_human),
-									name: '内存消耗',
-								},
+									name: '内存消耗'
+								}
 							];
 							setMemoryInfo(option);
 						}
 						setInfo({
 							...data.info,
-							dbSize,
+							dbSize
 						});
 					}
 				}
@@ -73,7 +73,7 @@ const Cache = () => {
 				<Card
 					size='small'
 					title='基本信息'
-					bodyStyle={{ padding: '1px 0 0' }}
+					styles={{ body: { padding: '1px 0 0' } }}
 					bordered={false}
 				>
 					<Descriptions
@@ -121,6 +121,7 @@ const Cache = () => {
 						<Echarts
 							id='command-statistics'
 							class='container'
+							style={{ height: '400px' }}
 							options={commandStats}
 						/>
 					</Card>
@@ -132,10 +133,10 @@ const Cache = () => {
 						title='内存信息'
 						bordered={false}
 					>
-						<div id='memory-information' className='container'></div>
 						<Echarts
 							id='memory-information'
 							class='container'
+							style={{ height: '400px' }}
 							options={memoryInfo}
 						/>
 					</Card>

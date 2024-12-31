@@ -4,7 +4,7 @@ import {
 	CloseOutlined,
 	ColumnWidthOutlined,
 	ReloadOutlined,
-	SwapOutlined,
+	SwapOutlined
 } from '@ant-design/icons';
 import { useDispatch } from 'react-redux';
 import { MenuProp, setSelectable, setTabs, useAppSelector } from '@/store';
@@ -78,26 +78,26 @@ function TabsComponent() {
 		{
 			key: '1',
 			label: '刷新页面',
-			icon: <ReloadOutlined />,
+			icon: <ReloadOutlined />
 		},
 		{
-			type: 'divider',
+			type: 'divider'
 		},
 		{
 			key: '2',
 			label: '关闭当前',
-			icon: <CloseOutlined />,
+			icon: <CloseOutlined />
 		},
 		{
 			key: '3',
 			label: '关闭其他',
-			icon: <SwapOutlined />,
+			icon: <SwapOutlined />
 		},
 		{
 			key: '4',
 			label: '关闭所有',
-			icon: <ColumnWidthOutlined />,
-		},
+			icon: <ColumnWidthOutlined />
+		}
 	];
 
 	const tabPane = (item: MenuProp) => (
@@ -106,7 +106,7 @@ function TabsComponent() {
 				className='mes-tabs--item'
 				style={{
 					borderColor: item.key == selectable ? token.colorPrimary : '',
-					backgroundColor: item.key == selectable ? token.colorPrimary : '',
+					backgroundColor: item.key == selectable ? token.colorPrimary : ''
 				}}
 			>
 				<span>{item.label}</span>
@@ -136,14 +136,14 @@ function TabsComponent() {
 									backgroundColor:
 										'index' == selectable || !selectable
 											? token.colorPrimary
-											: '',
+											: ''
 								}}
 							>
 								<span>首页</span>
 							</div>
-						),
+						)
 					},
-					...$tabs.map((item) => ({ key: item!.key, label: tabPane(item!) })),
+					...$tabs.map((item) => ({ key: item!.key, label: tabPane(item!) }))
 				]}
 				onTabClick={onSelectTabsItem}
 			/>

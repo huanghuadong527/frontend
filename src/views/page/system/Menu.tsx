@@ -2,7 +2,7 @@ import {
 	ANTD_ICONS,
 	CustomIcon,
 	DynamicSearch,
-	DynamicTable,
+	DynamicTable
 } from '@/components';
 import { FORM_LAYOUT, useAntdTable } from '@/core';
 import {
@@ -17,14 +17,14 @@ import {
 	Select,
 	Space,
 	Tag,
-	TreeSelect,
+	TreeSelect
 } from 'antd';
 import {
 	addMenuData,
 	deleteMenuData,
 	getMenuById,
 	getMenuTreeSelectData,
-	updateMenuData,
+	updateMenuData
 } from '@/service';
 import { createElement, useCallback, useEffect, useState } from 'react';
 import { DefaultOptionType } from 'antd/lib/select';
@@ -37,7 +37,8 @@ const Menu = () => {
 	const [menuTree, setMenuTree] = useState<DefaultOptionType[]>([]);
 	const [form] = Form.useForm();
 	const { dataSource, tableProps, loading, getTableData } = useAntdTable(
-		'/system/menu/list', {isTreeData: true}
+		'/system/menu/list',
+		{ isTreeData: true }
 	);
 
 	const getIconComponent = (iconName: string) => {
@@ -67,7 +68,7 @@ const Menu = () => {
 				updateMenuData({
 					...values,
 					id: editId,
-					parentId: values.parentId ? values.parentId : 0,
+					parentId: values.parentId ? values.parentId : 0
 				}).then(() => {
 					onCancel();
 					getTableData();
@@ -77,7 +78,7 @@ const Menu = () => {
 			} else {
 				addMenuData({
 					...values,
-					parentId: values.parentId ? values.parentId : 0,
+					parentId: values.parentId ? values.parentId : 0
 				}).then(() => {
 					onCancel();
 					getTableData();
@@ -110,7 +111,7 @@ const Menu = () => {
 				mapTree(result.data, (item) => {
 					return {
 						value: item.id,
-						label: item.label,
+						label: item.label
 					};
 				})
 			);
@@ -141,7 +142,7 @@ const Menu = () => {
 						title: '菜单名称',
 						dataIndex: 'menuName',
 						width: '20%',
-						ellipsis: true,
+						ellipsis: true
 					},
 					{
 						title: '菜单类型',
@@ -158,12 +159,12 @@ const Menu = () => {
 								default:
 									break;
 							}
-						},
+						}
 					},
 					{
 						title: '菜单地址',
 						dataIndex: 'path',
-						width: '20%',
+						width: '20%'
 					},
 					{
 						title: '图标',
@@ -174,7 +175,12 @@ const Menu = () => {
 								return getIconComponent(value);
 							}
 							return <></>;
-						},
+						}
+					},
+					{
+						title: '排序',
+						dataIndex: 'orderNum',
+						width: '20%'
 					},
 					{
 						title: '权限标识',
@@ -186,7 +192,7 @@ const Menu = () => {
 								return value;
 							}
 							return '--';
-						},
+						}
 					},
 					{
 						title: '状态',
@@ -198,13 +204,13 @@ const Menu = () => {
 									{value == 0 ? '正常' : '停用'}
 								</Tag>
 							);
-						},
+						}
 					},
 					{
 						title: '创建时间',
 						dataIndex: 'createTime',
 						width: '20%',
-						ellipsis: true,
+						ellipsis: true
 					},
 					{
 						title: '操作',
@@ -240,8 +246,8 @@ const Menu = () => {
 									</Popconfirm>
 								</Space>
 							);
-						},
-					},
+						}
+					}
 				]}
 				loading={loading}
 				dataSource={dataSource}

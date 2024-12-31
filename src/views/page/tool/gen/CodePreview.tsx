@@ -43,7 +43,7 @@ const CodePreview = (props: CodePreviewProps) => {
 								value={result.data[key]}
 								options={{ readOnly: true }}
 							/>
-						),
+						)
 					});
 				}
 				setItems(tabs);
@@ -57,7 +57,7 @@ const CodePreview = (props: CodePreviewProps) => {
 		}
 	}, [props.id]);
 	return (
-		<Modal bodyStyle={{ padding: 0 }} {...props}>
+		<Modal styles={{ body: { padding: 0 } }} {...props}>
 			<Tabs size='small' items={items} />
 		</Modal>
 	);

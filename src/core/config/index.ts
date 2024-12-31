@@ -42,11 +42,15 @@ export const SY_CONFIG: SyConfigInterface = config;
  */
 export const FORM_LAYOUT = {
 	labelCol: { span: 5 },
-	wrapperCol: { span: 19 },
+	wrapperCol: { span: 19 }
 };
 
 export const LG_FORM_LAYOUT = {
 	labelCol: { span: 7 },
-	wrapperCol: { span: 17 },
+	wrapperCol: { span: 17 }
 };
 
+export const FLEX_FORM_LAYOUT = {
+	labelCol: { flex: '110px' },
+	wrapperCol: { flex: 'auto' }
+};

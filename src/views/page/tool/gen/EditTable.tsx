@@ -11,7 +11,7 @@ import {
 	Select,
 	Table,
 	Tabs,
-	TreeSelect,
+	TreeSelect
 } from 'antd';
 import { getDictSelectOptionData, getGenTableInfo } from '@/service';
 import { LG_FORM_LAYOUT } from '@/core';
@@ -37,7 +37,7 @@ const EditTable = (props: EditTableProps) => {
 
 	const treeNodes = mapTree(menus, (item) => ({
 		value: item.key,
-		title: item.label,
+		title: item.label
 	}));
 
 	const [form] = Form.useForm();
@@ -46,7 +46,7 @@ const EditTable = (props: EditTableProps) => {
 
 	const onResetGenPath = () => {
 		form.setFieldsValue({
-			genPath: '/',
+			genPath: '/'
 		});
 	};
 
@@ -136,7 +136,7 @@ const EditTable = (props: EditTableProps) => {
 					title: '字段列名',
 					width: 120,
 					ellipsis: true,
-					fixed: 'left',
+					fixed: 'left'
 				},
 				{
 					dataIndex: 'columnComment',
@@ -145,13 +145,13 @@ const EditTable = (props: EditTableProps) => {
 					fixed: 'left',
 					render(value) {
 						return <Input defaultValue={value} />;
-					},
+					}
 				},
 				{
 					dataIndex: 'columnType',
 					title: '物理类型',
 					width: 120,
-					ellipsis: true,
+					ellipsis: true
 				},
 				{
 					dataIndex: 'javaType',
@@ -165,36 +165,36 @@ const EditTable = (props: EditTableProps) => {
 								options={[
 									{
 										value: 'Long',
-										label: 'Long',
+										label: 'Long'
 									},
 									{
 										value: 'String',
-										label: 'String',
+										label: 'String'
 									},
 									{
 										value: 'Integer',
-										label: 'Integer',
+										label: 'Integer'
 									},
 									{
 										value: 'Double',
-										label: 'Double',
+										label: 'Double'
 									},
 									{
 										value: 'BigDecimal',
-										label: 'BigDecimal',
+										label: 'BigDecimal'
 									},
 									{
 										value: 'Date',
-										label: 'Date',
+										label: 'Date'
 									},
 									{
 										value: 'Boolean',
-										label: 'Boolean',
-									},
+										label: 'Boolean'
+									}
 								]}
 							/>
 						);
-					},
+					}
 				},
 				{
 					dataIndex: 'javaField',
@@ -202,7 +202,7 @@ const EditTable = (props: EditTableProps) => {
 					width: 180,
 					render(value) {
 						return <Input defaultValue={value} />;
-					},
+					}
 				},
 				{
 					dataIndex: 'isInsert',
@@ -211,7 +211,7 @@ const EditTable = (props: EditTableProps) => {
 					align: 'center',
 					render(value) {
 						return <Checkbox checked={value == '1'} />;
-					},
+					}
 				},
 				{
 					dataIndex: 'isEdit',
@@ -220,7 +220,7 @@ const EditTable = (props: EditTableProps) => {
 					align: 'center',
 					render(value) {
 						return <Checkbox checked={value == '1'} />;
-					},
+					}
 				},
 				{
 					dataIndex: 'isList',
@@ -229,7 +229,7 @@ const EditTable = (props: EditTableProps) => {
 					align: 'center',
 					render(value) {
 						return <Checkbox checked={value == '1'} />;
-					},
+					}
 				},
 				{
 					dataIndex: 'isQuery',
@@ -238,7 +238,7 @@ const EditTable = (props: EditTableProps) => {
 					align: 'center',
 					render(value) {
 						return <Checkbox checked={value == '1'} />;
-					},
+					}
 				},
 				{
 					dataIndex: 'queryType',
@@ -252,40 +252,40 @@ const EditTable = (props: EditTableProps) => {
 								options={[
 									{
 										value: 'EQ',
-										label: '=',
+										label: '='
 									},
 									{
 										value: 'NE',
-										label: '!=',
+										label: '!='
 									},
 									{
 										value: 'GT',
-										label: '>',
+										label: '>'
 									},
 									{
 										value: 'GTE',
-										label: '>=',
+										label: '>='
 									},
 									{
 										value: 'LT',
-										label: '<',
+										label: '<'
 									},
 									{
 										value: 'LTE',
-										label: '<=',
+										label: '<='
 									},
 									{
 										value: 'LIKE',
-										label: 'LIKE',
+										label: 'LIKE'
 									},
 									{
 										value: 'BETWEEN',
-										label: 'BETWEEN',
-									},
+										label: 'BETWEEN'
+									}
 								]}
 							/>
 						);
-					},
+					}
 				},
 				{
 					dataIndex: 'isRequired',
@@ -294,7 +294,7 @@ const EditTable = (props: EditTableProps) => {
 					align: 'center',
 					render(value) {
 						return <Checkbox checked={value == '1'} />;
-					},
+					}
 				},
 				{
 					dataIndex: 'htmlType',
@@ -308,44 +308,44 @@ const EditTable = (props: EditTableProps) => {
 								options={[
 									{
 										value: 'input',
-										label: '文本框',
+										label: '文本框'
 									},
 									{
 										value: 'textarea',
-										label: '文本域',
+										label: '文本域'
 									},
 									{
 										value: 'select',
-										label: '下拉框',
+										label: '下拉框'
 									},
 									{
 										value: 'radio',
-										label: '单选框',
+										label: '单选框'
 									},
 									{
 										value: 'checkbox',
-										label: '复选框',
+										label: '复选框'
 									},
 									{
 										value: 'datetime',
-										label: '日期控件',
+										label: '日期控件'
 									},
 									{
 										value: 'imageUpload',
-										label: '图片上传',
+										label: '图片上传'
 									},
 									{
 										value: 'fileUpload',
-										label: '文件上传',
+										label: '文件上传'
 									},
 									{
 										value: 'editor',
-										label: '富文本控件',
-									},
+										label: '富文本控件'
+									}
 								]}
 							/>
 						);
-					},
+					}
 				},
 				{
 					dataIndex: 'dictType',
@@ -369,13 +369,13 @@ const EditTable = (props: EditTableProps) => {
 													{item.dictType}
 												</span>
 											</>
-										),
+										)
 									};
 								})}
 							/>
 						);
-					},
-				},
+					}
+				}
 			]}
 			dataSource={dataSource}
 		/>
@@ -396,16 +396,16 @@ const EditTable = (props: EditTableProps) => {
 								options={[
 									{
 										value: 'crud',
-										label: '单表(增删改查)',
+										label: '单表(增删改查)'
 									},
 									{
 										value: 'tree',
-										label: '树表(增删改查)',
+										label: '树表(增删改查)'
 									},
 									{
 										value: 'sub',
-										label: '主子表(增删改查)',
-									},
+										label: '主子表(增删改查)'
+									}
 								]}
 							/>
 						</Form.Item>
@@ -472,12 +472,12 @@ const EditTable = (props: EditTableProps) => {
 								options={[
 									{
 										value: '0',
-										label: 'zip压缩包',
+										label: 'zip压缩包'
 									},
 									{
 										value: '1',
-										label: '自定义路径',
-									},
+										label: '自定义路径'
+									}
 								]}
 							/>
 						</Form.Item>
@@ -517,7 +517,7 @@ const EditTable = (props: EditTableProps) => {
 	return (
 		<Modal
 			title={`修改[ ${title} ]生成配置`}
-			bodyStyle={{ padding: 0 }}
+			styles={{ body: { padding: 0 } }}
 			{...props}
 		>
 			<Tabs
@@ -526,7 +526,7 @@ const EditTable = (props: EditTableProps) => {
 				items={[
 					{ key: 'base', label: '基本信息', children: baseTemplate },
 					{ key: 'generate', label: '生成信息', children: generateTemplate },
-					{ key: 'fields', label: '字段信息', children: fieldsTemplate },
+					{ key: 'fields', label: '字段信息', children: fieldsTemplate }
 				]}
 			/>
 		</Modal>

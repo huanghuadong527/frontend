@@ -63,7 +63,7 @@ export class ErrorBoundary extends PureComponent<
 	 * the onDidCatch prop.
 	 */
 	componentDidCatch(error: any, errorInfo: any) {
-		return this.props.onDidCatch!(error, errorInfo);
+		// return this.props.onDidCatch!(error, errorInfo);
 	}
 
 	/**

@@ -8,7 +8,7 @@ import {
 	Modal,
 	Row,
 	Space,
-	Typography,
+	Typography
 } from 'antd';
 import {
 	CompressOutlined,
@@ -16,7 +16,7 @@ import {
 	ExclamationCircleOutlined,
 	ExpandOutlined,
 	FormOutlined,
-	LinkOutlined,
+	LinkOutlined
 } from '@ant-design/icons';
 import { useCallback, useEffect, useState } from 'react';
 import * as echarts from 'echarts';
@@ -26,7 +26,7 @@ import {
 	getWmCurrentPriceTypeAndData,
 	getWmCurrentPriceTypeData,
 	getWmCurrentPriceTypeDataById,
-	updateWmCurrentPriceTypeData,
+	updateWmCurrentPriceTypeData
 } from '@/service';
 import { CurrentPrice } from '@/core';
 import { useNavigate } from 'react-router-dom';
@@ -91,7 +91,7 @@ const Type = () => {
 			if (editId) {
 				updateWmCurrentPriceTypeData({
 					...values,
-					id: editId,
+					id: editId
 				}).then((result) => {
 					if (result.code == 200) {
 						onCancel();
@@ -136,7 +136,7 @@ const Type = () => {
 							message.error('删除失败');
 						}
 					});
-				},
+				}
 			});
 		}
 	};
@@ -165,7 +165,7 @@ const Type = () => {
 					option.series = chartData.data.map((v) => {
 						return {
 							...v,
-							type: 'line',
+							type: 'line'
 						};
 					});
 					charts.setOption(option);
@@ -224,7 +224,7 @@ const Type = () => {
 								className={
 									(screenfullId == item.id ? 'screenfull' : '') + ' flex-column'
 								}
-								bodyStyle={{ flex: 1 }}
+								styles={{ body: { flex: 1 } }}
 								title={item.name}
 								extra={
 									<Space>

@@ -14,11 +14,11 @@ function SysRouter() {
 	return useRoutes([
 		{
 			path: '/',
-			element: <Redirect to='/index' />,
+			element: <Redirect to='/index' />
 		},
 		{
 			path: '/login',
-			element: <Login />,
+			element: <Login />
 		},
 		{
 			path: '/index',
@@ -27,8 +27,8 @@ function SysRouter() {
 					<Layout />
 				</BeforeEach>
 			),
-			children: AppRouter,
-		},
+			children: AppRouter
+		}
 	]);
 }
 
@@ -40,95 +40,121 @@ export { SysRouter };
 const AppRouter: RouteObject[] = [
 	{
 		path: '',
-		element: <Lazy template={() => import('@/views/default')} />,
+		element: <Lazy template={() => import('@/views/default')} />
 	},
 	{
 		path: '/index/user',
-		element: <Lazy template={() => import('@/views/page/system/User')} />,
+		element: <Lazy template={() => import('@/views/page/system/User')} />
 	},
 	{
 		path: '/index/config',
-		element: <Lazy template={() => import('@/views/page/system/Config')} />,
+		element: <Lazy template={() => import('@/views/page/system/Config')} />
 	},
 	{
 		path: '/index/dept',
-		element: <Lazy template={() => import('@/views/page/system/Dept')} />,
+		element: <Lazy template={() => import('@/views/page/system/Dept')} />
 	},
 	{
 		path: '/index/dict',
-		element: <Lazy template={() => import('@/views/page/system/Dict')} />,
+		element: <Lazy template={() => import('@/views/page/system/Dict')} />
 	},
 	{
 		path: '/index/menu',
-		element: <Lazy template={() => import('@/views/page/system/Menu')} />,
+		element: <Lazy template={() => import('@/views/page/system/Menu')} />
 	},
 	{
 		path: '/index/post',
-		element: <Lazy template={() => import('@/views/page/system/Post')} />,
+		element: <Lazy template={() => import('@/views/page/system/Post')} />
 	},
 	{
 		path: '/index/role',
-		element: <Lazy template={() => import('@/views/page/system/Role')} />,
+		element: <Lazy template={() => import('@/views/page/system/Role')} />
 	},
 	{
 		path: '/index/notice',
-		element: <Lazy template={() => import('@/views/page/system/Notice')} />,
+		element: <Lazy template={() => import('@/views/page/system/Notice')} />
 	},
 	{
 		path: '/index/operlog',
-		element: <Lazy template={() => import('@/views/page/system/Operlog')} />,
+		element: <Lazy template={() => import('@/views/page/system/Operlog')} />
 	},
 	{
 		path: '/index/logininfor',
-		element: <Lazy template={() => import('@/views/page/system/Logininfor')} />,
+		element: <Lazy template={() => import('@/views/page/system/Logininfor')} />
 	},
 	{
 		path: '/index/online',
-		element: <Lazy template={() => import('@/views/page/monitor/Online')} />,
+		element: <Lazy template={() => import('@/views/page/monitor/Online')} />
 	},
 	{
 		path: '/index/cache',
-		element: <Lazy template={() => import('@/views/page/monitor/Cache')} />,
+		element: <Lazy template={() => import('@/views/page/monitor/Cache')} />
 	},
 	{
 		path: '/index/server',
-		element: <Lazy template={() => import('@/views/page/monitor/Server')} />,
+		element: <Lazy template={() => import('@/views/page/monitor/Server')} />
 	},
 	{
 		path: '/index/gen',
-		element: <Lazy template={() => import('@/views/page/tool/gen/index')}/>,
+		element: <Lazy template={() => import('@/views/page/tool/gen/index')} />
 	},
 	{
 		path: '/index/swagger',
-		element: <Lazy template={() => import('@/views/page/tool/Swagger')}/>,
+		element: <Lazy template={() => import('@/views/page/tool/Swagger')} />
 	},
 	{
 		path: '/index/character',
 		element: (
 			<Lazy template={() => import('@/views/page/shopping/character/index')} />
-		),
+		)
 	},
 	{
 		path: '/index/game-server',
 		element: (
 			<Lazy template={() => import('@/views/page/shopping/GameServer')} />
-		),
+		)
 	},
 	{
 		path: '/index/private-server',
 		element: (
 			<Lazy template={() => import('@/views/page/shopping/PrivateServer')} />
-		),
+		)
 	},
 	{
 		path: '/index/sy-notice',
-		element: <Lazy template={() => import('@/views/page/shopping/SyNotice')} />,
+		element: <Lazy template={() => import('@/views/page/shopping/SyNotice')} />
 	},
 	{
 		path: '/index/wm-player-role',
 		element: (
-			<Lazy template={() => import('@/views/page/shopping/wm-player-role/index')} />
-		),
+			<Lazy
+				template={() => import('@/views/page/shopping/wm-player-role/index')}
+			/>
+		)
+	},
+	{
+		path: '/index/wm/career',
+		element: <Lazy template={() => import('@/views/page/wm/Career')} />
+	},
+	{
+		path: '/index/wm/realm',
+		element: <Lazy template={() => import('@/views/page/wm/Realm')} />
+	},
+	{
+		path: '/index/wm/skills',
+		element: <Lazy template={() => import('@/views/page/wm/Skills')} />
+	},
+	{
+		path: '/index/wm/equipment',
+		element: <Lazy template={() => import('@/views/page/wm/Equipment')} />
+	},
+	{
+		path: '/index/wm/thing-type',
+		element: <Lazy template={() => import('@/views/page/wm/ThingType')} />
+	},
+	{
+		path: '/index/wm/classify',
+		element: <Lazy template={() => import('@/views/page/wm/Classify')} />
 	},
 	{
 		path: '/index/xunbao',
@@ -142,7 +168,7 @@ const AppRouter: RouteObject[] = [
 					<Lazy
 						template={() => import('@/views/page/shopping/xun-bao/goods')}
 					/>
-				),
+				)
 			}
 		]
 	},
@@ -156,20 +182,24 @@ const AppRouter: RouteObject[] = [
 				path: '',
 				element: (
 					<Lazy
-						template={() => import('@/views/page/shopping/wm-current-price/Type')}
+						template={() =>
+							import('@/views/page/shopping/wm-current-price/Type')
+						}
 					/>
-				),
+				)
 			},
 			{
 				path: '/index/wm-current-price/list/:id',
 				element: (
 					<Lazy
-						template={() => import('@/views/page/shopping/wm-current-price/List')}
+						template={() =>
+							import('@/views/page/shopping/wm-current-price/List')
+						}
 					/>
-				),
-			},
-		],
-	},
+				)
+			}
+		]
+	}
 ];
 
 /**
@@ -203,7 +233,7 @@ function BeforeEach({ children }: { children: JSX.Element }) {
 function Redirect({
 	to,
 	replace,
-	state,
+	state
 }: {
 	to: string;
 	replace?: boolean;

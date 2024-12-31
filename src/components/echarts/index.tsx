@@ -1,10 +1,11 @@
 import { useEcharts } from '@/core';
-import { useEffect } from 'react';
+import { CSSProperties, useEffect } from 'react';
 import { debounceTime, fromEvent, Subscription } from 'rxjs';
 
 interface EchartsProps {
 	id: string;
 	class?: string;
+	style?: CSSProperties;
 	options: echarts.EChartsCoreOption;
 }
 
@@ -19,7 +20,7 @@ export const Echarts = (props: EchartsProps) => {
 	}, [props.options]);
 
 	useEffect(() => {
-    initEcharts();
+		initEcharts();
 
 		const observable = fromEvent(window, 'resize');
 		let subscription: Subscription | null = null;
@@ -37,5 +38,5 @@ export const Echarts = (props: EchartsProps) => {
 		};
 	}, [resize]);
 
-	return <div id={props.id} className={props.class}></div>;
+	return <div id={props.id} className={props.class} style={props.style}></div>;
 };
