@@ -1,6 +1,11 @@
 import { Api } from '@/service';
 
 /**
+ * 获取参数列表
+ * @param params pageNum pageSize
+ */
+export const getConfigData = (params: object) => Api.get('/system/config/list', params);
+/**
  * 根据参数ID获取详细信息
  * @param id 参数ID
  */

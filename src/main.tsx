@@ -1,31 +1,26 @@
-import ReactDOM from 'react-dom/client';
-import RenderError from '@/error';
+import { CustomErrorBoundary } from '@/components';
+import { ROUTES } from '@/router';
 import store from '@/store';
-import App from '@/App';
-import { HashRouter as Router } from 'react-router-dom';
+import { createRoot } from 'react-dom/client';
+import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
 import { Provider } from 'react-redux';
-import { ErrorBoundary } from '@/components';
+import { RouterProvider } from 'react-router';
 
 import '@/index.css';
 
-const root = document.getElementById('root');
-
-try {
-	if (root) {
-		ReactDOM.createRoot(root).render(
-			// 这仅适用于开发模式
-			// 生产模式下生命周期不会被调用两次。
-			// <React.StrictMode>
-			<ErrorBoundary renderError={RenderError}>
-				<Provider store={store}>
-					<Router>
-						<App />
-					</Router>
-				</Provider>
-			</ErrorBoundary>
-			// </React.StrictMode>
-		);
-	}
-} catch (error) {
-	console.error(`%c 系统故障, 请联系管理员!`);
+const rootElement = document.getElementById('root');
+if (!rootElement) {
+	throw new Error('Root element #root not found in index.html');
 }
+
+const fallbackRender = (props: FallbackProps) => {
+	return <CustomErrorBoundary {...props} />;
+};
+
+createRoot(rootElement).render(
+	<ErrorBoundary fallbackRender={fallbackRender}>
+		<Provider store={store}>
+			<RouterProvider router={ROUTES} />
+		</Provider>
+	</ErrorBoundary>
+);

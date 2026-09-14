@@ -1,6 +1,11 @@
 import { Api } from '@/service';
 
 /**
+ * 获取岗位列表
+ * @param params pageNum pageSize
+ */
+export const getPostData = (params: object) => Api.get('/system/post/list', params);
+/**
  * 获取岗位详情
  * @param id 岗位ID
  */

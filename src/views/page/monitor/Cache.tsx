@@ -68,13 +68,13 @@ const Cache = () => {
 	}, []);
 
 	return (
-		<div className='container flex-column'>
+		<div className='w-full h-full flex flex-col'>
 			<div className='mb-sm'>
 				<Card
 					size='small'
 					title='基本信息'
 					styles={{ body: { padding: '1px 0 0' } }}
-					bordered={false}
+					variant="borderless"
 				>
 					<Descriptions
 						bordered
@@ -110,13 +110,13 @@ const Cache = () => {
 					</Descriptions>
 				</Card>
 			</div>
-			<div className='flex-row flex-1'>
+			<div className='flex flex-1'>
 				<div className='flex-1 mr-sm'>
 					<Card
 						className='auto-card'
 						size='small'
 						title='命令统计'
-						bordered={false}
+						variant="borderless"
 					>
 						<Echarts
 							id='command-statistics'
@@ -131,7 +131,7 @@ const Cache = () => {
 						className='auto-card'
 						size='small'
 						title='内存信息'
-						bordered={false}
+						variant="borderless"
 					>
 						<Echarts
 							id='memory-information'
@@ -146,4 +146,4 @@ const Cache = () => {
 	);
 };
 
-export default Cache;
+export const Component = Cache;

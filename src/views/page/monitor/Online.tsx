@@ -1,36 +1,60 @@
 import moment from 'moment';
-import { DynamicSearch, DynamicTable } from '@/components';
-import { useAntdTable } from '@/core';
 import { LogoutOutlined } from '@ant-design/icons';
-import { Button, message, Popconfirm, Space } from 'antd';
-import { forceLogout } from '@/service';
+import { Button, Popconfirm, Space, Table } from 'antd';
+import { message } from '@/redux';
+import { forceLogout, getOnlineData } from '@/service';
+import { useCallback, useEffect, useState } from 'react';
 
 const Online = () => {
-	const { dataSource, tableProps, loading, getTableData } = useAntdTable(
-		'/monitor/online/list'
+	const [dataSource, setDataSource] = useState<any[]>([]);
+	const [loading, setLoading] = useState(false);
+	const [pageNum, setPageNum] = useState(1);
+	const [pageSize, setPageSize] = useState(10);
+	const [total, setTotal] = useState(0);
+
+	const getData = useCallback(
+		(params: object = {}) => {
+			setLoading(true);
+			getOnlineData({ pageNum, pageSize, ...params }).then((result) => {
+				setLoading(false);
+				setTotal(result.data?.total ?? 0);
+				setDataSource(result.data?.data ?? []);
+			});
+		},
+		[pageNum, pageSize]
 	);
+
+	useEffect(() => {
+		getData();
+	}, [getData]);
 
 	const onForcedRetreat = (id: string) => {
 		forceLogout(id).then((result) => {
 			if (result.code == 200) {
 				message.success('强退成功!');
-				getTableData();
+				getData();
 			}
 		});
 	};
 
-	const headerRender = (
-		<div className='flex-row'>
-			<DynamicSearch />
-		</div>
-	);
-
 	return (
-		<div className='container flex-column'>
-			<DynamicTable
+		<div className='w-full h-full flex flex-col'>
+			<Table
+				rootClassName='table-fill'
 				size='small'
 				rowKey='id'
-				headerRender={headerRender}
+				pagination={{
+					current: pageNum,
+					pageSize,
+					total,
+					showSizeChanger: true,
+					showQuickJumper: true,
+					showTotal: (t) => `共 ${t} 条`,
+					onChange: (page, size) => {
+						setPageNum(page);
+						setPageSize(size);
+					},
+				}}
 				columns={[
 					{
 						title: '序号',
@@ -123,10 +147,9 @@ const Online = () => {
 				loading={loading}
 				dataSource={dataSource}
 				scroll={{ y: '100%' }}
-				{...tableProps}
 			/>
 		</div>
 	);
 };
 
-export default Online;
+export const Component = Online;

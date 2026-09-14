@@ -128,14 +128,14 @@ const Server = () => {
 	}, []);
 
 	return (
-		<div className='container o-y'>
+		<div className='w-full h-full overflow-x-hidden overflow-y-auto'>
 			<Row gutter={[10, 10]}>
 				<Col span={12}>
 					<Card
 						size='small'
 						title='CPU'
 						styles={{ body: { padding: '1px 0 0' } }}
-						bordered={false}
+						variant="borderless"
 					>
 						<Table
 							size='small'
@@ -200,7 +200,7 @@ const Server = () => {
 						size='small'
 						title='服务器信息'
 						styles={{ body: { padding: '1px 0 0' } }}
-						bordered={false}
+						variant="borderless"
 					>
 						<Descriptions
 							bordered
@@ -229,7 +229,7 @@ const Server = () => {
 						size='small'
 						title='Java虚拟机信息'
 						styles={{ body: { padding: '1px 0 0' } }}
-						bordered={false}
+						variant="borderless"
 					>
 						<Descriptions
 							bordered
@@ -267,7 +267,7 @@ const Server = () => {
 						size='small'
 						title='磁盘状态'
 						styles={{ body: { padding: '1px 0 0' } }}
-						bordered={false}
+						variant="borderless"
 					>
 						<Table
 							size='small'
@@ -323,4 +323,4 @@ const Server = () => {
 	);
 };
 
-export default Server;
+export const Component = Server;

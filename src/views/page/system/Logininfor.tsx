@@ -1,22 +1,40 @@
-import { DynamicSearch, DynamicTable } from '@/components';
-import { exportFile, useAntdTable } from '@/core';
-import { cleanLogininforData, deleteLogininforData, exportLogininforData } from '@/service';
+import { exportFile } from '@/core';
+import { cleanLogininforData, deleteLogininforData, exportLogininforData, getLogininforData } from '@/service';
 import { ExclamationCircleOutlined } from '@ant-design/icons';
-import { Button, message, Modal, Popconfirm, Space } from 'antd';
-import { Key, useState } from 'react';
+import { Button, Popconfirm, Space, Table } from 'antd';
+import { message, modal } from '@/redux';
+import { Key, useCallback, useEffect, useState } from 'react';
 
 const Logininfor = () => {
 	const [selectKeys, setSelectKeys] = useState<Key[]>([]);
-	const { dataSource, tableProps, loading, getTableData } = useAntdTable(
-		'/monitor/logininfor/list'
+	const [dataSource, setDataSource] = useState<any[]>([]);
+	const [loading, setLoading] = useState(false);
+	const [pageNum, setPageNum] = useState(1);
+	const [pageSize, setPageSize] = useState(10);
+	const [total, setTotal] = useState(0);
+
+	const getData = useCallback(
+		(params: object = {}) => {
+			setLoading(true);
+			getLogininforData({ pageNum, pageSize, ...params }).then((result) => {
+				setLoading(false);
+				setTotal(result.data?.total ?? 0);
+				setDataSource(result.data?.data ?? []);
+			});
+		},
+		[pageNum, pageSize]
 	);
+
+	useEffect(() => {
+		getData();
+	}, [getData]);
 
 	const onDeleteData = (id: string) => {
 		if (id) {
 			deleteLogininforData(id).then((result) => {
 				if (result.code == 200) {
 					message.success('删除成功!');
-					getTableData();
+					getData();
 				}
 			});
 		}
@@ -27,13 +45,13 @@ const Logininfor = () => {
 			if (result.code == 200) {
 				message.success('清空成功!');
 				setSelectKeys([]);
-				getTableData();
+				getData();
 			}
 		});
 	};
 
 	const onExport = () => {
-		Modal.confirm({
+		modal.confirm({
 			icon: <ExclamationCircleOutlined />,
 			content: '请确认是否导出数据',
 			onOk() {
@@ -60,8 +78,7 @@ const Logininfor = () => {
 	};
 
 	const headerRender = (
-		<div className='flex-row' style={{ justifyContent: 'space-between' }}>
-			<DynamicSearch />
+		<div className='flex justify-between mb-4'>
 			<Space>
 				<Button className='ant-btn-export' type='primary' onClick={onExport}>
 					导出
@@ -89,8 +106,10 @@ const Logininfor = () => {
 	);
 
 	return (
-		<div className='container flex-column'>
-			<DynamicTable
+		<div className='w-full h-full flex flex-col'>
+			{headerRender}
+			<Table
+				rootClassName='table-fill'
 				size='small'
 				rowKey='id'
 				rowSelection={{
@@ -98,7 +117,6 @@ const Logininfor = () => {
 						onSelectData(keys);
 					},
 				}}
-				headerRender={headerRender}
 				columns={[
 					{
 						title: '访问编号',
@@ -159,10 +177,10 @@ const Logininfor = () => {
 				loading={loading}
 				dataSource={dataSource}
 				scroll={{ y: '100%' }}
-				{...tableProps}
+				pagination={{ current: pageNum, pageSize, total, showSizeChanger: true, showQuickJumper: true, showTotal: (t) => `共 ${t} 条`, onChange: (page, size) => { setPageNum(page); setPageSize(size); } }}
 			/>
 		</div>
 	);
 };
 
-export default Logininfor;
+export const Component = Logininfor;

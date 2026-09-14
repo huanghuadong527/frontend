@@ -1,6 +1,5 @@
 import { useEcharts } from '@/core';
 import { CSSProperties, useEffect } from 'react';
-import { debounceTime, fromEvent, Subscription } from 'rxjs';
 
 interface EchartsProps {
 	id: string;
@@ -22,19 +21,11 @@ export const Echarts = (props: EchartsProps) => {
 	useEffect(() => {
 		initEcharts();
 
-		const observable = fromEvent(window, 'resize');
-		let subscription: Subscription | null = null;
-		const bindResizeEvent = () => {
-			subscription = observable.pipe(debounceTime(10)).subscribe(() => {
-				resize();
-			});
-		};
-		bindResizeEvent();
+		const onResize = () => resize();
+		window.addEventListener('resize', onResize);
 
 		return () => {
-			if (subscription) {
-				subscription.unsubscribe();
-			}
+			window.removeEventListener('resize', onResize);
 		};
 	}, [resize]);
 

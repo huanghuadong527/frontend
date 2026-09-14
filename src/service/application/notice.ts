@@ -1,6 +1,12 @@
 import { Api } from '@/service';
 
 /**
+ * 获取公告列表
+ * @param params pageNum pageSize
+ */
+export const getNoticeData = (params: object) => Api.get('/system/notice/list', params);
+
+/**
  * 获取公告详情
  * @param id 公告ID
  */

@@ -1,37 +1,48 @@
-import { DynamicSearch, DynamicTable } from '@/components';
-import { FORM_LAYOUT, useAntdTable } from '@/core';
+import { FORM_LAYOUT } from '@/core';
 import {
 	Button,
 	Form,
 	Input,
 	InputNumber,
-	message,
 	Modal,
 	Popconfirm,
 	Radio,
 	Space,
+	Table,
 	Tag,
 	TreeSelect,
 } from 'antd';
+import { message } from '@/redux';
 import { useEffect, useState } from 'react';
 import {
 	addDeptData,
 	deleteDeptData,
 	getDeptDataById,
+	getDeptListData,
 	getDeptTreeSelectData,
 	updateDeptData,
 } from '@/service';
-import { mapTree } from 'xe-utils';
-import { DefaultOptionType } from 'antd/lib/select';
+import { mapTree, toArrayTree } from 'xe-utils';
 
 const Dept = () => {
 	const [visible, setVisible] = useState(false);
 	const [editId, setEditId] = useState('');
-	const [deptTree, setDeptTree] = useState<DefaultOptionType[]>([]);
-	const { dataSource, tableProps, loading, getTableData } = useAntdTable(
-		'/system/dept/list', {isTreeData: true}
-	);
+	const [deptTree, setDeptTree] = useState<any[]>([]);
+	const [dataSource, setDataSource] = useState<any[]>([]);
+	const [loading, setLoading] = useState(false);
 	const [form] = Form.useForm();
+
+	const getData = () => {
+		setLoading(true);
+		getDeptListData({}).then((result) => {
+			setLoading(false);
+			setDataSource(toArrayTree(result.data ?? []) as any);
+		});
+	};
+
+	useEffect(() => {
+		getData();
+	}, []);
 
 	const onEdit = (id?: string | null, parentId?: string) => {
 		if (id) {
@@ -57,13 +68,13 @@ const Dept = () => {
 				}).then(() => {
 					onCancel();
 					message.success('修改成功!');
-					getTableData();
+					getData();
 				});
 			} else {
 				addDeptData(values).then(() => {
 					onCancel();
 					message.success('添加成功!');
-					getTableData();
+					getData();
 				});
 			}
 		});
@@ -79,7 +90,7 @@ const Dept = () => {
 		if (id) {
 			deleteDeptData(id).then(() => {
 				message.success('删除成功!');
-				getTableData();
+				getData();
 			});
 		}
 	};
@@ -102,8 +113,7 @@ const Dept = () => {
 	}, []);
 
 	const headerRender = (
-		<div className='flex-row' style={{ justifyContent: 'space-between' }}>
-			<DynamicSearch />
+		<div className='flex justify-between mb-4'>
 			<Button type='primary' onClick={() => onEdit()}>
 				新增
 			</Button>
@@ -111,11 +121,12 @@ const Dept = () => {
 	);
 
 	return (
-		<div className='container flex-column'>
-			<DynamicTable
+		<div className='w-full h-full flex flex-col'>
+			{headerRender}
+			<Table
+				rootClassName='table-fill'
 				size='small'
 				rowKey='id'
-				headerRender={headerRender}
 				columns={[
 					{
 						title: '部门名称',
@@ -185,7 +196,7 @@ const Dept = () => {
 				loading={loading}
 				dataSource={dataSource}
 				scroll={{ y: '100%' }}
-				{...tableProps}
+				pagination={false}
 			/>
 			<Modal
 				okText='保存'
@@ -242,4 +253,4 @@ const Dept = () => {
 	);
 };
 
-export default Dept;
+export const Component = Dept;

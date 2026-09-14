@@ -1,5 +1,7 @@
 import { Api } from '@/service';
 
+export const getGenTableData = (params: object) => Api.get('/tool/gen/list', params);
+
 export const getDBData = () => Api.get(`/tool/gen/db/list`);
 
 /**

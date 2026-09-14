@@ -1,7 +1,8 @@
-import MonacoEditor from 'react-monaco-editor';
+import Editor, { loader } from '@monaco-editor/react';
+import * as monaco from 'monaco-editor';
 import { getCodePreview } from '@/service';
 import { Modal, ModalProps, Tabs } from 'antd';
-import { Tab } from 'rc-tabs/lib/interface';
+import type { TabsProps } from 'antd';
 import { useCallback, useEffect, useState } from 'react';
 
 import 'monaco-editor/esm/vs/basic-languages/java/java.contribution';
@@ -9,17 +10,19 @@ import 'monaco-editor/esm/vs/basic-languages/javascript/javascript.contribution'
 import 'monaco-editor/esm/vs/basic-languages/sql/sql.contribution';
 import 'monaco-editor/esm/vs/basic-languages/xml/xml.contribution';
 
+loader.config({ monaco });
+
 interface CodePreviewProps extends ModalProps {
 	id: string;
 }
 
 const CodePreview = (props: CodePreviewProps) => {
-	const [items, setItems] = useState<Tab[]>([]);
+	const [items, setItems] = useState<NonNullable<TabsProps['items']>>([]);
 
 	const getCodePreviewData = useCallback((id: string) => {
 		getCodePreview(id).then((result) => {
 			if (result.code == 200) {
-				const tabs: Tab[] = [];
+				const tabs: NonNullable<TabsProps['items']> = [];
 				for (const key in result.data) {
 					const fileName = key.substring(
 						key.lastIndexOf('/') + 1,
@@ -37,7 +40,7 @@ const CodePreview = (props: CodePreviewProps) => {
 						key,
 						label: fileName,
 						children: (
-							<MonacoEditor
+							<Editor
 								height={450}
 								language={language}
 								value={result.data[key]}

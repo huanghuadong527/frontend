@@ -1,6 +1,11 @@
 import { Api } from '@/service';
 
 /**
+ * 获取部门列表
+ * @param params
+ */
+export const getDeptListData = (params: object) => Api.get('/system/dept/list', params);
+/**
  * 获取部门下拉树列表
  */
 export const getDeptTreeSelectData = () => Api.get('/system/dept/treeselect');

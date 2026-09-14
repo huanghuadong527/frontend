@@ -33,7 +33,7 @@ const EditTable = (props: EditTableProps) => {
 	const [dataSource, setDataSource] = useState([]);
 	const [selectOption, setSelectOption] = useState<DictSelectOption[]>([]);
 
-	const { menus } = useAppSelector((state) => state);
+	const menus = useAppSelector((state) => state.core.menus);
 
 	const treeNodes = mapTree(menus, (item) => ({
 		value: item.key,
@@ -461,7 +461,7 @@ const EditTable = (props: EditTableProps) => {
 								allowClear
 								treeDefaultExpandAll
 								style={{ width: '100%' }}
-								dropdownStyle={{ maxHeight: 400, overflow: 'auto' }}
+								styles={{ popup: { root: { maxHeight: 400, overflow: 'auto' } } }}
 								treeData={treeNodes}
 							/>
 						</Form.Item>

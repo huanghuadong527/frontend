@@ -1,19 +1,20 @@
-import { Key, useState } from 'react';
-import { DynamicSearch, DynamicTable } from '@/components';
-import { FORM_LAYOUT, useAntdTable } from '@/core';
+import { Key, useCallback, useEffect, useState } from 'react';
+import { FORM_LAYOUT } from '@/core';
 import {
 	Button,
 	Form,
 	Input,
-	message,
 	Modal,
 	Popconfirm,
 	Radio,
 	Space,
+	Table,
 } from 'antd';
+import { message } from '@/redux';
 import {
 	addUserData,
 	deleteUserData,
+	getUserData,
 	getUserDataById,
 	updateUserData,
 } from '@/service';
@@ -22,10 +23,28 @@ const User = () => {
 	const [visible, setVisible] = useState(false);
 	const [editId, setEditId] = useState('');
 	const [selectKeys, setSelectKeys] = useState<Key[]>([]);
-	const { dataSource, tableProps, loading, getTableData } = useAntdTable(
-		'/system/user/list'
-	);
+	const [dataSource, setDataSource] = useState<any[]>([]);
+	const [loading, setLoading] = useState(false);
+	const [pageNum, setPageNum] = useState(1);
+	const [pageSize, setPageSize] = useState(10);
+	const [total, setTotal] = useState(0);
 	const [form] = Form.useForm();
+
+	const getData = useCallback(
+		(params: object = {}) => {
+			setLoading(true);
+			getUserData({ pageNum, pageSize, ...params }).then((result) => {
+				setLoading(false);
+				setTotal(result.data?.total ?? 0);
+				setDataSource(result.data?.data ?? []);
+			});
+		},
+		[pageNum, pageSize]
+	);
+
+	useEffect(() => {
+		getData();
+	}, [getData]);
 
 	const onEdit = (id?: string) => {
 		if (id) {
@@ -50,14 +69,14 @@ const User = () => {
 					id: editId,
 				}).then(() => {
 					onCancel();
-					getTableData();
+					getData();
 					message.success('修改成功!');
 				});
 			} else {
 				addUserData(form.getFieldsValue()).then((result) => {
 					if (result.code == 200) {
 						onCancel();
-						getTableData();
+						getData();
 						message.success('添加成功!');
 					}
 				});
@@ -76,7 +95,7 @@ const User = () => {
 			deleteUserData(id).then((result) => {
 				if (result.code == 200) {
 					message.success('删除成功!');
-					getTableData();
+					getData();
 				}
 			});
 		}
@@ -92,8 +111,7 @@ const User = () => {
 	};
 
 	const headerRender = (
-		<div className='flex-row' style={{ justifyContent: 'space-between' }}>
-			<DynamicSearch />
+		<div className='flex justify-between mb-4'>
 			<Space>
 				<Button type='primary' onClick={() => onEdit()}>
 					新增
@@ -115,11 +133,12 @@ const User = () => {
 	);
 
 	return (
-		<div className='container flex-column'>
-			<DynamicTable
+		<div className='w-full h-full flex flex-col'>
+			{headerRender}
+			<Table
+				rootClassName='table-fill'
 				size='small'
 				rowKey='id'
-				headerRender={headerRender}
 				columns={[
 					{
 						title: '用户名',
@@ -189,7 +208,7 @@ const User = () => {
 				loading={loading}
 				dataSource={dataSource}
 				scroll={{ y: '100%' }}
-				{...tableProps}
+				pagination={{ current: pageNum, pageSize, total, showSizeChanger: true, showQuickJumper: true, showTotal: (t) => `共 ${t} 条`, onChange: (page, size) => { setPageNum(page); setPageSize(size); } }}
 			/>
 			<Modal
 				okText='保存'
@@ -245,4 +264,4 @@ const User = () => {
 	);
 };
 
-export default User;
+export const Component = User;

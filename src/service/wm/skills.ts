@@ -1,5 +1,8 @@
 import { Api } from '@/service';
 
+export const getSkillsData = (params: object) =>
+	Api.get('/wm/skills/list', params);
+
 export const getSkillsDataById = (id: string) => Api.get(`/wm/skills/${id}`);
 
 export const getSkillsOption = (params?: object) =>

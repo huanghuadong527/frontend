@@ -11,4 +11,4 @@ const Swagger = () => {
 	);
 };
 
-export default Swagger;
+export const Component = Swagger;

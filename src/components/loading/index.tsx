@@ -1,17 +1,9 @@
-/**
- * 路由加载动画
- */
-const Loading = () => {
+import { Spin } from 'antd';
+
+export const Loading = () => {
 	return (
-		<div className='container content'>
-			<div className='preloader'>
-				<span></span>
-				<span></span>
-				<span></span>
-				<span></span>
-			</div>
+		<div className='w-full h-screen flex items-center justify-center'>
+			<Spin size='large' />
 		</div>
 	);
-}
-
-export { Loading };
+};

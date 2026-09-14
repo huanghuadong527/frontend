@@ -1,5 +1,8 @@
 import { Api } from '@/service';
 
+export const getRealmData = (params: object) =>
+	Api.get('/wm/realm/list', params);
+
 export const getRealmOption = (params: object) =>
 	Api.get('/wm/realm/options', params);
 

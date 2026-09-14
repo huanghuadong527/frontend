@@ -1,48 +1,57 @@
-import {
-	ANTD_ICONS,
-	CustomIcon,
-	DynamicSearch,
-	DynamicTable
-} from '@/components';
-import { FORM_LAYOUT, useAntdTable } from '@/core';
+import { FORM_LAYOUT } from '@/core';
 import {
 	Button,
 	Form,
 	Input,
 	InputNumber,
-	message,
 	Modal,
 	Popconfirm,
 	Radio,
 	Select,
 	Space,
+	Table,
 	Tag,
 	TreeSelect
 } from 'antd';
+import { message } from '@/redux';
 import {
 	addMenuData,
 	deleteMenuData,
 	getMenuById,
+	getMenuListData,
 	getMenuTreeSelectData,
 	updateMenuData
 } from '@/service';
 import { createElement, useCallback, useEffect, useState } from 'react';
-import { DefaultOptionType } from 'antd/lib/select';
-import { mapTree } from 'xe-utils';
+import { mapTree, toArrayTree } from 'xe-utils';
 import * as Icon from '@ant-design/icons';
 
 const Menu = () => {
 	const [visible, setVisible] = useState(false);
 	const [editId, setEditId] = useState('');
-	const [menuTree, setMenuTree] = useState<DefaultOptionType[]>([]);
+	const [menuTree, setMenuTree] = useState<any[]>([]);
 	const [form] = Form.useForm();
-	const { dataSource, tableProps, loading, getTableData } = useAntdTable(
-		'/system/menu/list',
-		{ isTreeData: true }
-	);
+	const [dataSource, setDataSource] = useState<any[]>([]);
+	const [loading, setLoading] = useState(false);
+
+	const getData = () => {
+		setLoading(true);
+		getMenuListData({}).then((result) => {
+			setLoading(false);
+			setDataSource(toArrayTree(result.data ?? []) as any);
+		});
+	};
+
+	useEffect(() => {
+		getData();
+	}, []);
 
 	const getIconComponent = (iconName: string) => {
-		return createElement((Icon as any)[iconName]);
+		const Cmp = (Icon as any)[iconName];
+		return typeof Cmp === 'function' ||
+			(Cmp && typeof Cmp.render === 'function')
+			? createElement(Cmp)
+			: undefined;
 	};
 
 	const onEdit = (id?: string | null, parentId?: string) => {
@@ -71,7 +80,7 @@ const Menu = () => {
 					parentId: values.parentId ? values.parentId : 0
 				}).then(() => {
 					onCancel();
-					getTableData();
+					getData();
 					getMenuData();
 					message.success('修改成功!');
 				});
@@ -81,7 +90,7 @@ const Menu = () => {
 					parentId: values.parentId ? values.parentId : 0
 				}).then(() => {
 					onCancel();
-					getTableData();
+					getData();
 					getMenuData();
 					message.success('添加成功!');
 				});
@@ -100,7 +109,7 @@ const Menu = () => {
 		if (id) {
 			deleteMenuData(id).then(() => {
 				message.success('删除成功!');
-				getTableData();
+				getData();
 			});
 		}
 	};
@@ -123,8 +132,7 @@ const Menu = () => {
 	}, [getMenuData]);
 
 	const headerRender = (
-		<div className='flex-row' style={{ justifyContent: 'space-between' }}>
-			<DynamicSearch />
+		<div className='flex justify-between mb-4'>
 			<Button type='primary' onClick={() => onEdit()}>
 				新增
 			</Button>
@@ -132,11 +140,12 @@ const Menu = () => {
 	);
 
 	return (
-		<div className='container flex-column'>
-			<DynamicTable
+		<div className='w-full h-full flex flex-col'>
+			{headerRender}
+			<Table
+				rootClassName='table-fill'
 				size='small'
 				rowKey='id'
-				headerRender={headerRender}
 				columns={[
 					{
 						title: '菜单名称',
@@ -252,7 +261,7 @@ const Menu = () => {
 				loading={loading}
 				dataSource={dataSource}
 				scroll={{ y: '100%' }}
-				{...tableProps}
+				pagination={false}
 			/>
 			<Modal
 				okText='保存'
@@ -320,17 +329,12 @@ const Menu = () => {
 					{menuType == 'M' ? (
 						<Form.Item label='菜单图标' name='icon'>
 							<Select placeholder='请选择菜单图标'>
-								{Object.keys(ANTD_ICONS).map((name) => {
-									return (
-										<Select.Option key={name} value={name}>
-											<CustomIcon
-												name={name}
-												style={{ fontSize: '16px', marginRight: '10px' }}
-											></CustomIcon>
-											{name}
-										</Select.Option>
-									);
-								})}
+								{Object.keys(Icon).filter((name) => /Outlined$|Filled$|TwoTone$/.test(name)).map((name) => (
+									<Select.Option key={name} value={name}>
+										{createElement((Icon as any)[name], { style: { fontSize: '16px', marginRight: '10px' } })}
+										{name}
+									</Select.Option>
+								))}
 							</Select>
 						</Form.Item>
 					) : (
@@ -358,4 +362,4 @@ const Menu = () => {
 	);
 };
 
-export default Menu;
+export const Component = Menu;

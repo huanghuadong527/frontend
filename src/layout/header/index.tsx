@@ -2,22 +2,21 @@ import ImgCrop from 'antd-img-crop';
 import screenfull from 'screenfull';
 import {
 	Avatar,
+	ColorPicker,
 	Dropdown,
 	Form,
 	Input,
 	Image,
-	message,
 	Modal,
-	Space,
 	Upload,
 	Radio,
 	Descriptions,
-	theme,
 	Flex,
 	Typography
 } from 'antd';
 import {
 	CaretDownOutlined,
+	CompressOutlined,
 	ExpandOutlined,
 	IdcardOutlined,
 	InboxOutlined,
@@ -28,35 +27,32 @@ import {
 	SettingOutlined,
 	UserOutlined
 } from '@ant-design/icons';
-import { ColorResult, SketchPicker } from 'react-color';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useDispatch } from 'react-redux';
 import { FORM_LAYOUT, SY_CONFIG, useCommon } from '@/core';
 import { useEffect, useState } from 'react';
-import { setGloblaTheme, useAppSelector } from '@/store';
+import { setTheme, useAppSelector } from '@/store';
+import { message } from '@/redux';
 import type { MenuProps } from 'antd';
 import { updateSystemUserInfo, uploadImage } from '@/service';
 
-import style from './index.module.less';
 import logo from '@/assets/image/logo.png';
-
-const { useToken } = theme;
 
 function header(props: AppIndexProps) {
 	const navigate = useNavigate();
 	const dispatch = useDispatch();
-	const { user, theme } = useAppSelector((state) => state);
+	const user = useAppSelector((state) => state.core.user);
+	const theme = useAppSelector((state) => state.system.theme);
 	const [userVisible, setUserVisible] = useState(false);
 	const [psdVisible, setPsdVisible] = useState(false);
 	const [sysVisible, setSysVisible] = useState(false);
 	const [infoVisible, setInfoVisible] = useState(false);
-	// const [isScreenfull, setIsScreenfull] = useState(false);
+	const [isScreenfull, setIsScreenfull] = useState(false);
 	const [avatarImageSrc, setAvatarImageSrc] = useState<string | null>(null);
 	const [themeColor, setThemeColor] = useState(theme);
 	const [userForm] = Form.useForm();
 	const { logout } = useCommon();
-	const { token } = useToken();
-	const { config } = useAppSelector((state) => state);
+	const config = useAppSelector((state) => state.system.config);
 
 	const onSelectHandleItem = (key: string) => {
 		switch (key) {
@@ -166,61 +162,66 @@ function header(props: AppIndexProps) {
 
 	const onChangeScreenfull = () => {
 		if (screenfull.isEnabled) {
-			// setIsScreenfull(screenfull.isFullscreen);
+			setIsScreenfull(screenfull.isFullscreen);
 		}
 	};
 
-	const onChangeTheme = (color: ColorResult) => {
-		setThemeColor(color.hex);
+	const onChangeTheme = (color: any) => {
+		setThemeColor(color.toHexString());
 	};
 
 	const onSavaSysSetting = () => {
 		setSysVisible(false);
-		dispatch(setGloblaTheme(themeColor));
+		dispatch(setTheme(themeColor));
 	};
 
 	useEffect(() => {
 		if (screenfull.isEnabled) {
 			screenfull.on('change', onChangeScreenfull);
+			return () => screenfull.off('change', onChangeScreenfull);
 		}
 	}, []);
 
 	return (
-		<div className={style.layoutHeader}>
-			<Flex align='center' gap={8} className={style.layoutSiderTop}>
-				<div className='line-normal'>
+		<div className='layoutHeader flex h-12.5 leading-12.5 justify-between items-center'>
+			<Flex align='center' gap={8}>
+				<div className='leading-none'>
 					<Image
 						src={config ? `${SY_CONFIG.upload}${config.logo}` : logo}
-						height={40}
+						height={36}
 						preview={false}
 					/>
 				</div>
-				<Typography.Title level={4} style={{ margin: 0, color: '#FFFFFF' }}>
+				<Typography.Title
+					level={3}
+					style={{ margin: 0, color: '#FFFFFF', fontWeight: 400 }}
+				>
 					后台管理系统
 				</Typography.Title>
 			</Flex>
-			<Space>
-				<a className={style.layoutHeaderHandle}>
-					<SearchOutlined /> 搜索
-				</a>
-				<a className={style.layoutHeaderHandle} onClick={onScreenfull}>
-					<ExpandOutlined /> 全屏
-				</a>
+			<div className='flex h-full items-center'>
+				<button className='layoutHeaderBtn' type='button'>
+					<SearchOutlined />
+					<span>搜索</span>
+				</button>
+				<button className='layoutHeaderBtn' type='button' onClick={onScreenfull}>
+					{isScreenfull ? <CompressOutlined /> : <ExpandOutlined />}
+					<span>全屏</span>
+				</button>
 				<Dropdown menu={{ items, onClick: (e) => onSelectHandleItem(e.key) }}>
-					<a className={style.layoutHeaderHandle}>
-						<Space>
-							<Avatar
-								shape='square'
-								style={{ borderRadius: '4px' }}
-								src={user ? `${SY_CONFIG.upload}${user.avatar}` : null}
-								icon={<UserOutlined />}
-							/>
-							{user ? user.nickName : ''}
-							<CaretDownOutlined />
-						</Space>
-					</a>
+					<button className='layoutHeaderBtn' type='button'>
+						<Avatar
+							shape='square'
+							size={28}
+							style={{ borderRadius: '4px' }}
+							src={user ? `${SY_CONFIG.upload}${user.avatar}` : null}
+							icon={<UserOutlined />}
+						/>
+						<span>{user ? user.nickName : ''}</span>
+						<CaretDownOutlined />
+					</button>
 				</Dropdown>
-			</Space>
+			</div>
 			<Modal
 				title='基本资料'
 				width={450}
@@ -357,22 +358,16 @@ function header(props: AppIndexProps) {
 				onOk={onSavaSysSetting}
 				onCancel={() => setSysVisible(false)}
 			>
-				<div className='flex-row'>
-					<SketchPicker
-						color={themeColor}
-						presetColors={['#2EAFBB', '#1890ff', '#25b887']}
-						styles={{
-							default: {
-								picker: {
-									boxShadow: 'none',
-									border: `1px solid ${token.colorBorder}`,
-									borderRadius: 0
-								}
-							}
-						}}
+				<div className='flex'>
+					<ColorPicker
+						value={themeColor}
+						showText
+						presets={[
+							{ label: '推荐', colors: ['#2EAFBB', '#1890ff', '#25b887'] }
+						]}
 						onChange={onChangeTheme}
 					/>
-					<div className='flex'></div>
+					<div className='flex-1'></div>
 				</div>
 			</Modal>
 		</div>

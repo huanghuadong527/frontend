@@ -1,26 +1,36 @@
-import { useEffect, useState } from 'react';
+import { createElement, useEffect, useMemo, useState } from 'react';
 import { Flex, Image, Menu, Typography } from 'antd';
-import { MenuInfo } from 'rc-menu/lib/interface';
+import type { MenuProps } from 'antd';
 import { findTree } from 'xe-utils';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useDispatch } from 'react-redux';
-import { setSelectable, setTabs, useAppSelector } from '@/store';
+import { MenuProp, setSelectable, setTabs, useAppSelector } from '@/store';
 import { SY_CONFIG } from '@/core';
-
-import style from './index.module.less';
+import * as Icon from '@ant-design/icons';
 
 import logo from '@/assets/image/default_logo.png';
 import logoMini from '@/assets/image/logo.png';
+
+const getIconNode = (name?: string) => {
+	const Cmp = name ? (Icon as any)[name] : undefined;
+	return typeof Cmp === 'function' ||
+		(Cmp && typeof Cmp.render === 'function')
+		? createElement(Cmp)
+		: undefined;
+};
 
 function Sider(props: AppIndexProps) {
 	const navigate = useNavigate();
 	const dispatch = useDispatch();
 
-	const { tabs, selectable, menus, config } = useAppSelector((state) => state);
+	const tabs = useAppSelector((state) => state.system.tabs);
+	const selectable = useAppSelector((state) => state.system.selectable);
+	const menus = useAppSelector((state) => state.core.menus);
+	const config = useAppSelector((state) => state.system.config);
 
 	const [openKeys, setOpenKeys] = useState([selectable ?? '']);
 
-	const onSelectItem = ({ key }: MenuInfo) => {
+	const onSelectItem: MenuProps['onClick'] = ({ key }) => {
 		const mi = findTree(menus, (item) => item.key == key);
 		if (mi && mi.item && mi.item.path) {
 			navigate(mi.item.path, { replace: true });
@@ -42,12 +52,22 @@ function Sider(props: AppIndexProps) {
 		}
 	};
 
+	const menuItems = useMemo(() => {
+		const format = (item: MenuProp): any => ({
+			key: item.key,
+			label: item.label,
+			icon: getIconNode(item.icon),
+			children: item.children ? item.children.map(format) : undefined,
+		});
+		return menus.map(format);
+	}, [menus]);
+
 	const initMenuEle = (
 		<Menu
 			mode='inline'
 			openKeys={openKeys}
 			selectedKeys={[selectable ?? '']}
-			items={menus}
+			items={menuItems}
 			onClick={onSelectItem}
 			onOpenChange={onOpenChange}
 		/>
@@ -78,7 +98,7 @@ function Sider(props: AppIndexProps) {
 	}, [selectable, menus]);
 
 	return (
-		<div className={style.layoutSider}>
+		<div className='w-full h-full flex flex-col'>
 			{/* <Flex align='center' gap={8} className={style.layoutSiderTop}>
 				<Image
 					src={
@@ -99,7 +119,7 @@ function Sider(props: AppIndexProps) {
 					</Typography.Title>
 				) : null}
 			</Flex> */}
-			<div className={style.layoutSiderBody}>{initMenuEle}</div>
+			<div className='layoutSiderBody flex-1 h-0 overflow-x-hidden overflow-y-auto'>{initMenuEle}</div>
 		</div>
 	);
 }

@@ -1,8 +1,7 @@
 import moment from 'moment';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { UploadOutlined } from '@ant-design/icons';
-import { DynamicSearch, DynamicTable } from '@/components';
-import { FLEX_FORM_LAYOUT, SY_CONFIG, useAntdTable } from '@/core';
+import { FLEX_FORM_LAYOUT, SY_CONFIG } from '@/core';
 import {
 	App,
 	Button,
@@ -15,6 +14,7 @@ import {
 	Row,
 	Select,
 	Space,
+	Table,
 	Upload,
 	type UploadProps,
 	Flex,
@@ -26,6 +26,7 @@ import {
 	addSkillsData,
 	getCareerOptions,
 	getRealmOption,
+	getSkillsData,
 	getSkillsDataById,
 	getSkillsOption,
 	updateSkillsData,
@@ -46,8 +47,27 @@ const Skills = () => {
 	const [fileList, setFileList] = useState<UploadFile[]>([]);
 	const [form] = Form.useForm();
 	const { message } = App.useApp();
-	const { dataSource, tableProps, loading, getTableData } =
-		useAntdTable('/wm/skills/list');
+	const [dataSource, setDataSource] = useState<any[]>([]);
+	const [loading, setLoading] = useState(false);
+	const [pageNum, setPageNum] = useState(1);
+	const [pageSize, setPageSize] = useState(10);
+	const [total, setTotal] = useState(0);
+
+	const getData = useCallback(
+		(params: object = {}) => {
+			setLoading(true);
+			getSkillsData({ pageNum, pageSize, ...params }).then((result) => {
+				setLoading(false);
+				setTotal(result.data?.total ?? 0);
+				setDataSource(result.data?.data ?? []);
+			});
+		},
+		[pageNum, pageSize]
+	);
+
+	useEffect(() => {
+		getData();
+	}, [getData]);
 
 	const skillCareerId = useWatch('skillCareerId', form);
 
@@ -117,13 +137,13 @@ const Skills = () => {
 					id: editId
 				}).then(() => {
 					onCancel();
-					getTableData();
+					getData();
 					message.success('修改成功!');
 				});
 			} else {
 				addSkillsData(values).then(() => {
 					onCancel();
-					getTableData();
+					getData();
 					message.success('添加成功!');
 				});
 			}
@@ -138,8 +158,9 @@ const Skills = () => {
 	};
 
 	const headerRender = (
-		<div className='flex-row' style={{ justifyContent: 'space-between' }}>
-			<DynamicSearch />
+		<div
+			className='flex justify-between mb-4'
+		>
 			<Button type='primary' onClick={() => onEdit()}>
 				新增
 			</Button>
@@ -193,11 +214,12 @@ const Skills = () => {
 	}, []);
 
 	return (
-		<div className='container flex-column'>
-			<DynamicTable
+		<div className='w-full h-full flex flex-col'>
+			{headerRender}
+			<Table
+				rootClassName='table-fill'
 				size='small'
 				rowKey='id'
-				headerRender={headerRender}
 				columns={[
 					{
 						title: '技能名称',
@@ -379,7 +401,18 @@ const Skills = () => {
 					},
 					rowExpandable: (record) => record.name !== 'Not Expandable'
 				}}
-				{...tableProps}
+				pagination={{
+					current: pageNum,
+					pageSize,
+					total,
+					showSizeChanger: true,
+					showQuickJumper: true,
+					showTotal: (t) => `共 ${t} 条`,
+					onChange: (page, size) => {
+						setPageNum(page);
+						setPageSize(size);
+					}
+				}}
 			/>
 			<Modal
 				okText='保存'
@@ -514,4 +547,4 @@ const Skills = () => {
 	);
 };
 
-export default Skills;
+export const Component = Skills;

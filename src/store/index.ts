@@ -1,32 +1,35 @@
-import { configureStore } from '@reduxjs/toolkit';
-import { createEpicMiddleware } from 'redux-observable';
-import { TypedUseSelectorHook, useSelector } from 'react-redux';
-import { State } from './types';
+import {
+	type Action,
+	configureStore,
+	type Dispatch,
+	type ThunkDispatch,
+} from '@reduxjs/toolkit';
+import {
+	useDispatch as useReduxDispatch,
+	useSelector,
+} from 'react-redux';
+import core from './core';
+import system from './system';
 
-import epics from './epics';
-import reducers from './reducers';
-
-const epicmiddleware = createEpicMiddleware();
-
-// https://redux.js.org/usage/writing-logic-thunks
-const thunkMiddleware =
-	({ dispatch, getState }: any) =>
-	(next: any) =>
-	(action: any) => {
-		if (typeof action == 'function') {
-			return action(dispatch, getState);
-		}
-		return next(action);
-	};
-
-export default configureStore({
-	reducer: reducers,
-	middleware: [epicmiddleware, thunkMiddleware],
-});
-
-epicmiddleware.run(epics);
-
-export * from './reducers';
+export * from './core';
+export * from './system';
 export * from './types';
 
-export const useAppSelector: TypedUseSelectorHook<State> = useSelector;
+const store = configureStore({
+	reducer: {
+		core,
+		system,
+	},
+});
+
+export type State = ReturnType<typeof store.getState>;
+export type AppDispatch = typeof store.dispatch;
+
+export type CustomDispatch = ThunkDispatch<State, unknown, Action> &
+	Dispatch<Action>;
+
+export const useAppSelector = useSelector.withTypes<State>();
+
+export const useAppDispatch = useReduxDispatch.withTypes<CustomDispatch>();
+
+export default store;

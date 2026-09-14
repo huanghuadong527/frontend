@@ -1,32 +1,22 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet } from 'react-router';
 import { Layout } from 'antd';
-import { useDispatch } from 'react-redux';
-import { FETCH_RESOURCE, setConfigInfo, setConfig } from '@/store';
-import { getSystemConfig, getSystemUserInfo } from '@/service';
+import { getUserData, getMenusData, setConfig, useAppDispatch } from '@/store';
+import { getSystemConfig } from '@/service';
 import { useCommon } from '@/core';
 
-import style from './index.module.less';
 import Header from './header';
 import Sider from './sider';
 import Tabs from './tabs';
 
 function home() {
-	const dispatch = useDispatch();
+	const dispatch = useAppDispatch();
 	const [collapsed, setCollapsed] = useState(false);
 	const { updateSysConfig } = useCommon();
 
 	const onCollapse = (collapse: boolean) => {
 		setCollapsed(collapse);
 	};
-
-	const getUserInfo = useCallback(() => {
-		getSystemUserInfo().then((payload) => {
-			if (payload.code == 200) {
-				dispatch(setConfigInfo(payload));
-			}
-		});
-	}, []);
 
 	const getConfigInfo = useCallback(() => {
 		getSystemConfig().then((result) => {
@@ -42,13 +32,13 @@ function home() {
 	}, []);
 
 	useEffect(() => {
-		getUserInfo();
+		dispatch(getUserData());
 		getConfigInfo();
-		dispatch({ type: FETCH_RESOURCE });
+		dispatch(getMenusData());
 	}, []);
 
 	return (
-		<Layout className={style.layoutBody}>
+		<Layout className='relative h-screen overflow-hidden'>
 			<Layout.Header
 				style={{ height: '50px', lineHeight: '50px', paddingInline: '20px' }}
 			>
@@ -57,16 +47,16 @@ function home() {
 			<Layout>
 				<Layout.Sider
 					collapsible
-					className={style.layoutSider}
+					className='relative z-10 shadow-[2px_0_8px_0_rgba(29,35,41,0.05)]'
 					trigger={null}
 					style={{ backgroundColor: '#FFFFFF' }}
 					collapsed={collapsed}
 				>
 					<Sider collapsed={collapsed} />
 				</Layout.Sider>
-				<Layout.Content className='flex-column'>
+				<Layout.Content className='flex flex-col'>
 					<Tabs />
-					<div className={style.layoutContent}>
+					<div className='flex-1 h-0 p-[15px] bg-[#F0F2F5]'>
 						<Outlet />
 					</div>
 				</Layout.Content>
@@ -75,4 +65,4 @@ function home() {
 	);
 }
 
-export default home;
+export const Component = home;

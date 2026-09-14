@@ -1,5 +1,8 @@
 import { Api } from '@/service';
 
+export const getCareerData = (params: object) =>
+	Api.get('/wm/career/list', params);
+
 export const getCareerDataById = (id: string) => Api.get(`/wm/career/${id}`);
 
 export const getCareerOptions = (params?: object) =>

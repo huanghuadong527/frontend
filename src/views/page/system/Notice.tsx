@@ -1,19 +1,19 @@
-import { DynamicSearch, DynamicTable } from '@/components';
-import { FORM_LAYOUT, useAntdTable, useDictionary } from '@/core';
-import { addNoticeData, deleteNoticeData, getNoticeDataById, updateNoticeData } from '@/service';
+import { FORM_LAYOUT, useDictionary } from '@/core';
+import { addNoticeData, deleteNoticeData, getNoticeData, getNoticeDataById, updateNoticeData } from '@/service';
 import {
 	Button,
 	Form,
 	Input,
-	message,
 	Modal,
 	Popconfirm,
 	Radio,
 	Select,
 	Space,
+	Table,
 	Tag,
 } from 'antd';
-import { Key, useState } from 'react';
+import { message } from '@/redux';
+import { Key, useCallback, useEffect, useState } from 'react';
 
 const dictTypes = ['sys_notice_status', 'sys_notice_type'];
 
@@ -25,10 +25,28 @@ const Notice = () => {
 	const [editId, setEditId] = useState('');
 	const [selectKeys, setSelectKeys] = useState<Key[]>([]);
 	const { dictionary, getDictLabel } = useDictionary(dictTypes);
-	const { dataSource, tableProps, loading, getTableData } = useAntdTable(
-		'/system/notice/list'
-	);
+	const [dataSource, setDataSource] = useState<any[]>([]);
+	const [loading, setLoading] = useState(false);
+	const [pageNum, setPageNum] = useState(1);
+	const [pageSize, setPageSize] = useState(10);
+	const [total, setTotal] = useState(0);
 	const [form] = Form.useForm();
+
+	const getData = useCallback(
+		(params: object = {}) => {
+			setLoading(true);
+			getNoticeData({ pageNum, pageSize, ...params }).then((result) => {
+				setLoading(false);
+				setTotal(result.data?.total ?? 0);
+				setDataSource(result.data?.data ?? []);
+			});
+		},
+		[pageNum, pageSize]
+	);
+
+	useEffect(() => {
+		getData();
+	}, [getData]);
 
 	const onEdit = (id?: string) => {
 		if (id) {
@@ -53,14 +71,14 @@ const Notice = () => {
 					id: editId,
 				}).then(() => {
 					onCancel();
-					getTableData();
+					getData();
 					message.success('修改成功!');
 				});
 			} else {
 				addNoticeData(form.getFieldsValue()).then((result) => {
 					if (result.code == 200) {
 						onCancel();
-						getTableData();
+						getData();
 						message.success('添加成功!');
 					}
 				});
@@ -80,7 +98,7 @@ const Notice = () => {
 			deleteNoticeData(id).then((result) => {
 				if (result.code == 200) {
 					message.success('删除成功!');
-					getTableData();
+					getData();
 				}
 			});
 		}
@@ -100,8 +118,7 @@ const Notice = () => {
 	};
 
 	const headerRender = (
-		<div className='flex-row' style={{ justifyContent: 'space-between' }}>
-			<DynamicSearch />
+		<div className='flex justify-between mb-4'>
 			<Space>
 				<Button type='primary' onClick={() => onEdit()}>
 					新增
@@ -123,8 +140,10 @@ const Notice = () => {
 	);
 
 	return (
-		<div className='container flex-column'>
-			<DynamicTable
+		<div className='w-full h-full flex flex-col'>
+			{headerRender}
+			<Table
+				rootClassName='table-fill'
 				size='small'
 				rowKey='id'
 				rowSelection={{
@@ -132,7 +151,6 @@ const Notice = () => {
 						onSelectData(keys);
 					},
 				}}
-				headerRender={headerRender}
 				columns={[
 					{
 						title: '公告标题',
@@ -211,7 +229,7 @@ const Notice = () => {
 				loading={loading}
 				dataSource={dataSource}
 				scroll={{ y: '100%' }}
-				{...tableProps}
+				pagination={{ current: pageNum, pageSize, total, showSizeChanger: true, showQuickJumper: true, showTotal: (t) => `共 ${t} 条`, onChange: (page, size) => { setPageNum(page); setPageSize(size); } }}
 			/>
 			<Modal
 				okText='保存'
@@ -250,4 +268,4 @@ const Notice = () => {
 	);
 };
 
-export default Notice;
+export const Component = Notice;

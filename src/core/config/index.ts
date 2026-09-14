@@ -3,7 +3,6 @@ import config from '@/assets/config/index.json';
 export interface SyConfigInterface {
 	proxy: string;
 	upload: string;
-	xunbao: string;
 }
 
 /** 系统主题色 */
@@ -26,8 +25,8 @@ export const SY_KEY = 'SY_KEY';
 
 export const CONFIG_TITLE = 'sys.config.title';
 export const CONFIG_FAVICON = 'sys.config.favicon';
-export const CONFIG_LOGO = 'sys.config.mini.logo';
-export const CONFIG_MINI_LOGO = 'sys.config.logo';
+export const CONFIG_LOGO = 'sys.config.logo';
+export const CONFIG_MINI_LOGO = 'sys.config.mini.logo';
 
 /** 系统Cookie存储周期 */
 export const EXPIRES = 7;

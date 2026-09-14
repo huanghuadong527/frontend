@@ -1,8 +1,8 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 	<head>
 		<meta charset="UTF-8" />
-		<link rel="icon" type="image/x-icon">
+		<link rel="icon" type="image/x-icon" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title></title>
 		<style>
@@ -14,12 +14,12 @@
 				left: 0;
 			}
 
-      .content {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-      }
+			.content {
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				justify-content: center;
+			}
 
 			.preloader {
 				position: relative;
@@ -60,7 +60,7 @@
 				animation-delay: 0.6s;
 			}
 
-      @keyframes preloader_6 {
+			@keyframes preloader_6 {
 				from {
 					-webkit-transform: rotate(0deg);
 				}
@@ -146,15 +146,15 @@
 		</style>
 	</head>
 	<body>
-		<div id="root" class="container">
+		<div id="root" class="w-full h-full">
 			<div class="mes-loading content">
-        <div class="preloader">
-          <span></span>
-          <span></span>
-          <span></span>
-          <span></span>
-        </div>
-      </div>
+				<div class="preloader">
+					<span></span>
+					<span></span>
+					<span></span>
+					<span></span>
+				</div>
+			</div>
 		</div>
 		<script type="module" src="/src/main.tsx"></script>
 	</body>

@@ -1,7 +1,7 @@
 export interface MenuProp {
 	key: string;
 	label: string;
-	icon?: JSX.Element;
+	icon?: string;
 	path?: string;
 	children?: MenuProp[];
 }
@@ -11,7 +11,7 @@ export interface TabsProps {
 }
 
 export interface UserProps {
-  [key: string]: any;
+	[key: string]: any;
 }
 
 export interface ConfigProps {
@@ -21,20 +21,23 @@ export interface ConfigProps {
 	miniLogo: string;
 }
 
-export interface State {
-	theme: string;
-	// 当前选中一级菜单
-	selectable: string | undefined;
+export interface CoreState {
 	token: string | undefined;
 	user: UserProps | undefined;
 	roles: string[];
 	permissions: string[];
 	menus: MenuProp[];
+}
+
+export interface SystemState {
+	theme: string;
+	// 当前选中一级菜单
+	selectable: string | undefined;
 	tabs: TabsProps[];
 	config: ConfigProps | undefined;
 }
 
-export const FETCH_RESOURCE = 'FETCH_RESOURCE';
-
-export const FETCH_ERROR = 'FETCH_ERROR';
-
+export interface State {
+	core: CoreState;
+	system: SystemState;
+}

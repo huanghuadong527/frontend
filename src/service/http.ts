@@ -1,11 +1,10 @@
 import store, { delToken, delSelectable, delTabs } from '@/store';
 import axios, {
 	AxiosRequestConfig,
-	AxiosResponse,
 	AxiosError,
 	Method,
 } from 'axios';
-import { message } from 'antd';
+import { message } from '@/redux';
 import { SY_KEY, TOKEN_COOKIE_KEY } from '@/core';
 import { SY_CONFIG } from '@/core/config';
 import nProgress from 'nprogress';
@@ -15,23 +14,25 @@ export interface AxiosConfig extends AxiosRequestConfig {
 	type?: 'upload' | null;
 }
 
-axios.interceptors.request.use((request) => {
+const service = axios.create({
+	timeout: 60000,
+	method: 'POST',
+	baseURL: SY_CONFIG.proxy,
+	headers: {
+		'Content-Type': 'application/json; charset=UTF-8',
+		'Access-Control-Expose-Headers': 'ssep_token',
+	},
+});
+
+service.interceptors.request.use((request) => {
 	if (store) {
 		const state = store.getState();
-		if (state && state.token) {
-			request.headers![TOKEN_COOKIE_KEY] = `Bearer ${state.token}`;
+		if (state && state.core && state.core.token) {
+			request.headers![TOKEN_COOKIE_KEY] = `Bearer ${state.core.token}`;
 		}
 	}
 	return request;
 });
-
-axios.interceptors.response.use((response) => {
-	return response;
-});
-
-function onSuccessInterceptEvent(response: AxiosResponse<any>) {
-	// console.log(response);
-}
 
 /**
  * 请求异常拦截
@@ -40,16 +41,7 @@ function onErrorInterceptEvent(error: AxiosError) {
 	message.destroy(SY_KEY);
 	nProgress.done();
 	if (error && error.response && error.response.data) {
-		const data = error.response.data;
-		// if (data.status == 500) {
-		// 	message.error('系统异常, 请联系管理员!');
-		// } else if (data.status == 400) {
-		// 	if (data.errors && Array.isArray(data.errors) && data.errors.length > 0) {
-		// 		message.error(data.errors[0].defaultMessage);
-		// 	}
-		// } else {
-		// 	message.error(data.resultMessage);
-		// }
+		// 后端返回了业务错误体时由 onStatusInterceptEvent 统一处理
 	} else {
 		message.error({
 			key: SY_KEY,
@@ -69,20 +61,20 @@ function onStatusInterceptEvent(data: JsonResult) {
 			message.error(data.msg);
 			nProgress.done();
 			break;
-		case 401 ||
-			2001 ||
-			2002 ||
-			2003 ||
-			2004 ||
-			2005 ||
-			2006 ||
-			2007 ||
-			2008 ||
-			2009:
-			store.dispatch(delSelectable);
-			store.dispatch(delTabs);
-			store.dispatch(delToken);
-			window.location.replace('/#/login');
+		case 401:
+		case 2001:
+		case 2002:
+		case 2003:
+		case 2004:
+		case 2005:
+		case 2006:
+		case 2007:
+		case 2008:
+		case 2009:
+			store.dispatch(delSelectable());
+			store.dispatch(delTabs());
+			store.dispatch(delToken());
+			window.location.replace('/login');
 			return;
 		default:
 			message.error({
@@ -129,10 +121,9 @@ const Service = (options: AxiosConfig, data?: any) => {
 			return;
 		}
 		nProgress.start();
-		axios(config)
+		service(config)
 			.then((request) => {
 				nProgress.done();
-				onSuccessInterceptEvent(request);
 				const data = request.data as JsonResult;
 				if (data.code == 200 || data.code == undefined) {
 					resolve(request.data as JsonResult);
@@ -187,4 +178,4 @@ class ApiService<T = any> {
 
 const Api = new ApiService();
 
-export { Service, Api };
+export { Service, Api, service };

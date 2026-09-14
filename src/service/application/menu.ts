@@ -1,6 +1,11 @@
 import { Api } from '@/service';
 
 /**
+ * 获取菜单列表
+ * @param params
+ */
+export const getMenuListData = (params: object) => Api.get('/system/menu/list', params);
+/**
  * 加载对应角色菜单列表树
  * @param id 角色ID
  */

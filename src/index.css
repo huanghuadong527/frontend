@@ -1,14 +1,18 @@
-@import './assets/styles/variable.css';
+@layer theme, base, components, utilities;
 
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
 @import 'antd/dist/reset.css';
-
 @import 'nprogress/nprogress.css';
+@import './assets/styles/global.css';
 
-@import './assets/styles/common.css';
-
-@import './assets/styles/custom.css';
-
-html body {
-  --antd-wave-shadow-color: transparent !important;
+@theme {
+	--spacing-xs: 5px;
+	--spacing-sm: 10px;
+	--spacing-md: 15px;
+	--spacing-lg: 20px;
 }
 
+html body {
+	--antd-wave-shadow-color: transparent !important;
+}

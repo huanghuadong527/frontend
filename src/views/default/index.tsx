@@ -4,4 +4,4 @@ const DefaultComp = () => {
   )
 }
 
-export default DefaultComp;
+export const Component = DefaultComp;

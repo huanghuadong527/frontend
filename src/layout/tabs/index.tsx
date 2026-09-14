@@ -9,10 +9,8 @@ import {
 import { useDispatch } from 'react-redux';
 import { MenuProp, setSelectable, setTabs, useAppSelector } from '@/store';
 import { findTree } from 'xe-utils';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import type { MenuProps } from 'antd';
-
-import style from './index.module.less';
 
 const { useToken } = theme;
 
@@ -20,7 +18,9 @@ function TabsComponent() {
 	const dispatch = useDispatch();
 	const navigate = useNavigate();
 	const { token } = useToken();
-	const { tabs, selectable, menus } = useAppSelector((state) => state);
+	const tabs = useAppSelector((state) => state.system.tabs);
+	const selectable = useAppSelector((state) => state.system.selectable);
+	const menus = useAppSelector((state) => state.core.menus);
 
 	const $tabs: (MenuProp | null)[] = useMemo(() => {
 		if (tabs && menus && menus.length > 0) {
@@ -118,7 +118,7 @@ function TabsComponent() {
 	);
 
 	return (
-		<div className={style.layoutTabs}>
+		<div className='layoutTabs relative z-[11] bg-white min-h-[36px] px-[10px] py-[5px] shadow-[2px_0_8px_0_rgba(29,35,41,0.05)]'>
 			<Tabs
 				size='small'
 				activeKey={selectable}

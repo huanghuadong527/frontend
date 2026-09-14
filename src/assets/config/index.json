@@ -1,5 +1,4 @@
 {
 	"proxy": "/api",
-	"upload": "http://localhost:8081/siyang",
-	"xunbao": "http://www.xunbao178.com/wmgj"
+	"upload": "http://localhost:8081/siyang"
 }

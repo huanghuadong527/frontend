@@ -1,249 +1,176 @@
-import { lazy, Suspense, useEffect } from 'react';
-import { useRoutes, useNavigate, RouteObject } from 'react-router-dom';
-import { Loading } from '@/components';
-import { useSelector } from 'react-redux';
-import { useAppSelector } from '@/store';
+import { createBrowserRouter, redirect } from 'react-router';
+import App from '@/App';
+import { Loading, RouterErrorBoundary } from '@/components';
+import { beforeEachLoader } from './loader';
+import { authInterceptorMiddleware } from './middleware';
 
-import Layout from '@/layout';
-import Login from '@/views/login';
-
-/**
- * 系统路由
- */
-function SysRouter() {
-	return useRoutes([
-		{
-			path: '/',
-			element: <Redirect to='/index' />
-		},
-		{
-			path: '/login',
-			element: <Login />
-		},
-		{
-			path: '/index',
-			element: (
-				<BeforeEach>
-					<Layout />
-				</BeforeEach>
-			),
-			children: AppRouter
-		}
-	]);
-}
-
-export { SysRouter };
-
-/**
- * 业务路由
- */
-const AppRouter: RouteObject[] = [
+export const ROUTES = createBrowserRouter([
 	{
-		path: '',
-		element: <Lazy template={() => import('@/views/default')} />
-	},
-	{
-		path: '/index/user',
-		element: <Lazy template={() => import('@/views/page/system/User')} />
-	},
-	{
-		path: '/index/config',
-		element: <Lazy template={() => import('@/views/page/system/Config')} />
-	},
-	{
-		path: '/index/dept',
-		element: <Lazy template={() => import('@/views/page/system/Dept')} />
-	},
-	{
-		path: '/index/dict',
-		element: <Lazy template={() => import('@/views/page/system/Dict')} />
-	},
-	{
-		path: '/index/menu',
-		element: <Lazy template={() => import('@/views/page/system/Menu')} />
-	},
-	{
-		path: '/index/post',
-		element: <Lazy template={() => import('@/views/page/system/Post')} />
-	},
-	{
-		path: '/index/role',
-		element: <Lazy template={() => import('@/views/page/system/Role')} />
-	},
-	{
-		path: '/index/notice',
-		element: <Lazy template={() => import('@/views/page/system/Notice')} />
-	},
-	{
-		path: '/index/operlog',
-		element: <Lazy template={() => import('@/views/page/system/Operlog')} />
-	},
-	{
-		path: '/index/logininfor',
-		element: <Lazy template={() => import('@/views/page/system/Logininfor')} />
-	},
-	{
-		path: '/index/online',
-		element: <Lazy template={() => import('@/views/page/monitor/Online')} />
-	},
-	{
-		path: '/index/cache',
-		element: <Lazy template={() => import('@/views/page/monitor/Cache')} />
-	},
-	{
-		path: '/index/server',
-		element: <Lazy template={() => import('@/views/page/monitor/Server')} />
-	},
-	{
-		path: '/index/gen',
-		element: <Lazy template={() => import('@/views/page/tool/gen/index')} />
-	},
-	{
-		path: '/index/swagger',
-		element: <Lazy template={() => import('@/views/page/tool/Swagger')} />
-	},
-	{
-		path: '/index/character',
-		element: (
-			<Lazy template={() => import('@/views/page/shopping/character/index')} />
-		)
-	},
-	{
-		path: '/index/game-server',
-		element: (
-			<Lazy template={() => import('@/views/page/shopping/GameServer')} />
-		)
-	},
-	{
-		path: '/index/private-server',
-		element: (
-			<Lazy template={() => import('@/views/page/shopping/PrivateServer')} />
-		)
-	},
-	{
-		path: '/index/sy-notice',
-		element: <Lazy template={() => import('@/views/page/shopping/SyNotice')} />
-	},
-	{
-		path: '/index/wm-player-role',
-		element: (
-			<Lazy
-				template={() => import('@/views/page/shopping/wm-player-role/index')}
-			/>
-		)
-	},
-	{
-		path: '/index/wm/career',
-		element: <Lazy template={() => import('@/views/page/wm/Career')} />
-	},
-	{
-		path: '/index/wm/realm',
-		element: <Lazy template={() => import('@/views/page/wm/Realm')} />
-	},
-	{
-		path: '/index/wm/skills',
-		element: <Lazy template={() => import('@/views/page/wm/Skills')} />
-	},
-	{
-		path: '/index/wm/equipment',
-		element: <Lazy template={() => import('@/views/page/wm/Equipment')} />
-	},
-	{
-		path: '/index/wm/thing-type',
-		element: <Lazy template={() => import('@/views/page/wm/ThingType')} />
-	},
-	{
-		path: '/index/wm/classify',
-		element: <Lazy template={() => import('@/views/page/wm/Classify')} />
-	},
-	{
-		path: '/index/xunbao',
-		element: (
-			<Lazy template={() => import('@/views/page/shopping/xun-bao/index')} />
-		),
+		path: '/',
+		element: <App />,
+		ErrorBoundary: RouterErrorBoundary,
+		HydrateFallback: Loading,
 		children: [
 			{
-				path: '',
-				element: (
-					<Lazy
-						template={() => import('@/views/page/shopping/xun-bao/goods')}
-					/>
-				)
-			}
-		]
-	},
-	{
-		path: '/index/wm-current-price',
-		element: (
-			<Lazy template={() => import('@/views/page/shopping/wm-current-price')} />
-		),
-		children: [
-			{
-				path: '',
-				element: (
-					<Lazy
-						template={() =>
-							import('@/views/page/shopping/wm-current-price/Type')
-						}
-					/>
-				)
+				index: true,
+				loader: () => redirect('/index'),
 			},
 			{
-				path: '/index/wm-current-price/list/:id',
-				element: (
-					<Lazy
-						template={() =>
-							import('@/views/page/shopping/wm-current-price/List')
-						}
-					/>
-				)
-			}
-		]
-	}
-];
-
-/**
- * 权限路由
- * @param routes 系统路由
- */
-function Lazy({ template }: { template: () => Promise<any> }) {
-	const Component = lazy(template);
-	return (
-		<Suspense fallback={<Loading></Loading>}>
-			<BeforeEach>
-				<Component />
-			</BeforeEach>
-		</Suspense>
-	);
-}
-
-/**
- * 路由权限拦截器
- * @param props 指定路由
- */
-function BeforeEach({ children }: { children: JSX.Element }) {
-	const token = useAppSelector((state) => state.token);
-	return token ? children : <Redirect to='/login'></Redirect>;
-}
-
-/**
- * react router dom v6 中已经抛弃了 Redirect
- * 但是可以使用 Navigate(组件)或useNavigate(hook)作为替代方案
- */
-function Redirect({
-	to,
-	replace,
-	state
-}: {
-	to: string;
-	replace?: boolean;
-	state?: object;
-}): null {
-	const navigate = useNavigate();
-
-	useEffect(() => {
-		navigate(to, { replace, state });
-	});
-
-	return null;
-}
+				path: 'login',
+				loader: beforeEachLoader,
+				lazy: () => import('@/views/login'),
+			},
+			{
+				path: 'index',
+				middleware: [authInterceptorMiddleware],
+				lazy: () => import('@/layout'),
+				children: [
+					{
+						index: true,
+						lazy: () => import('@/views/default'),
+					},
+					{
+						path: 'welcome',
+						lazy: () => import('@/views/page/welcome'),
+					},
+					{
+						path: 'game/equipment',
+						lazy: () => import('@/views/page/game/equipment'),
+					},
+					{
+						path: 'game/character',
+						lazy: () => import('@/views/page/game/character'),
+					},
+					{
+						path: 'game/violation',
+						lazy: () => import('@/views/page/game/violation'),
+					},
+					{
+						path: 'game/monster',
+						lazy: () => import('@/views/page/game/monster'),
+					},
+					{
+						path: 'game/skill',
+						lazy: () => import('@/views/page/game/skill'),
+					},
+					{
+						path: 'game/task',
+						lazy: () => import('@/views/page/game/task'),
+					},
+					{
+						path: 'game/title',
+						lazy: () => import('@/views/page/game/title'),
+					},
+					{
+						path: 'study/poem',
+						lazy: () => import('@/views/page/study/poem'),
+					},
+					{
+						path: 'study/term',
+						lazy: () => import('@/views/page/study/term'),
+					},
+					{
+						path: 'study/word',
+						lazy: () => import('@/views/page/study/word'),
+					},
+					{
+						path: 'shop/goods',
+						lazy: () => import('@/views/page/shop/goods'),
+					},
+					{
+						path: 'shop/material',
+						lazy: () => import('@/views/page/shop/material'),
+					},
+					{
+						path: 'shop/report',
+						lazy: () => import('@/views/page/shop/report'),
+					},
+					{
+						path: 'user',
+						lazy: () => import('@/views/page/system/User'),
+					},
+					{
+						path: 'config',
+						lazy: () => import('@/views/page/system/Config'),
+					},
+					{
+						path: 'dept',
+						lazy: () => import('@/views/page/system/Dept'),
+					},
+					{
+						path: 'dict',
+						lazy: () => import('@/views/page/system/Dict'),
+					},
+					{
+						path: 'menu',
+						lazy: () => import('@/views/page/system/Menu'),
+					},
+					{
+						path: 'post',
+						lazy: () => import('@/views/page/system/Post'),
+					},
+					{
+						path: 'role',
+						lazy: () => import('@/views/page/system/Role'),
+					},
+					{
+						path: 'notice',
+						lazy: () => import('@/views/page/system/Notice'),
+					},
+					{
+						path: 'operlog',
+						lazy: () => import('@/views/page/system/Operlog'),
+					},
+					{
+						path: 'logininfor',
+						lazy: () => import('@/views/page/system/Logininfor'),
+					},
+					{
+						path: 'online',
+						lazy: () => import('@/views/page/monitor/Online'),
+					},
+					{
+						path: 'cache',
+						lazy: () => import('@/views/page/monitor/Cache'),
+					},
+					{
+						path: 'server',
+						lazy: () => import('@/views/page/monitor/Server'),
+					},
+					{
+						path: 'gen',
+						lazy: () => import('@/views/page/tool/gen/index'),
+					},
+					{
+						path: 'swagger',
+						lazy: () => import('@/views/page/tool/Swagger'),
+					},
+					{
+						path: 'wm/career',
+						lazy: () => import('@/views/page/wm/Career'),
+					},
+					{
+						path: 'wm/realm',
+						lazy: () => import('@/views/page/wm/Realm'),
+					},
+					{
+						path: 'wm/skills',
+						lazy: () => import('@/views/page/wm/Skills'),
+					},
+					{
+						path: 'wm/equipment',
+						lazy: () => import('@/views/page/wm/Equipment'),
+					},
+					{
+						path: 'wm/thing-type',
+						lazy: () => import('@/views/page/wm/ThingType'),
+					},
+					{
+						path: 'wm/classify',
+						lazy: () => import('@/views/page/wm/Classify'),
+					},
+				],
+			},
+		],
+	},
+]);

@@ -1,6 +1,5 @@
 import moment from 'moment';
-import { DynamicSearch, DynamicTable } from '@/components';
-import { FLEX_FORM_LAYOUT, useAntdTable } from '@/core';
+import { FLEX_FORM_LAYOUT } from '@/core';
 import {
 	App,
 	Button,
@@ -10,11 +9,13 @@ import {
 	Modal,
 	Popconfirm,
 	Row,
-	Space
+	Space,
+	Table
 } from 'antd';
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
 	addEquipmentData,
+	getEquipmentData,
 	getEquipmentDataById,
 	updateEquipmentData
 } from '@/service';
@@ -24,8 +25,27 @@ const Equipment = () => {
 	const [editId, setEditId] = useState('');
 	const [form] = Form.useForm();
 	const { message } = App.useApp();
-	const { dataSource, tableProps, loading, getTableData } =
-		useAntdTable('/wm/equipment/list');
+	const [dataSource, setDataSource] = useState<any[]>([]);
+	const [loading, setLoading] = useState(false);
+	const [pageNum, setPageNum] = useState(1);
+	const [pageSize, setPageSize] = useState(10);
+	const [total, setTotal] = useState(0);
+
+	const getData = useCallback(
+		(params: object = {}) => {
+			setLoading(true);
+			getEquipmentData({ pageNum, pageSize, ...params }).then((result) => {
+				setLoading(false);
+				setTotal(result.data?.total ?? 0);
+				setDataSource(result.data?.data ?? []);
+			});
+		},
+		[pageNum, pageSize]
+	);
+
+	useEffect(() => {
+		getData();
+	}, [getData]);
 
 	const onEdit = (id?: string) => {
 		if (id) {
@@ -49,13 +69,13 @@ const Equipment = () => {
 					id: editId
 				}).then(() => {
 					onCancel();
-					getTableData();
+					getData();
 					message.success('修改成功!');
 				});
 			} else {
 				addEquipmentData(values).then(() => {
 					onCancel();
-					getTableData();
+					getData();
 					message.success('添加成功!');
 				});
 			}
@@ -69,8 +89,9 @@ const Equipment = () => {
 	};
 
 	const headerRender = (
-		<div className='flex-row' style={{ justifyContent: 'space-between' }}>
-			<DynamicSearch />
+		<div
+			className='flex justify-between mb-4'
+		>
 			<Button type='primary' onClick={() => onEdit()}>
 				新增
 			</Button>
@@ -78,11 +99,12 @@ const Equipment = () => {
 	);
 
 	return (
-		<div className='container flex-column'>
-			<DynamicTable
+		<div className='w-full h-full flex flex-col'>
+			{headerRender}
+			<Table
+				rootClassName='table-fill'
 				size='small'
 				rowKey='id'
-				headerRender={headerRender}
 				columns={[
 					{
 						title: '装备名称',
@@ -215,7 +237,18 @@ const Equipment = () => {
 				loading={loading}
 				dataSource={dataSource}
 				scroll={{ y: '100%' }}
-				{...tableProps}
+				pagination={{
+					current: pageNum,
+					pageSize,
+					total,
+					showSizeChanger: true,
+					showQuickJumper: true,
+					showTotal: (t) => `共 ${t} 条`,
+					onChange: (page, size) => {
+						setPageNum(page);
+						setPageSize(size);
+					}
+				}}
 			/>
 			<Modal
 				okText='保存'
@@ -329,4 +362,4 @@ const Equipment = () => {
 	);
 };
 
-export default Equipment;
+export const Component = Equipment;

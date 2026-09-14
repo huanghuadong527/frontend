@@ -4,4 +4,4 @@ const Operlog = () => {
   )
 }
 
-export default Operlog;
+export const Component = Operlog;

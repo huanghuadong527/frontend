@@ -4,7 +4,6 @@ import {
 	Form,
 	Input,
 	InputNumber,
-	message,
 	Modal,
 	Pagination,
 	Popconfirm,
@@ -14,7 +13,7 @@ import {
 	Table,
 	Tag,
 } from 'antd';
-import { DynamicSearch } from '@/components';
+import { message } from '@/redux';
 import {
 	addDictType,
 	getDictTypeById,
@@ -239,21 +238,14 @@ const DictComponent = () => {
 
 	return (
 		<>
-			<div className='container flex-column'>
-				<div className='dynamic-table'>
-					<div className='dynamic-table--header'>
-						<div
-							className='flex-row'
-							style={{ justifyContent: 'space-between' }}
-						>
-							<DynamicSearch />
-							<Button type='primary' onClick={() => onEditType()}>
-								新增
-							</Button>
-						</div>
-					</div>
-					<div className='dynamic-table--content'>
-						<Table
+			<div className='w-full h-full flex flex-col'>
+				<div className='flex justify-between mb-4'>
+					<Button type='primary' onClick={() => onEditType()}>
+						新增
+					</Button>
+				</div>
+				<Table
+							rootClassName='table-fill'
 							size='small'
 							rowKey='key'
 							scroll={{ x: '100%', y: '100%' }}
@@ -358,7 +350,7 @@ const DictComponent = () => {
 								current: pageNum,
 								pageSize: pageSize,
 								total,
-								size: 'default',
+								size: 'middle',
 								showSizeChanger: true,
 								showQuickJumper: true,
 								onChange: onPageChange,
@@ -367,8 +359,6 @@ const DictComponent = () => {
 							loading={typeLoading}
 							dataSource={typeSource}
 						/>
-					</div>
-				</div>
 			</div>
 			<Modal
 				okText='保存'
@@ -460,4 +450,4 @@ const DictComponent = () => {
 	);
 };
 
-export default DictComponent;
+export const Component = DictComponent;

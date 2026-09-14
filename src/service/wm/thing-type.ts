@@ -1,5 +1,8 @@
 import { Api } from '@/service';
 
+export const getThingTypeData = (params: object) =>
+	Api.get('/wm/thing-type/list', params);
+
 export const getThingTypeDataById = (id: string) =>
 	Api.get(`/wm/thing-type/${id}`);
 

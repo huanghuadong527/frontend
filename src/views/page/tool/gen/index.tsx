@@ -1,13 +1,14 @@
-import { DynamicSearch, DynamicTable } from '@/components';
-import { exportFile, useAntdTable } from '@/core';
+import { exportFile } from '@/core';
 import {
 	batchGenCode,
 	deleteGenTable,
 	getDBData,
+	getGenTableData,
 	importTableSave,
 	synchGenTable,
 } from '@/service';
-import { Button, message, Modal, Popconfirm, Space, Table } from 'antd';
+import { Button, Modal, Popconfirm, Space, Table } from 'antd';
+import { message, modal } from '@/redux';
 import { Key, useCallback, useEffect, useState } from 'react';
 import { CodePreview } from './CodePreview';
 import { EditTable } from './EditTable';
@@ -23,8 +24,27 @@ const Gen = () => {
 	const [selectKeys, setSelectKeys] = useState<Key[]>([]);
 	const [importColumns, setImportColumns] = useState([]);
 	const [selectImportKeys, setSelectImportKeys] = useState<Key[]>([]);
-	const { dataSource, tableProps, loading, getTableData } =
-		useAntdTable('/tool/gen/list');
+	const [dataSource, setDataSource] = useState<any[]>([]);
+	const [loading, setLoading] = useState(false);
+	const [pageNum, setPageNum] = useState(1);
+	const [pageSize, setPageSize] = useState(10);
+	const [listTotal, setListTotal] = useState(0);
+
+	const getData = useCallback(
+		(params: object = {}) => {
+			setLoading(true);
+			getGenTableData({ pageNum, pageSize, ...params }).then((result) => {
+				setLoading(false);
+				setListTotal(result.data?.total ?? 0);
+				setDataSource(result.data?.data ?? []);
+			});
+		},
+		[pageNum, pageSize]
+	);
+
+	useEffect(() => {
+		getData();
+	}, [getData]);
 
 	const onSelectChange = (keys: Key[]) => {
 		setSelectKeys(keys);
@@ -58,7 +78,7 @@ const Gen = () => {
 		if (id) {
 			deleteGenTable(id).then((result) => {
 				if (result.code == 200) {
-					getTableData();
+					getData();
 					message.success('删除成功');
 					setSelectKeys([]);
 				}
@@ -70,18 +90,18 @@ const Gen = () => {
 		if (selectKeys.length > 0) {
 			onDelete(selectKeys.join(','));
 		} else {
-			message.warn('请选择');
+			message.warning('请选择');
 		}
 	};
 
 	const onSynch = (id: string) => {
-		Modal.confirm({
+		modal.confirm({
 			title: '系统提示',
 			content: `请确认是否同步[${id}]表结构?`,
 			onOk() {
 				synchGenTable(id).then((result) => {
 					if (result.code == 200) {
-						getTableData();
+						getData();
 						message.success('同步成功');
 						setSelectKeys([]);
 					}
@@ -92,7 +112,7 @@ const Gen = () => {
 
 	const onGenerate = (tables: string) => {
 		console.log(tables)
-		Modal.confirm({
+		modal.confirm({
 			title: '系统提示',
 			content: `请确认是否生成代码?`,
 			onOk() {
@@ -119,7 +139,7 @@ const Gen = () => {
 					.join(',')
 			);
 		} else {
-			message.warn('请选择');
+			message.warning('请选择');
 		}
 	};
 
@@ -130,12 +150,12 @@ const Gen = () => {
 			}).then((result) => {
 				if (result.code == 200) {
 					onImportCancel();
-					getTableData();
+					getData();
 					message.success('导入成功');
 				}
 			});
 		} else {
-			message.warn('请选择要导入的表');
+			message.warning('请选择要导入的表');
 		}
 	};
 
@@ -165,45 +185,41 @@ const Gen = () => {
 		getDBList();
 	}, []);
 
-	const headerRender = (
-		<div className='flex-row' style={{ justifyContent: 'space-between' }}>
-			<DynamicSearch />
-			<Space>
-				<Button
-					type='primary'
-					disabled={selectKeys.length == 0}
-					onClick={onBatchGenerate}
-				>
-					生成
-				</Button>
-				<Button
-					className='ant-btn-export'
-					type='primary'
-					onClick={() => {
-						setImportVisble(true);
-					}}
-				>
-					导入
-				</Button>
-				<Popconfirm
-					title='是否确认删除?'
-					placement='bottomRight'
-					onConfirm={onBatchDelete}
-				>
-					<Button danger type='primary' disabled={selectKeys.length == 0}>
-						批量删除
-					</Button>
-				</Popconfirm>
-			</Space>
-		</div>
-	);
-
 	return (
-		<div className='container flex-column'>
-			<DynamicTable
+		<div className='w-full h-full flex flex-col'>
+			<div className='flex justify-between mb-4'>
+				<Space>
+					<Button
+						type='primary'
+						disabled={selectKeys.length == 0}
+						onClick={onBatchGenerate}
+					>
+						生成
+					</Button>
+					<Button
+						className='ant-btn-export'
+						type='primary'
+						onClick={() => {
+							setImportVisble(true);
+						}}
+					>
+						导入
+					</Button>
+					<Popconfirm
+						title='是否确认删除?'
+						placement='bottomRight'
+						onConfirm={onBatchDelete}
+					>
+						<Button danger type='primary' disabled={selectKeys.length == 0}>
+							批量删除
+						</Button>
+					</Popconfirm>
+				</Space>
+			</div>
+			<Table
+				rootClassName='table-fill'
 				size='small'
 				rowKey='id'
-				headerRender={headerRender}
 				rowSelection={{
 					selectedRowKeys: selectKeys,
 					onChange: onSelectChange,
@@ -298,10 +314,21 @@ const Gen = () => {
 						},
 					},
 				]}
+				pagination={{
+					current: pageNum,
+					pageSize,
+					total: listTotal,
+					showSizeChanger: true,
+					showQuickJumper: true,
+					showTotal: (t) => `共 ${t} 条`,
+					onChange: (page, size) => {
+						setPageNum(page);
+						setPageSize(size);
+					},
+				}}
 				loading={loading}
 				dataSource={dataSource}
 				scroll={{ y: '100%' }}
-				{...tableProps}
 			/>
 			<Modal
 				okText='保存'
@@ -311,15 +338,12 @@ const Gen = () => {
 				onOk={onImportSave}
 				onCancel={onImportCancel}
 			>
-				<div className='mb-md'>
-					<DynamicSearch />
-				</div>
 				<Table
 					size='small'
 					rowKey='tableName'
 					scroll={{ y: 320 }}
 					pagination={{
-						size: 'default',
+						size: 'middle',
 						showQuickJumper: true,
 						showTotal: (total: number) => `共${total}条`,
 						current: pageNo,
@@ -373,4 +397,4 @@ const Gen = () => {
 	);
 };
 
-export default Gen;
+export const Component = Gen;

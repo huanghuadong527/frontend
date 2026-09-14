@@ -1,4 +1,4 @@
-import { Service, AxiosConfig } from '@/service';
+import { Service, Api, AxiosConfig } from '@/service';
 
 export const login = (params: object) => Service({ url: '/login' }, params);
 export const logout = () => Service({ url: '/logout' });
@@ -35,3 +35,20 @@ export const uploadImage = (params: FormData) => Service({
   type: 'upload',
 	headers: { 'Content-Type': 'multipart/form-data' },
 }, params);
+
+/**
+ * 上传文件
+ */
+export const uploadFile = (params: FormData) => Service({
+	url: '/upload/file',
+	method: 'POST',
+  type: 'upload',
+	headers: { 'Content-Type': 'multipart/form-data' },
+}, params);
+
+/**
+ * 下载文件
+ * @param fileName 文件相对路径(如 /file/2025/07/10/xxx.zip)
+ */
+export const downloadFile = (fileName: string) =>
+	Api.download(`/upload/download?fileName=${encodeURIComponent(fileName)}`, {}, 'GET');

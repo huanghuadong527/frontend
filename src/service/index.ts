@@ -18,17 +18,13 @@ export * from './monitor/cache';
 export * from './tool/gen';
 export * from './tool/swagger';
 
-export * from './shopping/character';
-export * from './shopping/game-server';
-export * from './shopping/private-server';
-export * from './shopping/sy-notice';
-export * from './shopping/wm-player-role';
-export * from './shopping/wm-current-price';
-export * from './shopping/xunbao';
-
 export * from './wm/career';
 export * from './wm/realm';
 export * from './wm/skills';
 export * from './wm/classify';
 export * from './wm/thing-type';
 export * from './wm/equipment';
+
+export * from './game';
+export * from './study';
+export * from './shop';

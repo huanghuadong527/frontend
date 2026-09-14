@@ -1,5 +1,8 @@
 import { Api } from '@/service';
 
+export const getClassifyData = (params: object) =>
+	Api.get('/wm/classify/list', params);
+
 export const getClassifyDataById = (id: string) =>
 	Api.get(`/wm/classify/${id}`);
 

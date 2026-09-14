@@ -1,5 +1,8 @@
 import { Api } from '@/service';
 
+export const getEquipmentData = (params: object) =>
+	Api.get('/wm/equipment/list', params);
+
 export const getEquipmentDataById = (id: string) =>
 	Api.get(`/wm/equipment/${id}`);
 

@@ -1,9 +1,7 @@
-import { DynamicSearch, DynamicTable } from '@/components';
 import {
 	Button,
 	Form,
 	Input,
-	message,
 	Modal,
 	Popconfirm,
 	Radio,
@@ -12,17 +10,20 @@ import {
 	Upload,
 	Image,
 	UploadProps,
+	Table,
 } from 'antd';
+import { message } from '@/redux';
 import {
 	getDictTypeByType,
 	addConfigData,
 	deleteConfigData,
+	getConfigData,
 	getConfigDataById,
 	updateConfigData,
 	uploadImage,
 } from '@/service';
 import { useCallback, useEffect, useState } from 'react';
-import { FORM_LAYOUT, SY_CONFIG, useAntdTable, useCommon } from '@/core';
+import { FORM_LAYOUT, SY_CONFIG, useCommon } from '@/core';
 import { LabeledValue } from 'antd/es/select';
 import { PlusOutlined } from '@ant-design/icons';
 import { useDispatch } from 'react-redux';
@@ -37,10 +38,28 @@ const Config = () => {
 	const [modes, setModes] = useState<LabeledValue[]>([]);
 	const [imageSrc, setImageSrc] = useState<string | null>(null);
 	const [form] = Form.useForm();
-	const { dataSource, tableProps, loading, getTableData } = useAntdTable(
-		'/system/config/list'
-	);
+	const [dataSource, setDataSource] = useState<any[]>([]);
+	const [loading, setLoading] = useState(false);
+	const [pageNum, setPageNum] = useState(1);
+	const [pageSize, setPageSize] = useState(10);
+	const [total, setTotal] = useState(0);
 	const { updateSysConfig } = useCommon();
+
+	const getData = useCallback(
+		(params: object = {}) => {
+			setLoading(true);
+			getConfigData({ pageNum, pageSize, ...params }).then((result) => {
+				setLoading(false);
+				setTotal(result.data?.total ?? 0);
+				setDataSource(result.data?.data ?? []);
+			});
+		},
+		[pageNum, pageSize]
+	);
+
+	useEffect(() => {
+		getData();
+	}, [getData]);
 
 	const configMode: ModeType = Form.useWatch('configMode', form);
 
@@ -78,7 +97,7 @@ const Config = () => {
 				}).then(() => {
 					message.success('修改成功!');
 					onCancel();
-					getTableData();
+					getData();
 					updateSysConfig(values);
 					dispatch(updateConfig({ ...values, ...params }));
 				});
@@ -89,7 +108,7 @@ const Config = () => {
 				}).then(() => {
 					message.success('新增成功!');
 					onCancel();
-					getTableData();
+					getData();
 					updateSysConfig(values);
 					dispatch(updateConfig({ ...values, ...params }));
 				});
@@ -108,7 +127,7 @@ const Config = () => {
 		if (id) {
 			deleteConfigData(id).then(() => {
 				message.success('删除成功!');
-				getTableData();
+				getData();
 			});
 		}
 	};
@@ -146,8 +165,7 @@ const Config = () => {
 	}, []);
 
 	const headerRender = (
-		<div className='flex-row' style={{ justifyContent: 'space-between' }}>
-			<DynamicSearch />
+		<div className='flex justify-between mb-4'>
 			<Button type='primary' onClick={() => onEdit()}>
 				新增
 			</Button>
@@ -155,11 +173,12 @@ const Config = () => {
 	);
 
 	return (
-		<div className='container flex-column'>
-			<DynamicTable
+		<div className='w-full h-full flex flex-col'>
+			{headerRender}
+			<Table
+				rootClassName='table-fill'
 				size='small'
 				rowKey='id'
-				headerRender={headerRender}
 				columns={[
 					{
 						title: '参数名称',
@@ -234,7 +253,7 @@ const Config = () => {
 				loading={loading}
 				dataSource={dataSource}
 				scroll={{ y: '100%' }}
-				{...tableProps}
+				pagination={{ current: pageNum, pageSize, total, showSizeChanger: true, showQuickJumper: true, showTotal: (t) => `共 ${t} 条`, onChange: (page, size) => { setPageNum(page); setPageSize(size); } }}
 			/>
 			<Modal
 				okText='保存'
@@ -318,4 +337,4 @@ const Config = () => {
 	);
 };
 
-export default Config;
+export const Component = Config;
