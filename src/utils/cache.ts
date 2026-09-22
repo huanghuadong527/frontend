@@ -1,5 +1,3 @@
-import { cookie } from 'xe-utils';
-
 const sessionCache = {
 	set(key: string, value: string) {
 		if (!sessionStorage) {
@@ -18,7 +16,7 @@ const sessionCache = {
 		}
 		return sessionStorage.getItem(key);
 	},
-	setJSON(key: string, jsonValue: any) {
+	setJSON(key: string, jsonValue: CObject) {
 		if (jsonValue != null) {
 			this.set(key, JSON.stringify(jsonValue));
 		}
@@ -32,9 +30,8 @@ const sessionCache = {
 	},
 	remove(key: string) {
 		sessionStorage.removeItem(key);
-	},
+	}
 };
-
 const localCache = {
 	set(key: string, value: string) {
 		if (!localStorage) {
@@ -53,7 +50,7 @@ const localCache = {
 		}
 		return localStorage.getItem(key);
 	},
-	setJSON(key: string, jsonValue: any) {
+	setJSON(key: string, jsonValue: CObject) {
 		if (jsonValue != null) {
 			this.set(key, JSON.stringify(jsonValue));
 		}
@@ -67,19 +64,7 @@ const localCache = {
 	},
 	remove(key: string) {
 		localStorage.removeItem(key);
-	},
-};
-
-const cookieCache = {
-	set(key: string, value: string, expires = 7) {
-		cookie.set(key, value, { expires: `${expires}d` });
-	},
-	get(key: string) {
-		return cookie.get(key);
-	},
-	remove(key: string) {
-		cookie.remove(key);
-	},
+	}
 };
 
 export const CACHE = {
@@ -90,9 +75,5 @@ export const CACHE = {
 	/**
 	 * 本地缓存
 	 */
-	LOCAL: localCache,
-	/**
-	 * cookie 默认7天
-	 */
-	COOKIE: cookieCache,
+	LOCAL: localCache
 };

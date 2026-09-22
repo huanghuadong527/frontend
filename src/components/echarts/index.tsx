@@ -1,33 +1,32 @@
-import { useEcharts } from '@/core';
-import { CSSProperties, useEffect } from 'react';
+import * as echarts from 'echarts';
+import { useEffect, useRef, type CSSProperties } from 'react';
 
 interface EchartsProps {
-	id: string;
-	class?: string;
-	style?: CSSProperties;
 	options: echarts.EChartsCoreOption;
+	style?: CSSProperties;
+	className?: string;
 }
 
-export const Echarts = (props: EchartsProps) => {
-	const { initEcharts, setOption, resize } = useEcharts(
-		props.id,
-		props.options
-	);
+export const Echarts = ({ options, style, className }: EchartsProps) => {
+	const containerRef = useRef<HTMLDivElement>(null);
+	const chartRef = useRef<echarts.ECharts | undefined>(undefined);
 
 	useEffect(() => {
-		setOption(props.options);
-	}, [props.options]);
-
-	useEffect(() => {
-		initEcharts();
-
-		const onResize = () => resize();
+		if (!containerRef.current) return;
+		const chart = echarts.init(containerRef.current);
+		chartRef.current = chart;
+		const onResize = () => chart.resize();
 		window.addEventListener('resize', onResize);
-
 		return () => {
 			window.removeEventListener('resize', onResize);
+			chart.dispose();
+			chartRef.current = undefined;
 		};
-	}, [resize]);
+	}, []);
 
-	return <div id={props.id} className={props.class} style={props.style}></div>;
+	useEffect(() => {
+		chartRef.current?.setOption(options);
+	}, [options]);
+
+	return <div ref={containerRef} className={className} style={style} />;
 };

@@ -1,26 +1,24 @@
-import { CustomErrorBoundary } from '@/components';
-import { ROUTES } from '@/router';
+import './index.css';
 import store from '@/store';
 import { createRoot } from 'react-dom/client';
-import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
+import { ErrorBoundary } from 'react-error-boundary';
 import { Provider } from 'react-redux';
-import { RouterProvider } from 'react-router';
+import { ERROR_STYLE, ERROR_TIPS } from '@/core';
+import { GlobalRouter } from '@/router';
 
-import '@/index.css';
+// 应用挂载节点
+const $root = document.getElementById('root');
 
-const rootElement = document.getElementById('root');
-if (!rootElement) {
-	throw new Error('Root element #root not found in index.html');
+try {
+	if ($root) {
+		createRoot($root).render(
+			<ErrorBoundary fallback={<p>ERROR</p>}>
+				<Provider store={store}>
+					<GlobalRouter />
+				</Provider>
+			</ErrorBoundary>
+		);
+	}
+} catch (error) {
+	console.error(`%c ${ERROR_TIPS}`, ERROR_STYLE);
 }
-
-const fallbackRender = (props: FallbackProps) => {
-	return <CustomErrorBoundary {...props} />;
-};
-
-createRoot(rootElement).render(
-	<ErrorBoundary fallbackRender={fallbackRender}>
-		<Provider store={store}>
-			<RouterProvider router={ROUTES} />
-		</Provider>
-	</ErrorBoundary>
-);

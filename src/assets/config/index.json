@@ -1,4 +1,0 @@
-{
-	"proxy": "/api",
-	"upload": "http://localhost:8081/siyang"
-}

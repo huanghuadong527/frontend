@@ -1,35 +1,15 @@
-import {
-	type Action,
-	configureStore,
-	type Dispatch,
-	type ThunkDispatch,
-} from '@reduxjs/toolkit';
-import {
-	useDispatch as useReduxDispatch,
-	useSelector,
-} from 'react-redux';
-import core from './core';
-import system from './system';
+import { configureStore, type Action } from '@reduxjs/toolkit';
+import { useSelector } from 'react-redux';
 
-export * from './core';
-export * from './system';
-export * from './types';
+import root from './reducers/root';
 
-const store = configureStore({
+export default configureStore<State, Action>({
 	reducer: {
-		core,
-		system,
+		root
 	},
+	middleware: (getDefaultMiddleware) => getDefaultMiddleware({})
 });
 
-export type State = ReturnType<typeof store.getState>;
-export type AppDispatch = typeof store.dispatch;
+export const useStore = useSelector.withTypes<State>();
 
-export type CustomDispatch = ThunkDispatch<State, unknown, Action> &
-	Dispatch<Action>;
-
-export const useAppSelector = useSelector.withTypes<State>();
-
-export const useAppDispatch = useReduxDispatch.withTypes<CustomDispatch>();
-
-export default store;
+export * from './reducers/root';

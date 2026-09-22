@@ -1,12 +1,15 @@
-import store from '@/store';
+import store, { clear } from '@/store';
 import { redirect } from 'react-router';
-import type { MiddlewareFunction } from 'react-router';
 
 /**
- * 路由鉴权中间件：导航前检查登录态，未登录则重定向到登录页。
+ * 权限认证
  */
-export const authInterceptorMiddleware: MiddlewareFunction = () => {
-	if (!store.getState().core.token) {
+export const authMiddleware = async () => {
+	const state = store.getState();
+
+	if (!state.root.token) {
+		store.dispatch(clear());
+
 		throw redirect('/login');
 	}
 };

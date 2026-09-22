@@ -1,10 +1,38 @@
-import { Key, useCallback, useEffect, useState } from 'react';
-import { Button, Form, Input, Modal, Popconfirm, Select, Space, Table } from 'antd';
-import { message } from '@/redux';
-import type { TableProps } from 'antd';
-import { DeleteOutlined, EditOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
-import { FORM_LAYOUT } from '@/core';
-import { addMonster, deleteMonster, getMonsterById, getMonsterList, updateMonster } from '@/service';
+import * as Yup from 'yup';
+import {
+	useEffect,
+	useState } from 'react';
+import { Button,
+	IconButton,
+	MenuItem,
+	Stack } from '@mui/material';
+import type { GridRowId } from '@mui/x-data-grid';
+import { useFormik,
+	type FormikValues } from 'formik';
+import {
+	AddRegular,
+	EditRegular,
+	DeleteRegular,
+	SearchRegular
+} from '@fluentui/react-icons';
+import {
+	Form,
+	getColumnData,
+	PageOverlay,
+	Input,
+	Modal,
+	Select,
+	Table,
+	confirm,
+	message
+} from '@/plugins';
+import { useTable } from '@/core';
+import {
+	addMonster,
+	deleteMonster,
+	getMonsterById,
+	updateMonster
+} from '@/service';
 
 const METHOD_OPTIONS = [
 	{ value: 0, label: '混合攻击' },
@@ -22,77 +50,43 @@ const ATTRIBUTE_OPTIONS = [
 	{ value: 5, label: '土' }
 ];
 
-const getOptionLabel = (options: { value: number; label: string }[], value: unknown) =>
+const getOptionLabel = (options: typeof METHOD_OPTIONS, value: unknown) =>
 	options.find((item) => item.value == value)?.label ?? '--';
 
-const Monster = () => {
-	const [visible, setVisible] = useState(false);
+export const Component = () => {
+	const [isOpen, setIsOpen] = useState(false);
 	const [editId, setEditId] = useState<string | number>('');
-	const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([]);
-	const [dataSource, setDataSource] = useState<any[]>([]);
-	const [loading, setLoading] = useState(false);
-	const [pageNum, setPageNum] = useState(1);
-	const [pageSize, setPageSize] = useState(10);
-	const [total, setTotal] = useState(0);
-	const [searchForm] = Form.useForm();
-	const [form] = Form.useForm();
+	const [selectKeys, setSelectKeys] = useState<GridRowId[]>([]);
 
-	const getData = useCallback(
-		(params: object = {}) => {
-			setLoading(true);
-			getMonsterList({ pageNum, pageSize, ...params }).then((result) => {
-				setLoading(false);
-				setTotal(result.data?.total ?? 0);
-				setDataSource(result.data?.data ?? []);
-			});
+	const { tableProps, getData } = useTable('/game/wm/monster/list');
+
+	const search = useFormik<FormikValues>({
+		initialValues: { name: '', fall: '' },
+		onSubmit(values) {
+			getData(values);
 		},
-		[pageNum, pageSize]
-	);
-
-	useEffect(() => {
-		getData();
-	}, [getData]);
-
-	const onSearch = (values: any) => {
-		getData({
-			name: values.name || undefined,
-			fall: values.fall || undefined
-		});
-	};
-
-	const onReset = () => {
-		searchForm.resetFields();
-		getData();
-	};
-
-	const onEdit = (id?: string | number) => {
-		if (id) {
-			setEditId(id);
-			getMonsterById(id).then((result) => {
-				const record = result.data;
-				form.setFieldsValue({
-					...record,
-					level: record.level != null ? String(record.level) : '',
-					method: record.method != null ? String(record.method) : '',
-					attribute: record.attribute != null ? String(record.attribute) : ''
-				});
-				setVisible(true);
-			});
-		} else {
-			setEditId('');
-			form.resetFields();
-			setVisible(true);
+		onReset() {
+			getData();
 		}
-	};
+	});
 
-	const onSave = () => {
-		form.validateFields().then((values) => {
+	const formik = useFormik<FormikValues>({
+		initialValues: {
+			name: '',
+			level: '',
+			method: '',
+			attribute: '',
+			fall: ''
+		},
+		validationSchema: Yup.object().shape({
+			name: Yup.string().required('请输入怪物名称')
+		}),
+		onSubmit(values) {
 			const params = {
 				...values,
-				level: values.level === '' || values.level == null ? null : Number(values.level),
-				method: values.method === '' || values.method == null ? null : Number(values.method),
-				attribute:
-					values.attribute === '' || values.attribute == null ? null : Number(values.attribute)
+				level: values.level === '' ? null : Number(values.level),
+				method: values.method === '' ? null : Number(values.method),
+				attribute: values.attribute === '' ? null : Number(values.attribute)
 			};
 			if (editId) {
 				updateMonster({ ...params, id: editId }).then(() => {
@@ -107,148 +101,223 @@ const Monster = () => {
 					getData();
 				});
 			}
-		});
+		}
+	});
+
+	const onEdit = (id?: string | number) => {
+		if (id) {
+			setEditId(id);
+			getMonsterById(id).then((result) => {
+				const record = result.data;
+				formik.resetForm();
+				formik.setValues({
+					name: record.name ?? '',
+					level: record.level != null ? String(record.level) : '',
+					method: record.method != null ? String(record.method) : '',
+					attribute: record.attribute != null ? String(record.attribute) : '',
+					fall: record.fall ?? ''
+				});
+				setIsOpen(true);
+			});
+		} else {
+			setEditId('');
+			formik.resetForm();
+			setIsOpen(true);
+		}
+	};
+
+	const onSave = () => {
+		formik.handleSubmit();
 	};
 
 	const onCancel = () => {
-		setVisible(false);
+		setIsOpen(false);
 		setEditId('');
-		form.resetFields();
+		formik.resetForm();
 	};
 
 	const onDelete = (id: string | number) => {
-		deleteMonster(id).then(() => {
-			message.success('删除成功');
-			getData();
+		confirm({
+			type: 'warning',
+			title: '系统提示',
+			content: '是否确认删除该怪物?',
+			onOk() {
+				deleteMonster(id).then(() => {
+					message.success('删除成功');
+					getData();
+				});
+			}
 		});
 	};
 
 	const onBatchDelete = () => {
-		if (selectedRowKeys.length === 0) {
+		if (selectKeys.length == 0) {
 			message.warning('请选择要删除的怪物');
 			return;
 		}
-		deleteMonster(selectedRowKeys.join(',')).then(() => {
-			message.success('删除成功');
-			setSelectedRowKeys([]);
-			getData();
+		confirm({
+			type: 'warning',
+			title: '系统提示',
+			content: `是否确认删除选中的 ${selectKeys.length} 项数据?`,
+			onOk() {
+				deleteMonster(selectKeys.join(',')).then(() => {
+					message.success('删除成功');
+					setSelectKeys([]);
+					getData();
+				});
+			}
 		});
 	};
 
-	const columns: TableProps<any>['columns'] = [
-		{ title: '编号', dataIndex: 'id' },
-		{ title: '怪物名称', dataIndex: 'name' },
-		{ title: '等级', dataIndex: 'level' },
-		{ title: '攻击方式', dataIndex: 'method', render: (value) => getOptionLabel(METHOD_OPTIONS, value) },
-		{ title: '属性', dataIndex: 'attribute', render: (value) => getOptionLabel(ATTRIBUTE_OPTIONS, value) },
-		{ title: '掉落物品', dataIndex: 'fall' },
-		{ title: '创建时间', dataIndex: 'createTime' },
-		{
-			title: '操作',
-			width: 120,
-			render: (_, record) => (
-				<Space>
-					<Button
-						type='link'
-						size='small'
-						icon={<EditOutlined />}
-						onClick={() => onEdit(record.id)}
-					>
-						编辑
-					</Button>
-					<Popconfirm title='是否确认删除?' onConfirm={() => onDelete(record.id)}>
-						<Button type='link' size='small' danger icon={<DeleteOutlined />}>
-							删除
-						</Button>
-					</Popconfirm>
-				</Space>
-			)
-		}
-	];
+	useEffect(() => {
+		getData();
+	}, []);
 
 	return (
-		<div className='w-full h-full flex flex-col'>
-			<div className='flex justify-between mb-4'>
-				<Form layout='inline' form={searchForm} onFinish={onSearch}>
+		<PageOverlay>
+			<div className='flex items-center justify-between'>
+				<Form layout='inline' formik={search}>
 					<Form.Item name='name' label='怪物名称'>
-						<Input placeholder='请输入怪物名称' />
+						<Input size='small' placeholder='请输入怪物名称' />
 					</Form.Item>
 					<Form.Item name='fall' label='掉落物品'>
-						<Input placeholder='请输入掉落物品' />
+						<Input size='small' placeholder='请输入掉落物品' />
 					</Form.Item>
 					<Form.Item>
-						<Space>
-							<Button type='primary' htmlType='submit' icon={<SearchOutlined />}>
+						<Stack direction='row' spacing={2}>
+							<Button variant='contained' type='submit' startIcon={<SearchRegular />}>
 								查询
 							</Button>
-							<Button onClick={onReset}>重置</Button>
-						</Space>
+							<Button variant='outlined' type='reset'>
+								重置
+							</Button>
+						</Stack>
 					</Form.Item>
 				</Form>
-				<Space>
-					<Button type='primary' icon={<PlusOutlined />} onClick={() => onEdit()}>
+				<Stack direction='row' spacing={2}>
+					<Button
+						variant='contained'
+						startIcon={<AddRegular />}
+						onClick={() => onEdit()}
+					>
 						新建
 					</Button>
-					<Popconfirm title='是否确认删除?' onConfirm={onBatchDelete}>
-						<Button danger icon={<DeleteOutlined />} disabled={selectedRowKeys.length === 0}>
-							批量删除
-						</Button>
-					</Popconfirm>
-				</Space>
+					<Button
+						color='error'
+						variant='contained'
+						startIcon={<DeleteRegular />}
+						disabled={selectKeys.length == 0}
+						onClick={onBatchDelete}
+					>
+						批量删除
+					</Button>
+				</Stack>
 			</div>
 			<Table
-				rootClassName='table-fill'
-				size='small'
-				rowKey='id'
-				loading={loading}
-				dataSource={dataSource}
-				columns={columns}
-				scroll={{ y: '100%' }}
-				rowSelection={{ selectedRowKeys, onChange: (keys) => setSelectedRowKeys(keys) }}
-				pagination={{
-					current: pageNum,
-					pageSize,
-					total,
-					showSizeChanger: true,
-					showQuickJumper: true,
-					showTotal: (t) => `共 ${t} 条`,
-					onChange: (page, size) => {
-						setPageNum(page);
-						setPageSize(size);
+				{...tableProps}
+				checkboxSelection
+				onRowSelectionModelChange={(model) => setSelectKeys(Array.from(model.ids))}
+				columns={getColumnData([
+					{
+						field: 'id',
+						headerName: '编号'
+					},
+					{
+						field: 'name',
+						headerName: '怪物名称'
+					},
+					{
+						field: 'level',
+						headerName: '等级'
+					},
+					{
+						field: 'method',
+						headerName: '攻击方式',
+						renderCell({ value }) {
+							return getOptionLabel(METHOD_OPTIONS, value);
+						}
+					},
+					{
+						field: 'attribute',
+						headerName: '属性',
+						renderCell({ value }) {
+							return getOptionLabel(ATTRIBUTE_OPTIONS, value);
+						}
+					},
+					{
+						field: 'fall',
+						headerName: '掉落物品'
+					},
+					{
+						field: 'createTime',
+						headerName: '创建时间'
+					},
+					{
+						field: 'action',
+						headerName: '操作',
+						flex: 0,
+						width: 100,
+						renderCell({ row }) {
+							return (
+								<>
+									<IconButton
+										color='primary'
+										size='small'
+										title='编辑'
+										onClick={() => onEdit(row.id)}
+									>
+										<EditRegular />
+									</IconButton>
+									<IconButton
+										color='error'
+										size='small'
+										title='删除'
+										onClick={() => onDelete(row.id)}
+									>
+										<DeleteRegular />
+									</IconButton>
+								</>
+							);
+						}
 					}
-				}}
+				])}
 			/>
-			<Modal title={editId ? '编辑怪物' : '新增怪物'} open={visible} onOk={onSave} onCancel={onCancel}>
-				<Form {...FORM_LAYOUT} form={form}>
-					<Form.Item
-						name='name'
-						label='怪物名称'
-						rules={[{ required: true, message: '请输入怪物名称' }]}
-					>
-						<Input placeholder='请输入怪物名称' />
+			<Modal
+				title={editId ? '编辑怪物' : '新增怪物'}
+				open={isOpen}
+				onOk={onSave}
+				onClose={onCancel}
+			>
+				<Form labelCol={{ flex: '0 0 100px' }} formik={formik}>
+					<Form.Item required name='name' label='怪物名称'>
+						<Input size='small' placeholder='请输入怪物名称' />
 					</Form.Item>
 					<Form.Item name='level' label='怪物等级'>
-						<Input placeholder='请输入怪物等级' />
+						<Input size='small' placeholder='请输入怪物等级' />
 					</Form.Item>
 					<Form.Item name='method' label='攻击方式'>
-						<Select
-							placeholder='请选择攻击方式'
-							options={METHOD_OPTIONS.map((item) => ({ value: String(item.value), label: item.label }))}
-						/>
+						<Select placeholder='请选择攻击方式'>
+							{METHOD_OPTIONS.map((item) => (
+								<MenuItem key={item.value} value={String(item.value)}>
+									{item.label}
+								</MenuItem>
+							))}
+						</Select>
 					</Form.Item>
 					<Form.Item name='attribute' label='怪物属性'>
-						<Select
-							placeholder='请选择怪物属性'
-							options={ATTRIBUTE_OPTIONS.map((item) => ({ value: String(item.value), label: item.label }))}
-						/>
+						<Select placeholder='请选择怪物属性'>
+							{ATTRIBUTE_OPTIONS.map((item) => (
+								<MenuItem key={item.value} value={String(item.value)}>
+									{item.label}
+								</MenuItem>
+							))}
+						</Select>
 					</Form.Item>
 					<Form.Item name='fall' label='掉落物品'>
-						<Input placeholder='请输入掉落物品' />
+						<Input size='small' placeholder='请输入掉落物品' />
 					</Form.Item>
 				</Form>
 			</Modal>
-		</div>
+		</PageOverlay>
 	);
 };
-
-export const Component = Monster;

@@ -1,17 +1,29 @@
-import { App as AntdApp } from 'antd';
+import {
+	GlobalStyles,
+	StyledEngineProvider,
+	ThemeProvider
+} from '@mui/material';
+import { ConfirmProvider } from 'material-ui-confirm';
+import { useMemo } from 'react';
 import { Outlet } from 'react-router';
-import GlobalApp from './redux';
-import { ThemeProvider } from './provider';
+import { useStore } from '@/store';
+import { createGlobalTheme } from './theme';
 
-const App = () => {
+function App() {
+	const theme = useStore((state) => state.root.theme);
+	const globalTheme = useMemo(() => createGlobalTheme(theme), [theme]);
+
 	return (
-		<ThemeProvider>
-			<AntdApp>
-				<GlobalApp />
-				<Outlet />
-			</AntdApp>
-		</ThemeProvider>
+		// enableCssLayer emotion
+		<StyledEngineProvider enableCssLayer={false}>
+			<GlobalStyles styles='@layer theme, base, mui, components, utilities;' />
+			<ThemeProvider theme={globalTheme}>
+				<ConfirmProvider>
+					<Outlet />
+				</ConfirmProvider>
+			</ThemeProvider>
+		</StyledEngineProvider>
 	);
-};
+}
 
 export default App;

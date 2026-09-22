@@ -1,136 +1,159 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Button, Form, Input, Modal, Space, Table } from 'antd';
-import type { TableProps } from 'antd';
-import { EyeOutlined, SearchOutlined } from '@ant-design/icons';
-import { getReportById, getReportList } from '@/service';
+import {
+	useEffect,
+	useState } from 'react';
+import {
+	Button,
+	IconButton,
+	Stack,
+	Table as MuiTable,
+	TableBody,
+	TableCell,
+	TableContainer,
+	TableHead,
+	TableRow,
+	Typography
+} from '@mui/material';
+import { useFormik,
+	type FormikValues } from 'formik';
+import {
+	EyeRegular,
+	SearchRegular
+} from '@fluentui/react-icons';
+import {
+	Form,
+	getColumnData,
+	PageOverlay,
+	Input,
+	Modal,
+	Table
+} from '@/plugins';
+import { useTable } from '@/core';
+import { getReportById } from '@/service';
 
-const Report = () => {
-	const [visible, setVisible] = useState(false);
-	const [goods, setGoods] = useState<any[]>([]);
-	const [dataSource, setDataSource] = useState<any[]>([]);
-	const [loading, setLoading] = useState(false);
-	const [pageNum, setPageNum] = useState(1);
-	const [pageSize, setPageSize] = useState(10);
-	const [total, setTotal] = useState(0);
-	const [searchForm] = Form.useForm();
+export const Component = () => {
+	const [isOpen, setIsOpen] = useState(false);
+	const [goods, setGoods] = useState<AnyObject[]>([]);
 
-	const getData = useCallback(
-		(params: object = {}) => {
-			setLoading(true);
-			getReportList({ pageNum, pageSize, ...params }).then((result) => {
-				setLoading(false);
-				setTotal(result.data?.total ?? 0);
-				setDataSource(result.data?.data ?? []);
-			});
+	const { tableProps, getData } = useTable('/shop/report/list');
+
+	const search = useFormik<FormikValues>({
+		initialValues: { nickName: '' },
+		onSubmit(values) {
+			getData(values);
 		},
-		[pageNum, pageSize]
-	);
-
-	useEffect(() => {
-		getData();
-	}, [getData]);
-
-	const onSearch = (values: any) => {
-		getData({
-			nickName: values.nickName || undefined
-		});
-	};
-
-	const onReset = () => {
-		searchForm.resetFields();
-		getData();
-	};
+		onReset() {
+			getData();
+		}
+	});
 
 	const onDetail = (id: string | number) => {
 		getReportById(id).then((result) => {
 			setGoods(result.data?.goods ?? []);
-			setVisible(true);
+			setIsOpen(true);
 		});
 	};
 
 	const onClose = () => {
-		setVisible(false);
+		setIsOpen(false);
 		setGoods([]);
 	};
 
-	const columns: TableProps<any>['columns'] = [
-		{ title: '报表编号', dataIndex: 'id' },
-		{ title: '用户昵称', dataIndex: 'nickName' },
-		{ title: '导出次数', dataIndex: 'count' },
-		{ title: '导出时间', dataIndex: 'exportTime' },
-		{
-			title: '操作',
-			width: 90,
-			render: (_, record) => (
-				<Button
-					type='link'
-					size='small'
-					icon={<EyeOutlined />}
-					onClick={() => onDetail(record.id)}
-				>
-					详情
-				</Button>
-			)
-		}
-	];
-
-	const detailColumns: TableProps<any>['columns'] = [
-		{ title: '商品编码', dataIndex: 'goodsCode' },
-		{ title: '商品名称', dataIndex: 'goodsName' },
-		{ title: '材质', dataIndex: 'materialName' },
-		{ title: '零售价', dataIndex: 'goodsRetailPrice' },
-		{ title: '条码', dataIndex: 'goodsBarcode' }
-	];
+	useEffect(() => {
+		getData();
+	}, []);
 
 	return (
-		<div className='w-full h-full flex flex-col'>
-			<div className='flex justify-between mb-4'>
-				<Form layout='inline' form={searchForm} onFinish={onSearch}>
+		<PageOverlay>
+			<div className='flex items-center justify-between'>
+				<Form layout='inline' formik={search}>
 					<Form.Item name='nickName' label='用户昵称'>
-						<Input placeholder='请输入用户昵称' />
+						<Input size='small' placeholder='请输入用户昵称' />
 					</Form.Item>
 					<Form.Item>
-						<Space>
-							<Button type='primary' htmlType='submit' icon={<SearchOutlined />}>
+						<Stack direction='row' spacing={2}>
+							<Button variant='contained' type='submit' startIcon={<SearchRegular />}>
 								查询
 							</Button>
-							<Button onClick={onReset}>重置</Button>
-						</Space>
+							<Button variant='outlined' type='reset'>
+								重置
+							</Button>
+						</Stack>
 					</Form.Item>
 				</Form>
 			</div>
 			<Table
-				rootClassName='table-fill'
-				size='small'
-				rowKey='id'
-				loading={loading}
-				dataSource={dataSource}
-				columns={columns}
-				scroll={{ y: '100%' }}
-				pagination={{
-					current: pageNum,
-					pageSize,
-					total,
-					showSizeChanger: true,
-					showQuickJumper: true,
-					showTotal: (t) => `共 ${t} 条`,
-					onChange: (page, size) => {
-						setPageNum(page);
-						setPageSize(size);
+				{...tableProps}
+				columns={getColumnData([
+					{
+						field: 'id',
+						headerName: '报表编号'
+					},
+					{
+						field: 'nickName',
+						headerName: '用户昵称'
+					},
+					{
+						field: 'count',
+						headerName: '导出次数'
+					},
+					{
+						field: 'exportTime',
+						headerName: '导出时间'
+					},
+					{
+						field: 'action',
+						headerName: '操作',
+						flex: 0,
+						width: 90,
+						renderCell({ row }) {
+							return (
+								<IconButton
+									color='primary'
+									size='small'
+									title='详情'
+									onClick={() => onDetail(row.id)}
+								>
+									<EyeRegular />
+								</IconButton>
+							);
+						}
 					}
-				}}
+				])}
 			/>
-			<Modal title='报表详情' open={visible} onCancel={onClose} footer={null}>
-				<Table
-					rowKey='id'
-					size='small'
-					dataSource={goods}
-					columns={detailColumns}
-					pagination={false}
-				/>
+			<Modal title='报表详情' open={isOpen} onClose={onClose} footer={false}>
+				<TableContainer>
+					<MuiTable size='small'>
+						<TableHead>
+							<TableRow>
+								<TableCell sx={{ fontWeight: 600 }}>商品编码</TableCell>
+								<TableCell sx={{ fontWeight: 600 }}>商品名称</TableCell>
+								<TableCell sx={{ fontWeight: 600 }}>材质</TableCell>
+								<TableCell sx={{ fontWeight: 600 }}>零售价</TableCell>
+								<TableCell sx={{ fontWeight: 600 }}>条码</TableCell>
+							</TableRow>
+						</TableHead>
+						<TableBody>
+							{goods.length > 0 ? (
+								goods.map((item) => (
+									<TableRow key={item.id}>
+										<TableCell>{item.goodsCode}</TableCell>
+										<TableCell>{item.goodsName}</TableCell>
+										<TableCell>{item.materialName}</TableCell>
+										<TableCell>{item.goodsRetailPrice}</TableCell>
+										<TableCell>{item.goodsBarcode}</TableCell>
+									</TableRow>
+								))
+							) : (
+								<TableRow>
+									<TableCell colSpan={5} align='center'>
+										<Typography variant='body2'>暂无数据</Typography>
+									</TableCell>
+								</TableRow>
+							)}
+						</TableBody>
+					</MuiTable>
+				</TableContainer>
 			</Modal>
-		</div>
+		</PageOverlay>
 	);
 };
-
-export const Component = Report;

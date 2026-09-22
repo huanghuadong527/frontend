@@ -1,70 +1,67 @@
-import { Key, useCallback, useEffect, useState } from 'react';
-import { Button, Form, Input, Modal, Popconfirm, Radio, Space, Table, Tag } from 'antd';
-import { message } from '@/redux';
-import type { TableProps } from 'antd';
-import { DeleteOutlined, EditOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
-import { FORM_LAYOUT } from '@/core';
-import { addMaterial, deleteMaterial, getMaterialById, getMaterialList, updateMaterial } from '@/service';
+import * as Yup from 'yup';
+import {
+	useEffect,
+	useState } from 'react';
+import { Button,
+	Chip,
+	IconButton,
+	RadioGroup,
+	Stack } from '@mui/material';
+import type { GridRowId } from '@mui/x-data-grid';
+import { useFormik,
+	type FormikValues } from 'formik';
+import {
+	AddRegular,
+	EditRegular,
+	DeleteRegular,
+	SearchRegular
+} from '@fluentui/react-icons';
+import {
+	Form,
+	getColumnData,
+	PageOverlay,
+	Input,
+	Modal,
+	Radio,
+	Table,
+	confirm,
+	message
+} from '@/plugins';
+import { useTable } from '@/core';
+import {
+	addMaterial,
+	deleteMaterial,
+	getMaterialById,
+	updateMaterial
+} from '@/service';
 
-const Material = () => {
-	const [visible, setVisible] = useState(false);
+export const Component = () => {
+	const [isOpen, setIsOpen] = useState(false);
 	const [editId, setEditId] = useState<string | number>('');
-	const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([]);
-	const [dataSource, setDataSource] = useState<any[]>([]);
-	const [loading, setLoading] = useState(false);
-	const [pageNum, setPageNum] = useState(1);
-	const [pageSize, setPageSize] = useState(10);
-	const [total, setTotal] = useState(0);
-	const [searchForm] = Form.useForm();
-	const [form] = Form.useForm();
+	const [selectKeys, setSelectKeys] = useState<GridRowId[]>([]);
 
-	const getData = useCallback(
-		(params: object = {}) => {
-			setLoading(true);
-			getMaterialList({ pageNum, pageSize, ...params }).then((result) => {
-				setLoading(false);
-				setTotal(result.data?.total ?? 0);
-				setDataSource(result.data?.data ?? []);
-			});
+	const { tableProps, getData } = useTable('/shop/material/list');
+
+	const search = useFormik<FormikValues>({
+		initialValues: { materialName: '' },
+		onSubmit(values) {
+			getData(values);
 		},
-		[pageNum, pageSize]
-	);
-
-	useEffect(() => {
-		getData();
-	}, [getData]);
-
-	const onSearch = (values: any) => {
-		getData({
-			materialName: values.materialName || undefined
-		});
-	};
-
-	const onReset = () => {
-		searchForm.resetFields();
-		getData();
-	};
-
-	const onEdit = (id?: string | number) => {
-		if (id) {
-			setEditId(id);
-			getMaterialById(id).then((result) => {
-				const record = result.data;
-				form.setFieldsValue({
-					...record,
-					status: String(record.status ?? '0')
-				});
-				setVisible(true);
-			});
-		} else {
-			setEditId('');
-			form.resetFields();
-			setVisible(true);
+		onReset() {
+			getData();
 		}
-	};
+	});
 
-	const onSave = () => {
-		form.validateFields().then((values) => {
+	const formik = useFormik<FormikValues>({
+		initialValues: {
+			materialName: '',
+			materialUrl: '',
+			status: '0'
+		},
+		validationSchema: Yup.object().shape({
+			materialName: Yup.string().required('请输入材质名称')
+		}),
+		onSubmit(values) {
 			if (editId) {
 				updateMaterial({ ...values, id: editId }).then(() => {
 					message.success('修改成功');
@@ -78,140 +75,194 @@ const Material = () => {
 					getData();
 				});
 			}
-		});
+		}
+	});
+
+	const onEdit = (id?: string | number) => {
+		if (id) {
+			setEditId(id);
+			getMaterialById(id).then((result) => {
+				const record = result.data;
+				formik.resetForm();
+				formik.setValues({
+					materialName: record.materialName,
+					materialUrl: record.materialUrl,
+					status: String(record.status ?? '0')
+				});
+				setIsOpen(true);
+			});
+		} else {
+			setEditId('');
+			formik.resetForm();
+			setIsOpen(true);
+		}
+	};
+
+	const onSave = () => {
+		formik.handleSubmit();
 	};
 
 	const onCancel = () => {
-		setVisible(false);
+		setIsOpen(false);
 		setEditId('');
-		form.resetFields();
+		formik.resetForm();
 	};
 
 	const onDelete = (id: string | number) => {
-		deleteMaterial(id).then(() => {
-			message.success('删除成功');
-			getData();
+		confirm({
+			type: 'warning',
+			title: '系统提示',
+			content: '是否确认删除该材质?',
+			onOk() {
+				deleteMaterial(id).then(() => {
+					message.success('删除成功');
+					getData();
+				});
+			}
 		});
 	};
 
 	const onBatchDelete = () => {
-		if (selectedRowKeys.length === 0) {
+		if (selectKeys.length == 0) {
 			message.warning('请选择要删除的材质');
 			return;
 		}
-		Promise.all(selectedRowKeys.map((id) => deleteMaterial(id as string | number))).then(() => {
-			message.success('删除成功');
-			setSelectedRowKeys([]);
-			getData();
+		confirm({
+			type: 'warning',
+			title: '系统提示',
+			content: `是否确认删除选中的 ${selectKeys.length} 项数据?`,
+			onOk() {
+				Promise.all(selectKeys.map((id) => deleteMaterial(id))).then(() => {
+					message.success('删除成功');
+					setSelectKeys([]);
+					getData();
+				});
+			}
 		});
 	};
 
-	const columns: TableProps<any>['columns'] = [
-		{ title: '材质编号', dataIndex: 'id' },
-		{ title: '材质名称', dataIndex: 'materialName' },
-		{ title: '材质贴图', dataIndex: 'materialUrl' },
-		{
-			title: '状态',
-			dataIndex: 'status',
-			render: (value) => (
-				<Tag color={value == 0 ? 'success' : 'error'}>{value == 0 ? '正常' : '停用'}</Tag>
-			)
-		},
-		{ title: '创建时间', dataIndex: 'createTime' },
-		{
-			title: '操作',
-			width: 120,
-			render: (_, record) => (
-				<Space>
-					<Button
-						type='link'
-						size='small'
-						icon={<EditOutlined />}
-						onClick={() => onEdit(record.id)}
-					>
-						编辑
-					</Button>
-					<Popconfirm title='是否确认删除?' onConfirm={() => onDelete(record.id)}>
-						<Button type='link' size='small' danger icon={<DeleteOutlined />}>
-							删除
-						</Button>
-					</Popconfirm>
-				</Space>
-			)
-		}
-	];
+	useEffect(() => {
+		getData();
+	}, []);
 
 	return (
-		<div className='w-full h-full flex flex-col'>
-			<div className='flex justify-between mb-4'>
-				<Form layout='inline' form={searchForm} onFinish={onSearch}>
+		<PageOverlay>
+			<div className='flex items-center justify-between'>
+				<Form layout='inline' formik={search}>
 					<Form.Item name='materialName' label='材质名称'>
-						<Input placeholder='请输入材质名称' />
+						<Input size='small' placeholder='请输入材质名称' />
 					</Form.Item>
 					<Form.Item>
-						<Space>
-							<Button type='primary' htmlType='submit' icon={<SearchOutlined />}>
+						<Stack direction='row' spacing={2}>
+							<Button variant='contained' type='submit' startIcon={<SearchRegular />}>
 								查询
 							</Button>
-							<Button onClick={onReset}>重置</Button>
-						</Space>
+							<Button variant='outlined' type='reset'>
+								重置
+							</Button>
+						</Stack>
 					</Form.Item>
 				</Form>
-				<Space>
-					<Button type='primary' icon={<PlusOutlined />} onClick={() => onEdit()}>
+				<Stack direction='row' spacing={2}>
+					<Button variant='contained' startIcon={<AddRegular />} onClick={() => onEdit()}>
 						新建
 					</Button>
-					<Popconfirm title='是否确认删除?' onConfirm={onBatchDelete}>
-						<Button danger icon={<DeleteOutlined />} disabled={selectedRowKeys.length === 0}>
-							批量删除
-						</Button>
-					</Popconfirm>
-				</Space>
+					<Button
+						color='error'
+						variant='contained'
+						startIcon={<DeleteRegular />}
+						disabled={selectKeys.length == 0}
+						onClick={onBatchDelete}
+					>
+						批量删除
+					</Button>
+				</Stack>
 			</div>
 			<Table
-				rootClassName='table-fill'
-				size='small'
-				rowKey='id'
-				loading={loading}
-				dataSource={dataSource}
-				columns={columns}
-				scroll={{ y: '100%' }}
-				rowSelection={{ selectedRowKeys, onChange: (keys) => setSelectedRowKeys(keys) }}
-				pagination={{
-					current: pageNum,
-					pageSize,
-					total,
-					showSizeChanger: true,
-					showQuickJumper: true,
-					showTotal: (t) => `共 ${t} 条`,
-					onChange: (page, size) => {
-						setPageNum(page);
-						setPageSize(size);
+				{...tableProps}
+				checkboxSelection
+				onRowSelectionModelChange={(model) => setSelectKeys(Array.from(model.ids))}
+				columns={getColumnData([
+					{
+						field: 'id',
+						headerName: '材质编号'
+					},
+					{
+						field: 'materialName',
+						headerName: '材质名称'
+					},
+					{
+						field: 'materialUrl',
+						headerName: '材质贴图'
+					},
+					{
+						field: 'status',
+						headerName: '状态',
+						renderCell({ value }) {
+							return (
+								<Chip
+									size='small'
+									color={value == 0 ? 'success' : 'error'}
+									label={value == 0 ? '正常' : '停用'}
+								/>
+							);
+						}
+					},
+					{
+						field: 'createTime',
+						headerName: '创建时间'
+					},
+					{
+						field: 'action',
+						headerName: '操作',
+						flex: 0,
+						width: 100,
+						renderCell({ row }) {
+							return (
+								<>
+									<IconButton
+										color='primary'
+										size='small'
+										title='编辑'
+										onClick={() => onEdit(row.id)}
+									>
+										<EditRegular />
+									</IconButton>
+									<IconButton
+										color='error'
+										size='small'
+										title='删除'
+										onClick={() => onDelete(row.id)}
+									>
+										<DeleteRegular />
+									</IconButton>
+								</>
+							);
+						}
 					}
-				}}
+				])}
 			/>
-			<Modal title={editId ? '编辑材质' : '新增材质'} open={visible} onOk={onSave} onCancel={onCancel}>
-				<Form {...FORM_LAYOUT} form={form}>
-					<Form.Item
-						name='materialName'
-						label='材质名称'
-						rules={[{ required: true, message: '请输入材质名称' }]}
-					>
-						<Input placeholder='请输入材质名称' />
+			<Modal
+				title={editId ? '编辑材质' : '新增材质'}
+				open={isOpen}
+				onOk={onSave}
+				onClose={onCancel}
+			>
+				<Form labelCol={{ flex: '0 0 100px' }} formik={formik}>
+					<Form.Item required name='materialName' label='材质名称'>
+						<Input size='small' placeholder='请输入材质名称' />
 					</Form.Item>
 					<Form.Item name='materialUrl' label='材质贴图'>
-						<Input placeholder='请输入材质贴图地址' />
+						<Input size='small' placeholder='请输入材质贴图地址' />
 					</Form.Item>
 					<Form.Item name='status' label='状态'>
-						<Radio.Group>
-							<Radio value='0'>正常</Radio>
-							<Radio value='1'>停用</Radio>
-						</Radio.Group>
+						<RadioGroup row>
+							<Radio value='0' label='正常' />
+							<Radio value='1' label='停用' />
+						</RadioGroup>
 					</Form.Item>
 				</Form>
 			</Modal>
-		</div>
+		</PageOverlay>
 	);
 };
-
-export const Component = Material;

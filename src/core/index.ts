@@ -1,13 +1,3 @@
 export * from './config';
-
-// Echarts图表配置
-export * from './options/command-statistics';
-export * from './options/memory-information';
-
-// 高阶组件
-export * from './hooks/useCommon';
-export * from './hooks/useDictionary';
-export * from './hooks/useEcharts';
-
-export * from './utils';
-
+export * from './hooks';
+export * from './icons';

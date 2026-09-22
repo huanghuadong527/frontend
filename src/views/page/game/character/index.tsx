@@ -1,138 +1,149 @@
-import { Key, useCallback, useEffect, useState } from 'react';
-import { Button, Form, Input, Modal, Popconfirm, Radio, Select, Space, Table, Tag, Upload } from 'antd';
-import { message } from '@/redux';
-import type { TableProps, UploadProps } from 'antd';
+import * as Yup from 'yup';
+import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import {
-	DeleteOutlined,
-	EditOutlined,
-	PlusOutlined,
-	SearchOutlined,
-	UploadOutlined
-} from '@ant-design/icons';
-import { FORM_LAYOUT } from '@/core';
+	Button,
+	Dialog,
+	IconButton,
+	MenuItem,
+	RadioGroup,
+	Stack,
+	Typography
+} from '@mui/material';
+import type { GridRowId } from '@mui/x-data-grid';
+import { useFormik, type FormikValues } from 'formik';
+import {
+	AddRegular,
+	ArrowDownloadRegular,
+	EditRegular,
+	DeleteRegular,
+	SearchRegular,
+	CloudArrowUpRegular
+} from '@fluentui/react-icons';
+import {
+	Autocomplete,
+	Form,
+	getColumnData,
+	PageOverlay,
+	Input,
+	Modal,
+	Radio,
+	Select,
+	Table,
+	Upload,
+	confirm,
+	message
+} from '@/plugins';
+import { API_UPLOAD, useTable } from '@/core';
 import {
 	addCharacter,
 	deleteCharacter,
 	downloadFile,
 	getCharacterById,
-	getCharacterList,
 	updateCharacter,
 	uploadFile
 } from '@/service';
 import { getFileName } from '@/utils';
 
 const ROLE_OPTIONS = [
-	{ label: '男武侠', value: '男武侠' },
-	{ label: '女武侠', value: '女武侠' },
-	{ label: '男法师', value: '男法师' },
-	{ label: '女法师', value: '女法师' },
-	{ label: '男妖兽', value: '男妖兽' },
-	{ label: '女妖兽', value: '女妖兽' },
-	{ label: '男羽芒', value: '男羽芒' },
-	{ label: '女羽芒', value: '女羽芒' },
-	{ label: '男羽毛', value: '男羽毛' },
-	{ label: '女羽毛', value: '女羽毛' },
-	{ label: '女妖精', value: '女妖精' }
+	'男武侠',
+	'女武侠',
+	'男法师',
+	'女法师',
+	'男妖兽',
+	'女妖兽',
+	'男羽芒',
+	'女羽芒',
+	'男羽毛',
+	'女羽毛',
+	'女妖精'
 ];
 
-const Character = () => {
-	const [visible, setVisible] = useState(false);
-	const [editId, setEditId] = useState<string | number>('');
-	const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([]);
-	const [dataSource, setDataSource] = useState<any[]>([]);
-	const [loading, setLoading] = useState(false);
-	const [pageNum, setPageNum] = useState(1);
-	const [pageSize, setPageSize] = useState(10);
-	const [total, setTotal] = useState(0);
-	const [fileList, setFileList] = useState<any[]>([]);
-	const [searchForm] = Form.useForm();
-	const [form] = Form.useForm();
+const renderYesNo = (value: unknown) => (value == 1 ? '是' : '否');
 
-	const getData = useCallback(
-		(params: object = {}) => {
-			setLoading(true);
-			getCharacterList({ pageNum, pageSize, ...params }).then((result) => {
-				setLoading(false);
-				setTotal(result.data?.total ?? 0);
-				setDataSource(result.data?.data ?? []);
-			});
-		},
-		[pageNum, pageSize]
+const getImageUrl = (value: unknown) => {
+	const src = String(value);
+	return src.startsWith('http') ? src : API_UPLOAD + src;
+};
+
+const renderImage = (value: unknown, onClick?: () => void) => {
+	if (!value) return '--';
+	return (
+		<Stack
+			className='h-full'
+			sx={{
+				justifyContent: 'center',
+				alignItems: 'center'
+			}}
+		>
+			<img
+				src={getImageUrl(value)}
+				alt=''
+				onClick={onClick}
+				style={{
+					width: 28,
+					height: 28,
+					objectFit: 'cover',
+					borderRadius: 4,
+					cursor: 'pointer'
+				}}
+			/>
+		</Stack>
 	);
+};
 
-	useEffect(() => {
-		getData();
-	}, [getData]);
+export const Component = () => {
+	const fileRef = useRef<HTMLInputElement>(null);
+	const [isOpen, setIsOpen] = useState(false);
+	const [editId, setEditId] = useState<string | number>('');
+	const [selectKeys, setSelectKeys] = useState<GridRowId[]>([]);
+	const [fileName, setFileName] = useState('');
+	const [previewUrl, setPreviewUrl] = useState('');
 
-	const onSearch = (values: any) => {
-		getData({
-			name: values.name || undefined,
-			sharer: values.sharer || undefined
-		});
-	};
+	const { tableProps, getData } = useTable('/game/wm/character/list');
 
-	const onReset = () => {
-		searchForm.resetFields();
-		getData();
-	};
-
-	const uploadProps: UploadProps = {
-		name: 'file',
-		maxCount: 1,
-		fileList,
-		onRemove: () => {
-			form.setFieldValue('downloadUrl', null);
-			setFileList([]);
+	const search = useFormik<FormikValues>({
+		initialValues: { name: '', sharer: '' },
+		onSubmit(values) {
+			getData({
+				name: values.name || undefined,
+				sharer: values.sharer || undefined
+			});
 		},
-		customRequest: ({ file }: any) => {
-			const formData = new FormData();
-			formData.append('file', file);
-			setFileList([{ ...file, status: 'uploading' }]);
-			uploadFile(formData).then((result) => {
-				form.setFieldValue('downloadUrl', result.data);
-				setFileList([{ ...file, status: 'done', name: file.name }]);
-			});
+		onReset() {
+			getData();
 		}
-	};
+	});
 
-	const onEdit = (id?: string | number) => {
-		if (id) {
-			setEditId(id);
-			getCharacterById(id).then((result) => {
-				const record = result.data;
-				form.setFieldsValue({
-					...record,
-					roles: record.roles ? record.roles.split(',') : [],
-					tags: record.tags ? record.tags.split(',') : []
-				});
-				if (record.downloadUrl) {
-					setFileList([
-						{
-							uid: record.id,
-							name: getFileName(record.downloadUrl) || '下载文件',
-							status: 'done'
-						}
-					]);
-				} else {
-					setFileList([]);
-				}
-				setVisible(true);
-			});
-		} else {
-			setEditId('');
-			form.resetFields();
-			form.setFieldsValue({ isTop: 0, isVisible: 1 });
-			setFileList([]);
-			setVisible(true);
-		}
-	};
-
-	const onSave = () => {
-		form.validateFields().then((values) => {
+	const formik = useFormik<FormikValues>({
+		initialValues: {
+			name: '',
+			roles: [],
+			tags: [],
+			sharer: '',
+			isTop: '0',
+			isVisible: '1',
+			isRecommend: '0',
+			downloadUrl: '',
+			url: '',
+			sort: ''
+		},
+		validationSchema: Yup.object().shape({
+			name: Yup.string().required('请输入代码名称')
+		}),
+		onSubmit(values) {
 			const params = {
-				...values,
-				roles: Array.isArray(values.roles) ? values.roles.join(',') : values.roles,
-				tags: Array.isArray(values.tags) ? values.tags.join(',') : values.tags
+				name: values.name,
+				roles: Array.isArray(values.roles)
+					? values.roles.join(',')
+					: values.roles,
+				tags: Array.isArray(values.tags) ? values.tags.join(',') : values.tags,
+				sharer: values.sharer || undefined,
+				isTop: Number(values.isTop),
+				isVisible: Number(values.isVisible),
+				isRecommend: Number(values.isRecommend),
+				downloadUrl: values.downloadUrl || undefined,
+				url: values.url || undefined,
+				sort: values.sort === '' ? null : Number(values.sort)
 			};
 			if (editId) {
 				updateCharacter({ ...params, id: editId }).then(() => {
@@ -147,36 +158,96 @@ const Character = () => {
 					getData();
 				});
 			}
+		}
+	});
+
+	const onUpload = (e: ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0];
+		e.target.value = '';
+		if (!file) return;
+		const formData = new FormData();
+		formData.append('file', file);
+		uploadFile(formData).then((result) => {
+			formik.setFieldValue('downloadUrl', result.data);
+			setFileName(file.name);
 		});
 	};
 
+	const onEdit = (id?: string | number) => {
+		if (id) {
+			setEditId(id);
+			getCharacterById(id).then((result) => {
+				const record = result.data;
+				formik.resetForm();
+				formik.setValues({
+					name: record.name ?? '',
+					roles: record.roles ? record.roles.split(',') : [],
+					tags: record.tags ? record.tags.split(',') : [],
+					sharer: record.sharer ?? '',
+					isTop: record.isTop != null ? String(record.isTop) : '0',
+					isVisible: record.isVisible != null ? String(record.isVisible) : '1',
+					isRecommend:
+						record.isRecommend != null ? String(record.isRecommend) : '0',
+					downloadUrl: record.downloadUrl ?? '',
+					url: record.url ?? '',
+					sort: record.sort != null ? String(record.sort) : ''
+				});
+				setFileName(record.downloadUrl ? getFileName(record.downloadUrl) : '');
+				setIsOpen(true);
+			});
+		} else {
+			setEditId('');
+			formik.resetForm();
+			setFileName('');
+			setIsOpen(true);
+		}
+	};
+
+	const onSave = () => {
+		formik.handleSubmit();
+	};
+
 	const onCancel = () => {
-		setVisible(false);
+		setIsOpen(false);
 		setEditId('');
-		form.resetFields();
-		setFileList([]);
+		setFileName('');
+		formik.resetForm();
 	};
 
 	const onDelete = (id: string | number) => {
-		deleteCharacter(id).then(() => {
-			message.success('删除成功');
-			getData();
+		confirm({
+			type: 'warning',
+			title: '系统提示',
+			content: '是否确认删除该代码?',
+			onOk() {
+				deleteCharacter(id).then(() => {
+					message.success('删除成功');
+					getData();
+				});
+			}
 		});
 	};
 
 	const onBatchDelete = () => {
-		if (selectedRowKeys.length === 0) {
+		if (selectKeys.length == 0) {
 			message.warning('请选择要删除的代码');
 			return;
 		}
-		deleteCharacter(selectedRowKeys.join(',')).then(() => {
-			message.success('删除成功');
-			setSelectedRowKeys([]);
-			getData();
+		confirm({
+			type: 'warning',
+			title: '系统提示',
+			content: `是否确认删除选中的 ${selectKeys.length} 项数据?`,
+			onOk() {
+				deleteCharacter(selectKeys.join(',')).then(() => {
+					message.success('删除成功');
+					setSelectKeys([]);
+					getData();
+				});
+			}
 		});
 	};
 
-	const onDownload = (record: any) => {
+	const onDownload = (record: AnyObject) => {
 		downloadFile(record.downloadUrl).then((result) => {
 			const blob = result as unknown as Blob;
 			const url = URL.createObjectURL(blob);
@@ -190,158 +261,262 @@ const Character = () => {
 		});
 	};
 
-	const renderTags = (value: unknown) => {
-		if (!value) return '--';
-		const list = String(value)
-			.split(',')
-			.map((item) => item.trim())
-			.filter(Boolean);
-		if (list.length === 0) return '--';
-		return list.map((item) => <Tag key={item}>{item}</Tag>);
-	};
-
-	const renderYesNo = (value: unknown) =>
-		value == 1 ? <Tag color='green'>是</Tag> : <Tag>否</Tag>;
-
-	const columns: TableProps<any>['columns'] = [
-		{ title: '编号', dataIndex: 'id', width: 70 },
-		{ title: '代码名称', dataIndex: 'name' },
-		{ title: '可用角色', dataIndex: 'roles', render: renderTags },
-		{ title: '标签', dataIndex: 'tags', render: renderTags },
-		{ title: '分享人', dataIndex: 'sharer' },
-		{ title: '是否置顶', dataIndex: 'isTop', render: renderYesNo },
-		{ title: '是否可见', dataIndex: 'isVisible', render: renderYesNo },
-		{
-			title: '下载地址',
-			dataIndex: 'downloadUrl',
-			render: (value, record) =>
-				value ? (
-					<Button type='link' size='small' onClick={() => onDownload(record)}>
-						{getFileName(value)}
-					</Button>
-				) : (
-					'--'
-				)
-		},
-		{
-			title: '操作',
-			width: 120,
-			render: (_, record) => (
-				<Space>
-					<Button
-						type='link'
-						size='small'
-						icon={<EditOutlined />}
-						onClick={() => onEdit(record.id)}
-					>
-						编辑
-					</Button>
-					<Popconfirm title='是否确认删除?' onConfirm={() => onDelete(record.id)}>
-						<Button type='link' size='small' danger icon={<DeleteOutlined />}>
-							删除
-						</Button>
-					</Popconfirm>
-				</Space>
-			)
-		}
-	];
+	useEffect(() => {
+		getData();
+	}, []);
 
 	return (
-		<div className='w-full h-full flex flex-col'>
-			<div className='flex justify-between mb-4'>
-				<Form layout='inline' form={searchForm} onFinish={onSearch}>
+		<PageOverlay>
+			<div className='flex items-center justify-between'>
+				<Form layout='inline' formik={search}>
 					<Form.Item name='name' label='代码名称'>
-						<Input placeholder='请输入代码名称' />
+						<Input size='small' placeholder='请输入代码名称' />
 					</Form.Item>
 					<Form.Item name='sharer' label='分享人'>
-						<Input placeholder='请输入分享人' />
+						<Input size='small' placeholder='请输入分享人' />
 					</Form.Item>
 					<Form.Item>
-						<Space>
-							<Button type='primary' htmlType='submit' icon={<SearchOutlined />}>
+						<Stack direction='row' spacing={2}>
+							<Button
+								variant='contained'
+								type='submit'
+								startIcon={<SearchRegular />}
+							>
 								查询
 							</Button>
-							<Button onClick={onReset}>重置</Button>
-						</Space>
+							<Button variant='outlined' type='reset'>
+								重置
+							</Button>
+						</Stack>
 					</Form.Item>
 				</Form>
-				<Space>
-					<Button type='primary' icon={<PlusOutlined />} onClick={() => onEdit()}>
+				<Stack direction='row' spacing={2}>
+					<Button
+						variant='contained'
+						startIcon={<AddRegular />}
+						onClick={() => onEdit()}
+					>
 						新建
 					</Button>
-					<Popconfirm title='是否确认删除?' onConfirm={onBatchDelete}>
-						<Button danger icon={<DeleteOutlined />} disabled={selectedRowKeys.length === 0}>
-							批量删除
-						</Button>
-					</Popconfirm>
-				</Space>
+					<Button
+						color='error'
+						variant='contained'
+						startIcon={<DeleteRegular />}
+						disabled={selectKeys.length == 0}
+						onClick={onBatchDelete}
+					>
+						批量删除
+					</Button>
+				</Stack>
 			</div>
 			<Table
-				rootClassName='table-fill'
-				size='small'
-				rowKey='id'
-				loading={loading}
-				dataSource={dataSource}
-				columns={columns}
-				scroll={{ x: 1200, y: '100%' }}
-				rowSelection={{ selectedRowKeys, onChange: (keys) => setSelectedRowKeys(keys) }}
-				pagination={{
-					current: pageNum,
-					pageSize,
-					total,
-					showSizeChanger: true,
-					showQuickJumper: true,
-					showTotal: (t) => `共 ${t} 条`,
-					onChange: (page, size) => {
-						setPageNum(page);
-						setPageSize(size);
+				{...tableProps}
+				checkboxSelection
+				onRowSelectionModelChange={(model) =>
+					setSelectKeys(Array.from(model.ids))
+				}
+				columns={getColumnData([
+					{
+						field: 'id',
+						headerName: '编号'
+					},
+					{
+						field: 'name',
+						headerName: '代码名称'
+					},
+					{
+						field: 'sort',
+						headerName: '排序'
+					},
+					{
+						field: 'roles',
+						headerName: '可用角色'
+					},
+					{
+						field: 'tags',
+						headerName: '标签'
+					},
+					{
+						field: 'sharer',
+						headerName: '分享人'
+					},
+					{
+						field: 'isTop',
+						headerName: '是否置顶',
+						renderCell({ value }) {
+							return renderYesNo(value);
+						}
+					},
+					{
+						field: 'isVisible',
+						headerName: '是否可见',
+						renderCell({ value }) {
+							return renderYesNo(value);
+						}
+					},
+					{
+						field: 'isRecommend',
+						headerName: '是否推荐',
+						renderCell({ value }) {
+							return renderYesNo(value);
+						}
+					},
+					{
+						field: 'url',
+						headerName: '预览图片',
+						flex: 0,
+						width: 80,
+						renderCell({ value }) {
+							return renderImage(
+								value,
+								() => {
+									(document.activeElement as HTMLElement | null)?.blur();
+									setPreviewUrl(getImageUrl(value));
+								}
+							);
+						}
+					},
+					{
+						field: 'downloadUrl',
+						headerName: '下载地址',
+						flex: 1,
+						renderCell({ value, row }) {
+							if (!value) return '--';
+							return (
+								<Button
+									size='small'
+									startIcon={<ArrowDownloadRegular />}
+									onClick={() => onDownload(row)}
+								>
+									{getFileName(value)}
+								</Button>
+							);
+						}
+					},
+					{
+						field: 'action',
+						headerName: '操作',
+						flex: 0,
+						width: 100,
+						renderCell({ row }) {
+							return (
+								<>
+									<IconButton
+										color='primary'
+										size='small'
+										title='编辑'
+										onClick={() => onEdit(row.id)}
+									>
+										<EditRegular />
+									</IconButton>
+									<IconButton
+										color='error'
+										size='small'
+										title='删除'
+										onClick={() => onDelete(row.id)}
+									>
+										<DeleteRegular />
+									</IconButton>
+								</>
+							);
+						}
 					}
-				}}
+				])}
 			/>
-			<Modal title={editId ? '编辑代码' : '新增代码'} open={visible} onOk={onSave} onCancel={onCancel}>
-				<Form {...FORM_LAYOUT} form={form}>
-					<Form.Item
-						name='name'
-						label='代码名称'
-						rules={[{ required: true, message: '请输入代码名称' }]}
-					>
-						<Input placeholder='请输入代码名称' />
+			<Modal
+				title={editId ? '编辑代码' : '新增代码'}
+				open={isOpen}
+				onOk={onSave}
+				onClose={onCancel}
+			>
+				<Form labelCol={{ flex: '0 0 100px' }} formik={formik}>
+					<Form.Item required name='name' label='代码名称'>
+						<Input size='small' placeholder='请输入代码名称' />
 					</Form.Item>
 					<Form.Item name='roles' label='可用角色'>
-						<Select
-							mode='multiple'
-							placeholder='请选择可用角色'
-							options={ROLE_OPTIONS}
-							allowClear
-						/>
+						<Select multiple placeholder='请选择可用角色'>
+							{ROLE_OPTIONS.map((item) => (
+								<MenuItem key={item} value={item}>
+									{item}
+								</MenuItem>
+							))}
+						</Select>
+					</Form.Item>
+					<Form.Item name='sort' label='排序'>
+						<Input size='small' placeholder='请输入排序' />
 					</Form.Item>
 					<Form.Item name='tags' label='标签'>
-						<Select mode='tags' placeholder='请输入标签' allowClear />
+						<Autocomplete
+							multiple
+							freeSolo
+							size='small'
+							options={[]}
+							placeholder='请输入标签'
+						/>
 					</Form.Item>
 					<Form.Item name='sharer' label='分享人'>
-						<Input placeholder='请输入分享人' />
+						<Input size='small' placeholder='请输入分享人' />
 					</Form.Item>
 					<Form.Item name='isTop' label='是否置顶'>
-						<Radio.Group>
-							<Radio value={1}>是</Radio>
-							<Radio value={0}>否</Radio>
-						</Radio.Group>
+						<RadioGroup row>
+							<Radio value='1' label='是' />
+							<Radio value='0' label='否' />
+						</RadioGroup>
 					</Form.Item>
 					<Form.Item name='isVisible' label='是否可见'>
-						<Radio.Group>
-							<Radio value={1}>是</Radio>
-							<Radio value={0}>否</Radio>
-						</Radio.Group>
+						<RadioGroup row>
+							<Radio value='1' label='是' />
+							<Radio value='0' label='否' />
+						</RadioGroup>
 					</Form.Item>
-					<Form.Item name='downloadUrl' label='下载地址'>
-						<Upload {...uploadProps}>
-							<Button icon={<UploadOutlined />}>上传文件</Button>
-						</Upload>
+					<Form.Item name='isRecommend' label='是否推荐'>
+						<RadioGroup row>
+							<Radio value='1' label='是' />
+							<Radio value='0' label='否' />
+						</RadioGroup>
+					</Form.Item>
+					<Form.Item name='url' label='预览图片'>
+						<Upload />
+					</Form.Item>
+					<Form.Item label='下载地址'>
+						<Stack direction='row' spacing={1} alignItems='center'>
+							<Button
+								variant='contained'
+								startIcon={<CloudArrowUpRegular />}
+								onClick={() => fileRef.current?.click()}
+							>
+								上传文件
+							</Button>
+							<Typography variant='body2'>{fileName || '--'}</Typography>
+							<input ref={fileRef} type='file' hidden onChange={onUpload} />
+						</Stack>
 					</Form.Item>
 				</Form>
 			</Modal>
-		</div>
+			<Dialog
+				open={!!previewUrl}
+				onClose={() => setPreviewUrl('')}
+				maxWidth='md'
+				PaperProps={{
+					sx: { backgroundColor: 'transparent', boxShadow: 'none' }
+				}}
+			>
+				{previewUrl ? (
+					<img
+						src={previewUrl}
+						alt='预览大图'
+						onClick={() => setPreviewUrl('')}
+						style={{
+							maxWidth: '90vw',
+							maxHeight: '90vh',
+							objectFit: 'contain',
+							display: 'block',
+							margin: '0 auto',
+							cursor: 'zoom-out'
+						}}
+					/>
+				) : null}
+			</Dialog>
+		</PageOverlay>
 	);
 };
-
-export const Component = Character;

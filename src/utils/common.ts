@@ -8,15 +8,24 @@ export const isEmpty = (str: any) => {
 };
 
 /**
+ * 获取路径上的文件名（含格式）
+ * @param path 文件相对路径
+ * @returns
+ */
+export const getFileName = (path: string) => {
+	return path.split('/').pop() ?? '';
+};
+
+/**
  * 参数处理
  * @param params 参数
  * @returns
  */
-export const tansParams = (params: AnyObject) => {
+export const tansParams = (params: CObject) => {
 	let result = '';
 	for (const propName of Object.keys(params)) {
 		const value = params[propName];
-		const part = encodeURIComponent(propName) + '=';
+		var part = encodeURIComponent(propName) + '=';
 		if (value !== null && value !== '' && typeof value !== 'undefined') {
 			if (typeof value === 'object') {
 				for (const key of Object.keys(value)) {
@@ -25,8 +34,8 @@ export const tansParams = (params: AnyObject) => {
 						value[key] !== '' &&
 						typeof value[key] !== 'undefined'
 					) {
-						const params = propName + '[' + key + ']';
-						const subPart = encodeURIComponent(params) + '=';
+						let params = propName + '[' + key + ']';
+						var subPart = encodeURIComponent(params) + '=';
 						result += subPart + encodeURIComponent(value[key]) + '&';
 					}
 				}

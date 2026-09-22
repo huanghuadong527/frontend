@@ -1,67 +1,62 @@
-import { Key, useCallback, useEffect, useState } from 'react';
-import { Button, Form, Input, Modal, Popconfirm, Space, Table } from 'antd';
-import { message } from '@/redux';
-import type { TableProps } from 'antd';
-import { DeleteOutlined, EditOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
-import { FORM_LAYOUT } from '@/core';
-import { addTerm, deleteTerm, getTermById, getTermList, updateTerm } from '@/service';
+import * as Yup from 'yup';
+import {
+	useEffect,
+	useState } from 'react';
+import { Button,
+	IconButton,
+	Stack } from '@mui/material';
+import type { GridRowId } from '@mui/x-data-grid';
+import { useFormik,
+	type FormikValues } from 'formik';
+import {
+	AddRegular,
+	EditRegular,
+	DeleteRegular,
+	SearchRegular
+} from '@fluentui/react-icons';
+import {
+	Form,
+	getColumnData,
+	PageOverlay,
+	Input,
+	Modal,
+	Table,
+	confirm,
+	message
+} from '@/plugins';
+import { useTable } from '@/core';
+import { addTerm, deleteTerm, getTermById, updateTerm } from '@/service';
 
-const Term = () => {
-	const [visible, setVisible] = useState(false);
+export const Component = () => {
+	const [isOpen, setIsOpen] = useState(false);
 	const [editId, setEditId] = useState<string | number>('');
-	const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([]);
-	const [dataSource, setDataSource] = useState<any[]>([]);
-	const [loading, setLoading] = useState(false);
-	const [pageNum, setPageNum] = useState(1);
-	const [pageSize, setPageSize] = useState(10);
-	const [total, setTotal] = useState(0);
-	const [searchForm] = Form.useForm();
-	const [form] = Form.useForm();
+	const [selectKeys, setSelectKeys] = useState<GridRowId[]>([]);
 
-	const getData = useCallback(
-		(params: object = {}) => {
-			setLoading(true);
-			getTermList({ pageNum, pageSize, ...params }).then((result) => {
-				setLoading(false);
-				setTotal(result.data?.total ?? 0);
-				setDataSource(result.data?.data ?? []);
-			});
+	const { tableProps, getData } = useTable('/study/term/list');
+
+	const search = useFormik<FormikValues>({
+		initialValues: { name: '', type: '' },
+		onSubmit(values) {
+			getData(values);
 		},
-		[pageNum, pageSize]
-	);
-
-	useEffect(() => {
-		getData();
-	}, [getData]);
-
-	const onSearch = (values: any) => {
-		getData({
-			name: values.name || undefined,
-			type: values.type || undefined
-		});
-	};
-
-	const onReset = () => {
-		searchForm.resetFields();
-		getData();
-	};
-
-	const onEdit = (id?: string | number) => {
-		if (id) {
-			setEditId(id);
-			getTermById(id).then((result) => {
-				form.setFieldsValue(result.data);
-				setVisible(true);
-			});
-		} else {
-			setEditId('');
-			form.resetFields();
-			setVisible(true);
+		onReset() {
+			getData();
 		}
-	};
+	});
 
-	const onSave = () => {
-		form.validateFields().then((values) => {
+	const formik = useFormik<FormikValues>({
+		initialValues: {
+			name: '',
+			traditional: '',
+			type: '',
+			pinyin: '',
+			source: '',
+			definition: ''
+		},
+		validationSchema: Yup.object().shape({
+			name: Yup.string().required('请输入词语名称')
+		}),
+		onSubmit(values) {
 			if (editId) {
 				updateTerm({ ...values, id: editId }).then(() => {
 					message.success('修改成功');
@@ -75,144 +70,201 @@ const Term = () => {
 					getData();
 				});
 			}
-		});
+		}
+	});
+
+	const onEdit = (id?: string | number) => {
+		if (id) {
+			setEditId(id);
+			getTermById(id).then((result) => {
+				const record = result.data;
+				formik.resetForm();
+				formik.setValues({
+					name: record.name ?? '',
+					traditional: record.traditional ?? '',
+					type: record.type ?? '',
+					pinyin: record.pinyin ?? '',
+					source: record.source ?? '',
+					definition: record.definition ?? ''
+				});
+				setIsOpen(true);
+			});
+		} else {
+			setEditId('');
+			formik.resetForm();
+			setIsOpen(true);
+		}
+	};
+
+	const onSave = () => {
+		formik.handleSubmit();
 	};
 
 	const onCancel = () => {
-		setVisible(false);
+		setIsOpen(false);
 		setEditId('');
-		form.resetFields();
+		formik.resetForm();
 	};
 
 	const onDelete = (id: string | number) => {
-		deleteTerm(id).then(() => {
-			message.success('删除成功');
-			getData();
+		confirm({
+			type: 'warning',
+			title: '系统提示',
+			content: '是否确认删除该词语?',
+			onOk() {
+				deleteTerm(id).then(() => {
+					message.success('删除成功');
+					getData();
+				});
+			}
 		});
 	};
 
 	const onBatchDelete = () => {
-		if (selectedRowKeys.length === 0) {
+		if (selectKeys.length == 0) {
 			message.warning('请选择要删除的词语');
 			return;
 		}
-		deleteTerm(selectedRowKeys.join(',')).then(() => {
-			message.success('删除成功');
-			setSelectedRowKeys([]);
-			getData();
+		confirm({
+			type: 'warning',
+			title: '系统提示',
+			content: `是否确认删除选中的 ${selectKeys.length} 项数据?`,
+			onOk() {
+				deleteTerm(selectKeys.join(',')).then(() => {
+					message.success('删除成功');
+					setSelectKeys([]);
+					getData();
+				});
+			}
 		});
 	};
 
-	const columns: TableProps<any>['columns'] = [
-		{ title: '编号', dataIndex: 'id' },
-		{ title: '词语名称', dataIndex: 'name' },
-		{ title: '名称繁体', dataIndex: 'traditional' },
-		{ title: '类型', dataIndex: 'type' },
-		{ title: '拼音', dataIndex: 'pinyin' },
-		{ title: '出处', dataIndex: 'source' },
-		{
-			title: '操作',
-			width: 120,
-			render: (_, record) => (
-				<Space>
-					<Button
-						type='link'
-						size='small'
-						icon={<EditOutlined />}
-						onClick={() => onEdit(record.id)}
-					>
-						编辑
-					</Button>
-					<Popconfirm title='是否确认删除?' onConfirm={() => onDelete(record.id)}>
-						<Button type='link' size='small' danger icon={<DeleteOutlined />}>
-							删除
-						</Button>
-					</Popconfirm>
-				</Space>
-			)
-		}
-	];
+	useEffect(() => {
+		getData();
+	}, []);
 
 	return (
-		<div className='w-full h-full flex flex-col'>
-			<div className='flex justify-between mb-4'>
-				<Form layout='inline' form={searchForm} onFinish={onSearch}>
+		<PageOverlay>
+			<div className='flex items-center justify-between'>
+				<Form layout='inline' formik={search}>
 					<Form.Item name='name' label='词语名称'>
-						<Input placeholder='请输入词语名称' />
+						<Input size='small' placeholder='请输入词语名称' />
 					</Form.Item>
 					<Form.Item name='type' label='类型'>
-						<Input placeholder='请输入类型' />
+						<Input size='small' placeholder='请输入类型' />
 					</Form.Item>
 					<Form.Item>
-						<Space>
-							<Button type='primary' htmlType='submit' icon={<SearchOutlined />}>
+						<Stack direction='row' spacing={2}>
+							<Button variant='contained' type='submit' startIcon={<SearchRegular />}>
 								查询
 							</Button>
-							<Button onClick={onReset}>重置</Button>
-						</Space>
+							<Button variant='outlined' type='reset'>
+								重置
+							</Button>
+						</Stack>
 					</Form.Item>
 				</Form>
-				<Space>
-					<Button type='primary' icon={<PlusOutlined />} onClick={() => onEdit()}>
+				<Stack direction='row' spacing={2}>
+					<Button variant='contained' startIcon={<AddRegular />} onClick={() => onEdit()}>
 						新建
 					</Button>
-					<Popconfirm title='是否确认删除?' onConfirm={onBatchDelete}>
-						<Button danger icon={<DeleteOutlined />} disabled={selectedRowKeys.length === 0}>
-							批量删除
-						</Button>
-					</Popconfirm>
-				</Space>
+					<Button
+						color='error'
+						variant='contained'
+						startIcon={<DeleteRegular />}
+						disabled={selectKeys.length == 0}
+						onClick={onBatchDelete}
+					>
+						批量删除
+					</Button>
+				</Stack>
 			</div>
 			<Table
-				rootClassName='table-fill'
-				size='small'
-				rowKey='id'
-				loading={loading}
-				dataSource={dataSource}
-				columns={columns}
-				scroll={{ y: '100%' }}
-				rowSelection={{ selectedRowKeys, onChange: (keys) => setSelectedRowKeys(keys) }}
-				pagination={{
-					current: pageNum,
-					pageSize,
-					total,
-					showSizeChanger: true,
-					showQuickJumper: true,
-					showTotal: (t) => `共 ${t} 条`,
-					onChange: (page, size) => {
-						setPageNum(page);
-						setPageSize(size);
+				{...tableProps}
+				checkboxSelection
+				onRowSelectionModelChange={(model) => setSelectKeys(Array.from(model.ids))}
+				columns={getColumnData([
+					{
+						field: 'id',
+						headerName: '编号'
+					},
+					{
+						field: 'name',
+						headerName: '词语名称'
+					},
+					{
+						field: 'traditional',
+						headerName: '名称繁体'
+					},
+					{
+						field: 'type',
+						headerName: '类型'
+					},
+					{
+						field: 'pinyin',
+						headerName: '拼音'
+					},
+					{
+						field: 'source',
+						headerName: '出处'
+					},
+					{
+						field: 'action',
+						headerName: '操作',
+						flex: 0,
+						width: 100,
+						renderCell({ row }) {
+							return (
+								<>
+									<IconButton
+										color='primary'
+										size='small'
+										title='编辑'
+										onClick={() => onEdit(row.id)}
+									>
+										<EditRegular />
+									</IconButton>
+									<IconButton
+										color='error'
+										size='small'
+										title='删除'
+										onClick={() => onDelete(row.id)}
+									>
+										<DeleteRegular />
+									</IconButton>
+								</>
+							);
+						}
 					}
-				}}
+				])}
 			/>
-			<Modal title={editId ? '编辑词语' : '新增词语'} open={visible} onOk={onSave} onCancel={onCancel}>
-				<Form {...FORM_LAYOUT} form={form}>
-					<Form.Item
-						name='name'
-						label='词语名称'
-						rules={[{ required: true, message: '请输入词语名称' }]}
-					>
-						<Input placeholder='请输入词语名称' />
+			<Modal
+				title={editId ? '编辑词语' : '新增词语'}
+				open={isOpen}
+				onOk={onSave}
+				onClose={onCancel}
+			>
+				<Form labelCol={{ flex: '0 0 90px' }} formik={formik}>
+					<Form.Item required name='name' label='词语名称'>
+						<Input size='small' placeholder='请输入词语名称' />
 					</Form.Item>
 					<Form.Item name='traditional' label='名称繁体'>
-						<Input placeholder='请输入名称繁体' />
+						<Input size='small' placeholder='请输入名称繁体' />
 					</Form.Item>
 					<Form.Item name='type' label='类型'>
-						<Input placeholder='请输入类型' />
+						<Input size='small' placeholder='请输入类型' />
 					</Form.Item>
 					<Form.Item name='pinyin' label='拼音'>
-						<Input placeholder='请输入拼音' />
+						<Input size='small' placeholder='请输入拼音' />
 					</Form.Item>
 					<Form.Item name='source' label='出处'>
-						<Input placeholder='请输入出处' />
+						<Input size='small' placeholder='请输入出处' />
 					</Form.Item>
 					<Form.Item name='definition' label='解释'>
-						<Input.TextArea rows={4} placeholder='请输入解释' />
+						<Input.TextArea placeholder='请输入解释' />
 					</Form.Item>
 				</Form>
 			</Modal>
-		</div>
+		</PageOverlay>
 	);
 };
-
-export const Component = Term;
