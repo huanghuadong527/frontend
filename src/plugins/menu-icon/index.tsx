@@ -10,12 +10,13 @@ interface Props {
 	name: string;
 }
 
+// 后端菜单 icon 字段使用 Ant Design 图标名，这里映射到对应的 Fluent UI 图标
 const Icons: CObject = {
-	SettingsRegular,
-	ServerRegular,
-	BuildingShopRegular,
-	BookRegular,
-	WrenchRegular
+	SettingOutlined: SettingsRegular,
+	HddOutlined: ServerRegular,
+	ShopOutlined: BuildingShopRegular,
+	ReadOutlined: BookRegular,
+	BuildOutlined: WrenchRegular
 };
 
 export const MenuIcon = ({ name }: Props) => {

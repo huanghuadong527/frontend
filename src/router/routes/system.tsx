@@ -40,5 +40,9 @@ export const ROUTER_SYSTEM: RouteObject[] = [
 	{
 		path: 'logininfor',
 		lazy: () => import('@/views/page/system/logininfor')
+	},
+	{
+		path: 'wx-user',
+		lazy: () => import('@/views/page/system/wx-user')
 	}
 ];

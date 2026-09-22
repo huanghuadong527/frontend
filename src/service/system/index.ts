@@ -8,3 +8,4 @@ export * from './operlog';
 export * from './post';
 export * from './role';
 export * from './user';
+export * from './wxUser';
