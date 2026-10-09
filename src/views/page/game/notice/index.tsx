@@ -8,7 +8,10 @@ import {
 	ArrowSyncRegular,
 	EditRegular,
 	DeleteRegular,
-	SearchRegular
+	SearchRegular,
+	CheckmarkRegular,
+	ArrowUpRegular,
+	ArrowDownRegular
 } from '@fluentui/react-icons';
 import {
 	Form,
@@ -70,7 +73,8 @@ export const Component = () => {
 				publishTime: values.publishTime || undefined,
 				content: values.content || undefined,
 				url: values.url || undefined,
-				noticeId: values.noticeId || undefined
+				noticeId: values.noticeId || undefined,
+				isAudit: 1
 			};
 			if (editId) {
 				updateWmNotice({ ...params, id: editId }).then(() => {
@@ -79,7 +83,7 @@ export const Component = () => {
 					getData();
 				});
 			} else {
-				addWmNotice(params).then(() => {
+				addWmNotice({ ...params, isShelf: 1 }).then(() => {
 					message.success('新增成功');
 					onCancel();
 					getData();
@@ -161,6 +165,36 @@ export const Component = () => {
 				getData();
 			})
 			.finally(() => setSyncing(false));
+	};
+
+	const onAudit = (row: AnyObject) => {
+		confirm({
+			type: 'warning',
+			title: '审核',
+			content: '请选择审核结果',
+			confirmationText: '通过',
+			cancellationText: '拒绝',
+			onOk() {
+				updateWmNotice({ ...row, isAudit: 1 }).then(() => {
+					message.success('已通过审核');
+					getData();
+				});
+			},
+			onCancel() {
+				updateWmNotice({ ...row, isAudit: 2 }).then(() => {
+					message.success('已拒绝');
+					getData();
+				});
+			}
+		});
+	};
+
+	const onShelf = (row: AnyObject) => {
+		const next = row.isShelf == 1 ? 0 : 1;
+		updateWmNotice({ ...row, isShelf: next }).then(() => {
+			message.success(next == 1 ? '已上架' : '已下架');
+			getData();
+		});
 	};
 
 	useEffect(() => {
@@ -249,13 +283,46 @@ export const Component = () => {
 						}
 					},
 					{
+						field: 'isAudit',
+						headerName: '审核状态',
+						renderCell({ value }) {
+							if (value == 2) return '已拒绝';
+							return value == 1 ? '已通过' : '待审核';
+						}
+					},
+					{
+						field: 'isShelf',
+						headerName: '是否上架',
+						renderCell({ value }) {
+							return value == 1 ? '上架' : '下架';
+						}
+					},
+					{
 						field: 'action',
 						headerName: '操作',
 						flex: 0,
-						width: 100,
+						width: 220,
 						renderCell({ row }) {
 							return (
 								<>
+									{row.isAudit == 0 && (
+										<IconButton
+											color='primary'
+											size='small'
+											title='审核'
+											onClick={() => onAudit(row)}
+										>
+											<CheckmarkRegular />
+										</IconButton>
+									)}
+									<IconButton
+										color={row.isShelf == 1 ? 'warning' : 'success'}
+										size='small'
+										title={row.isShelf == 1 ? '下架' : '上架'}
+										onClick={() => onShelf(row)}
+									>
+										{row.isShelf == 1 ? <ArrowDownRegular /> : <ArrowUpRegular />}
+									</IconButton>
 									<IconButton
 										color='primary'
 										size='small'

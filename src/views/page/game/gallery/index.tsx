@@ -7,12 +7,14 @@ import {
 	AddRegular,
 	EditRegular,
 	DeleteRegular,
-	SearchRegular
+	SearchRegular,
+	CheckmarkRegular
 } from '@fluentui/react-icons';
 import {
 	Form,
 	getColumnData,
 	PageOverlay,
+	ImagePreview,
 	Input,
 	Modal,
 	Radio,
@@ -21,7 +23,7 @@ import {
 	confirm,
 	message
 } from '@/plugins';
-import { API_UPLOAD, useTable } from '@/core';
+import { useTable } from '@/core';
 import {
 	addGallery,
 	deleteGallery,
@@ -30,19 +32,6 @@ import {
 } from '@/service';
 
 const renderYesNo = (value: unknown) => (value == 1 ? '是' : '否');
-
-const renderImage = (value: unknown) => {
-	if (!value) return '--';
-	const src = String(value);
-	const url = src.startsWith('http') ? src : API_UPLOAD + src;
-	return (
-		<img
-			src={url}
-			alt=''
-			style={{ width: 28, height: 28, objectFit: 'cover', borderRadius: 4 }}
-		/>
-	);
-};
 
 export const Component = () => {
 	const [isOpen, setIsOpen] = useState(false);
@@ -78,7 +67,8 @@ export const Component = () => {
 				image: values.image || undefined,
 				description: values.description || undefined,
 				isOnSale: Number(values.isOnSale),
-				isRecommend: Number(values.isRecommend)
+				isRecommend: Number(values.isRecommend),
+				isAudit: 1
 			};
 			if (editId) {
 				updateGallery({ ...params, id: editId }).then(() => {
@@ -161,6 +151,28 @@ export const Component = () => {
 		});
 	};
 
+	const onAudit = (row: AnyObject) => {
+		confirm({
+			type: 'warning',
+			title: '审核',
+			content: '请选择审核结果',
+			confirmationText: '通过',
+			cancellationText: '拒绝',
+			onOk() {
+				updateGallery({ ...row, isAudit: 1 }).then(() => {
+					message.success('已通过审核');
+					getData();
+				});
+			},
+			onCancel() {
+				updateGallery({ ...row, isAudit: 2 }).then(() => {
+					message.success('已拒绝');
+					getData();
+				});
+			}
+		});
+	};
+
 	useEffect(() => {
 		getData();
 	}, []);
@@ -210,7 +222,7 @@ export const Component = () => {
 						flex: 0,
 						width: 80,
 						renderCell({ value }) {
-							return renderImage(value);
+							return <ImagePreview value={value} />;
 						}
 					},
 					{ field: 'name', headerName: '画廊名称' },
@@ -230,13 +242,31 @@ export const Component = () => {
 						}
 					},
 					{
+						field: 'isAudit',
+						headerName: '审核状态',
+						renderCell({ value }) {
+							if (value == 2) return '已拒绝';
+							return value == 1 ? '已通过' : '待审核';
+						}
+					},
+					{
 						field: 'action',
 						headerName: '操作',
 						flex: 0,
-						width: 100,
+						width: 220,
 						renderCell({ row }) {
 							return (
 								<>
+									{row.isAudit == 0 && (
+										<IconButton
+											color='primary'
+											size='small'
+											title='审核'
+											onClick={() => onAudit(row)}
+										>
+											<CheckmarkRegular />
+										</IconButton>
+									)}
 									<IconButton
 										color='primary'
 										size='small'

@@ -2,7 +2,6 @@ import * as Yup from 'yup';
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import {
 	Button,
-	Dialog,
 	IconButton,
 	MenuItem,
 	RadioGroup,
@@ -17,13 +16,15 @@ import {
 	EditRegular,
 	DeleteRegular,
 	SearchRegular,
-	CloudArrowUpRegular
+	CloudArrowUpRegular,
+	CheckmarkRegular
 } from '@fluentui/react-icons';
 import {
 	Autocomplete,
 	Form,
 	getColumnData,
 	PageOverlay,
+	ImagePreview,
 	Input,
 	Modal,
 	Radio,
@@ -33,7 +34,7 @@ import {
 	confirm,
 	message
 } from '@/plugins';
-import { API_UPLOAD, useTable } from '@/core';
+import { useTable } from '@/core';
 import {
 	addCharacter,
 	deleteCharacter,
@@ -60,44 +61,12 @@ const ROLE_OPTIONS = [
 
 const renderYesNo = (value: unknown) => (value == 1 ? '是' : '否');
 
-const getImageUrl = (value: unknown) => {
-	const src = String(value);
-	return src.startsWith('http') ? src : API_UPLOAD + src;
-};
-
-const renderImage = (value: unknown, onClick?: () => void) => {
-	if (!value) return '--';
-	return (
-		<Stack
-			className='h-full'
-			sx={{
-				justifyContent: 'center',
-				alignItems: 'center'
-			}}
-		>
-			<img
-				src={getImageUrl(value)}
-				alt=''
-				onClick={onClick}
-				style={{
-					width: 28,
-					height: 28,
-					objectFit: 'cover',
-					borderRadius: 4,
-					cursor: 'pointer'
-				}}
-			/>
-		</Stack>
-	);
-};
-
 export const Component = () => {
 	const fileRef = useRef<HTMLInputElement>(null);
 	const [isOpen, setIsOpen] = useState(false);
 	const [editId, setEditId] = useState<string | number>('');
 	const [selectKeys, setSelectKeys] = useState<GridRowId[]>([]);
 	const [fileName, setFileName] = useState('');
-	const [previewUrl, setPreviewUrl] = useState('');
 
 	const { tableProps, getData } = useTable('/game/wm/character/list');
 
@@ -123,6 +92,7 @@ export const Component = () => {
 			isTop: '0',
 			isVisible: '1',
 			isRecommend: '0',
+			isMemberOnly: '0',
 			downloadUrl: '',
 			url: '',
 			sort: ''
@@ -141,6 +111,8 @@ export const Component = () => {
 				isTop: Number(values.isTop),
 				isVisible: Number(values.isVisible),
 				isRecommend: Number(values.isRecommend),
+				isMemberOnly: Number(values.isMemberOnly),
+				isAudit: 1,
 				downloadUrl: values.downloadUrl || undefined,
 				url: values.url || undefined,
 				sort: values.sort === '' ? null : Number(values.sort)
@@ -188,6 +160,8 @@ export const Component = () => {
 					isVisible: record.isVisible != null ? String(record.isVisible) : '1',
 					isRecommend:
 						record.isRecommend != null ? String(record.isRecommend) : '0',
+					isMemberOnly:
+						record.isMemberOnly != null ? String(record.isMemberOnly) : '0',
 					downloadUrl: record.downloadUrl ?? '',
 					url: record.url ?? '',
 					sort: record.sort != null ? String(record.sort) : ''
@@ -258,6 +232,28 @@ export const Component = () => {
 			a.click();
 			document.body.removeChild(a);
 			URL.revokeObjectURL(url);
+		});
+	};
+
+	const onAudit = (row: AnyObject) => {
+		confirm({
+			type: 'warning',
+			title: '审核',
+			content: '请选择审核结果',
+			confirmationText: '通过',
+			cancellationText: '拒绝',
+			onOk() {
+				updateCharacter({ ...row, isAudit: 1 }).then(() => {
+					message.success('已通过审核');
+					getData();
+				});
+			},
+			onCancel() {
+				updateCharacter({ ...row, isAudit: 2 }).then(() => {
+					message.success('已拒绝');
+					getData();
+				});
+			}
 		});
 	};
 
@@ -362,18 +358,27 @@ export const Component = () => {
 						}
 					},
 					{
+						field: 'isMemberOnly',
+						headerName: '会员专属',
+						renderCell({ value }) {
+							return renderYesNo(value);
+						}
+					},
+					{
+						field: 'isAudit',
+						headerName: '审核状态',
+						renderCell({ value }) {
+							if (value == 2) return '已拒绝';
+							return value == 1 ? '已通过' : '待审核';
+						}
+					},
+					{
 						field: 'url',
 						headerName: '预览图片',
 						flex: 0,
 						width: 80,
 						renderCell({ value }) {
-							return renderImage(
-								value,
-								() => {
-									(document.activeElement as HTMLElement | null)?.blur();
-									setPreviewUrl(getImageUrl(value));
-								}
-							);
+							return <ImagePreview value={value} />;
 						}
 					},
 					{
@@ -397,10 +402,20 @@ export const Component = () => {
 						field: 'action',
 						headerName: '操作',
 						flex: 0,
-						width: 100,
+						width: 220,
 						renderCell({ row }) {
 							return (
 								<>
+									{row.isAudit == 0 && (
+										<IconButton
+											color='primary'
+											size='small'
+											title='审核'
+											onClick={() => onAudit(row)}
+										>
+											<CheckmarkRegular />
+										</IconButton>
+									)}
 									<IconButton
 										color='primary'
 										size='small'
@@ -475,6 +490,12 @@ export const Component = () => {
 							<Radio value='0' label='否' />
 						</RadioGroup>
 					</Form.Item>
+					<Form.Item name='isMemberOnly' label='会员专属'>
+						<RadioGroup row>
+							<Radio value='1' label='是' />
+							<Radio value='0' label='否' />
+						</RadioGroup>
+					</Form.Item>
 					<Form.Item name='url' label='预览图片'>
 						<Upload />
 					</Form.Item>
@@ -493,30 +514,6 @@ export const Component = () => {
 					</Form.Item>
 				</Form>
 			</Modal>
-			<Dialog
-				open={!!previewUrl}
-				onClose={() => setPreviewUrl('')}
-				maxWidth='md'
-				PaperProps={{
-					sx: { backgroundColor: 'transparent', boxShadow: 'none' }
-				}}
-			>
-				{previewUrl ? (
-					<img
-						src={previewUrl}
-						alt='预览大图'
-						onClick={() => setPreviewUrl('')}
-						style={{
-							maxWidth: '90vw',
-							maxHeight: '90vh',
-							objectFit: 'contain',
-							display: 'block',
-							margin: '0 auto',
-							cursor: 'zoom-out'
-						}}
-					/>
-				) : null}
-			</Dialog>
 		</PageOverlay>
 	);
 };

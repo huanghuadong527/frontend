@@ -54,12 +54,15 @@ interface UploadProps {
 	name?: string;
 	value?: string;
 	multiple?: boolean;
+	/** 单张图片大小上限(字节) */
+	maxSize?: number;
+	onChange?: (value: string) => void;
 }
 
 const getSrc = (value: string) =>
 	value.startsWith('http') ? value : API_UPLOAD + value;
 
-export const Upload = ({ name, value, multiple }: UploadProps) => {
+export const Upload = ({ name, value, multiple, maxSize, onChange }: UploadProps) => {
 	const inputRef = useRef<HTMLInputElement>(null);
 	const [loading, setLoading] = useState(false);
 	const form = useContext(FormContext);
@@ -67,9 +70,11 @@ export const Upload = ({ name, value, multiple }: UploadProps) => {
 	const urls = value ? value.split(',').filter(Boolean) : [];
 
 	const setValue = (list: string[]) => {
+		const next = multiple ? list.join(',') : (list[0] ?? '');
 		if (form.formik && name) {
-			const next = multiple ? list.join(',') : (list[0] ?? '');
 			form.formik.setFieldValue(name, next);
+		} else if (onChange) {
+			onChange(next);
 		}
 	};
 
@@ -82,6 +87,10 @@ export const Upload = ({ name, value, multiple }: UploadProps) => {
 		try {
 			const uploaded: string[] = [];
 			for (const file of files) {
+				if (maxSize && file.size > maxSize) {
+					message.error(`单张图片大小不能超过 ${Math.round(maxSize / 1024 / 1024)}MB`);
+					continue;
+				}
 				const formData = new FormData();
 				formData.append('file', file);
 				const result = await uploadImage(formData);
@@ -93,7 +102,7 @@ export const Upload = ({ name, value, multiple }: UploadProps) => {
 				uploaded.push(url);
 			}
 			if (uploaded.length) {
-				setValue([...urls, ...uploaded]);
+				setValue(multiple ? [...urls, ...uploaded] : uploaded);
 			}
 		} catch {
 			message.error('上传失败');

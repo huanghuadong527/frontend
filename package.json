@@ -34,6 +34,7 @@
     "react-router": "^7.13.0",
     "react-use": "^17.6.0",
     "tailwindcss": "^4.1.18",
+    "vditor": "^4.0.0",
     "xe-utils": "^4.0.1",
     "yup": "^1.7.1"
   },

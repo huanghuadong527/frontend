@@ -43,6 +43,18 @@ export const ROUTER_GAME: RouteObject[] = [
 			{
 				path: 'top',
 				lazy: () => import('@/views/page/game/top')
+			},
+			{
+				path: 'tutorial',
+				lazy: () => import('@/views/page/game/tutorial')
+			},
+			{
+				path: 'merchant',
+				lazy: () => import('@/views/page/game/merchant')
+			},
+			{
+				path: 'mount-pet',
+				lazy: () => import('@/views/page/game/mount-pet')
 			}
 		]
 	}

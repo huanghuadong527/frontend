@@ -8,7 +8,10 @@ import {
 	AddRegular,
 	EditRegular,
 	DeleteRegular,
-	SearchRegular
+	SearchRegular,
+	CheckmarkRegular,
+	ArrowUpRegular,
+	ArrowDownRegular
 } from '@fluentui/react-icons';
 import {
 	Form,
@@ -118,11 +121,13 @@ export const Component = () => {
 			level: '',
 			npcClaim: '',
 			npcComplete: '',
+			content: '',
 			goldCoin: '',
 			exp: '',
 			spirit: '',
 			prestige: '',
-			reward: ''
+			reward: '',
+			remark: ''
 		},
 		validationSchema: Yup.object().shape({
 			name: Yup.string().required('请输入任务名称')
@@ -137,7 +142,8 @@ export const Component = () => {
 				goldCoin: toNumber(values.goldCoin),
 				exp: toNumber(values.exp),
 				spirit: toNumber(values.spirit),
-				prestige: toNumber(values.prestige)
+				prestige: toNumber(values.prestige),
+				isAudit: 1
 			};
 			if (editId) {
 				updateTask({ ...params, id: editId }).then(() => {
@@ -147,7 +153,7 @@ export const Component = () => {
 					getParentData();
 				});
 			} else {
-				addTask(params).then(() => {
+				addTask({ ...params, isShelf: 1 }).then(() => {
 					message.success('新增成功');
 					onCancel();
 					loadData();
@@ -171,11 +177,13 @@ export const Component = () => {
 					level: record.level != null ? String(record.level) : '',
 					npcClaim: record.npcClaim ?? '',
 					npcComplete: record.npcComplete ?? '',
+					content: record.content ?? '',
 					goldCoin: record.goldCoin != null ? String(record.goldCoin) : '',
 					exp: record.exp != null ? String(record.exp) : '',
 					spirit: record.spirit != null ? String(record.spirit) : '',
 					prestige: record.prestige != null ? String(record.prestige) : '',
-					reward: record.reward ?? ''
+					reward: record.reward ?? '',
+					remark: record.remark ?? ''
 				});
 				setIsOpen(true);
 			});
@@ -228,6 +236,36 @@ export const Component = () => {
 					getParentData();
 				});
 			}
+		});
+	};
+
+	const onAudit = (row: AnyObject) => {
+		confirm({
+			type: 'warning',
+			title: '审核',
+			content: '请选择审核结果',
+			confirmationText: '通过',
+			cancellationText: '拒绝',
+			onOk() {
+				updateTask({ ...row, isAudit: 1 }).then(() => {
+					message.success('已通过审核');
+					loadData();
+				});
+			},
+			onCancel() {
+				updateTask({ ...row, isAudit: 2 }).then(() => {
+					message.success('已拒绝');
+					loadData();
+				});
+			}
+		});
+	};
+
+	const onShelf = (row: AnyObject) => {
+		const next = row.isShelf == 1 ? 0 : 1;
+		updateTask({ ...row, isShelf: next }).then(() => {
+			message.success(next == 1 ? '已上架' : '已下架');
+			loadData();
 		});
 	};
 
@@ -426,13 +464,50 @@ export const Component = () => {
 							flex: 0
 						},
 						{
+							field: 'isAudit',
+							headerName: '审核状态',
+							width: 110,
+							flex: 0,
+							renderCell({ value }) {
+								if (value == 2) return '已拒绝';
+								return value == 1 ? '已通过' : '待审核';
+							}
+						},
+						{
+							field: 'isShelf',
+							headerName: '是否上架',
+							width: 110,
+							flex: 0,
+							renderCell({ value }) {
+								return value == 1 ? '上架' : '下架';
+							}
+						},
+						{
 							field: 'action',
 							headerName: '操作',
 							flex: 0,
-							width: 100,
+							width: 220,
 							renderCell({ row }) {
 								return (
 									<>
+										{row.isAudit == 0 && (
+											<IconButton
+												color='primary'
+												size='small'
+												title='审核'
+												onClick={() => onAudit(row)}
+											>
+												<CheckmarkRegular />
+											</IconButton>
+										)}
+										<IconButton
+											color={row.isShelf == 1 ? 'warning' : 'success'}
+											size='small'
+											title={row.isShelf == 1 ? '下架' : '上架'}
+											onClick={() => onShelf(row)}
+										>
+											{row.isShelf == 1 ? <ArrowDownRegular /> : <ArrowUpRegular />}
+										</IconButton>
 										<IconButton
 											color='primary'
 											size='small'
@@ -484,6 +559,9 @@ export const Component = () => {
 					<Form.Item name='npcComplete' label='完成NPC'>
 						<Input size='small' placeholder='请输入完成NPC' />
 					</Form.Item>
+					<Form.Item name='content' label='任务内容'>
+						<Input.TextArea minRows={3} placeholder='请输入任务内容' />
+					</Form.Item>
 					<Form.Item name='goldCoin' label='金币'>
 						<Input size='small' placeholder='请输入金币' />
 					</Form.Item>
@@ -498,6 +576,9 @@ export const Component = () => {
 					</Form.Item>
 					<Form.Item name='reward' label='奖励'>
 						<Input size='small' placeholder='请输入奖励' />
+					</Form.Item>
+					<Form.Item name='remark' label='备注'>
+						<Input.TextArea placeholder='请输入备注' />
 					</Form.Item>
 				</Form>
 			</Modal>

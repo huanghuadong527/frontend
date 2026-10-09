@@ -7,7 +7,10 @@ import {
 	AddRegular,
 	EditRegular,
 	DeleteRegular,
-	SearchRegular
+	SearchRegular,
+	CheckmarkRegular,
+	ArrowUpRegular,
+	ArrowDownRegular
 } from '@fluentui/react-icons';
 import {
 	Form,
@@ -87,7 +90,8 @@ export const Component = () => {
 				grade: values.grade === '' ? null : Number(values.grade),
 				level: values.level === '' ? null : Number(values.level),
 				price: values.price === '' ? null : Number(values.price),
-				setCount: values.setCount === '' ? null : Number(values.setCount)
+				setCount: values.setCount === '' ? null : Number(values.setCount),
+				isAudit: 1
 			};
 			if (editId) {
 				updateEquipment({ ...params, id: editId }).then(() => {
@@ -96,7 +100,7 @@ export const Component = () => {
 					getData();
 				});
 			} else {
-				addEquipment(params).then(() => {
+				addEquipment({ ...params, isShelf: 1 }).then(() => {
 					message.success('新增成功');
 					onCancel();
 					getData();
@@ -181,6 +185,36 @@ export const Component = () => {
 		});
 	};
 
+	const onAudit = (row: AnyObject) => {
+		confirm({
+			type: 'warning',
+			title: '审核',
+			content: '请选择审核结果',
+			confirmationText: '通过',
+			cancellationText: '拒绝',
+			onOk() {
+				updateEquipment({ ...row, isAudit: 1 }).then(() => {
+					message.success('已通过审核');
+					getData();
+				});
+			},
+			onCancel() {
+				updateEquipment({ ...row, isAudit: 2 }).then(() => {
+					message.success('已拒绝');
+					getData();
+				});
+			}
+		});
+	};
+
+	const onShelf = (row: AnyObject) => {
+		const next = row.isShelf == 1 ? 0 : 1;
+		updateEquipment({ ...row, isShelf: next }).then(() => {
+			message.success(next == 1 ? '已上架' : '已下架');
+			getData();
+		});
+	};
+
 	useEffect(() => {
 		getData();
 	}, []);
@@ -247,13 +281,46 @@ export const Component = () => {
 					{ field: 'className', headerName: '职业限制' },
 					{ field: 'setName', headerName: '套装名称', flex: 1 },
 					{
+						field: 'isAudit',
+						headerName: '审核状态',
+						renderCell({ value }) {
+							if (value == 2) return '已拒绝';
+							return value == 1 ? '已通过' : '待审核';
+						}
+					},
+					{
+						field: 'isShelf',
+						headerName: '是否上架',
+						renderCell({ value }) {
+							return value == 1 ? '上架' : '下架';
+						}
+					},
+					{
 						field: 'action',
 						headerName: '操作',
 						flex: 0,
-						width: 100,
+						width: 220,
 						renderCell({ row }) {
 							return (
 								<>
+									{row.isAudit == 0 && (
+										<IconButton
+											color='primary'
+											size='small'
+											title='审核'
+											onClick={() => onAudit(row)}
+										>
+											<CheckmarkRegular />
+										</IconButton>
+									)}
+									<IconButton
+										color={row.isShelf == 1 ? 'warning' : 'success'}
+										size='small'
+										title={row.isShelf == 1 ? '下架' : '上架'}
+										onClick={() => onShelf(row)}
+									>
+										{row.isShelf == 1 ? <ArrowDownRegular /> : <ArrowUpRegular />}
+									</IconButton>
 									<IconButton
 										color='primary'
 										size='small'

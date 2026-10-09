@@ -7,7 +7,8 @@ import {
 	AddRegular,
 	EditRegular,
 	DeleteRegular,
-	SearchRegular
+	SearchRegular,
+	CheckmarkRegular
 } from '@fluentui/react-icons';
 import {
 	Form,
@@ -70,7 +71,8 @@ export const Component = () => {
 				url: values.url || undefined,
 				isShow: Number(values.isShow),
 				isTop: Number(values.isTop),
-				isNewZone: Number(values.isNewZone)
+				isNewZone: Number(values.isNewZone),
+				isAudit: 1
 			};
 			if (editId) {
 				updateViolation({ ...params, id: editId }).then(() => {
@@ -148,6 +150,28 @@ export const Component = () => {
 				deleteViolation(selectKeys.join(',')).then(() => {
 					message.success('删除成功');
 					setSelectKeys([]);
+					getData();
+				});
+			}
+		});
+	};
+
+	const onAudit = (row: AnyObject) => {
+		confirm({
+			type: 'warning',
+			title: '审核',
+			content: '请选择审核结果',
+			confirmationText: '通过',
+			cancellationText: '拒绝',
+			onOk() {
+				updateViolation({ ...row, isAudit: 1 }).then(() => {
+					message.success('已通过审核');
+					getData();
+				});
+			},
+			onCancel() {
+				updateViolation({ ...row, isAudit: 2 }).then(() => {
+					message.success('已拒绝');
 					getData();
 				});
 			}
@@ -243,6 +267,14 @@ export const Component = () => {
 						}
 					},
 					{
+						field: 'isAudit',
+						headerName: '审核状态',
+						renderCell({ value }) {
+							if (value == 2) return '已拒绝';
+							return value == 1 ? '已通过' : '待审核';
+						}
+					},
+					{
 						field: 'createTime',
 						headerName: '创建时间'
 					},
@@ -250,10 +282,20 @@ export const Component = () => {
 						field: 'action',
 						headerName: '操作',
 						flex: 0,
-						width: 100,
+						width: 220,
 						renderCell({ row }) {
 							return (
 								<>
+									{row.isAudit == 0 && (
+										<IconButton
+											color='primary'
+											size='small'
+											title='审核'
+											onClick={() => onAudit(row)}
+										>
+											<CheckmarkRegular />
+										</IconButton>
+									)}
 									<IconButton
 										color='primary'
 										size='small'

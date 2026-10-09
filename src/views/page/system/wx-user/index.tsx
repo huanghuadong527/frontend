@@ -12,33 +12,22 @@ import {
 	Form,
 	getColumnData,
 	PageOverlay,
+	ImagePreview,
 	Input,
 	Modal,
 	Radio,
 	Select,
 	Table,
+	Upload,
 	confirm,
 	message
 } from '@/plugins';
-import { API_UPLOAD, useTable } from '@/core';
+import { useTable } from '@/core';
 import {
 	deleteWxUser,
 	getWxUserById,
 	updateWxUser
 } from '@/service';
-
-const renderAvatar = (value: unknown) => {
-	if (!value) return '--';
-	const src = String(value);
-	const url = src.startsWith('http') ? src : API_UPLOAD + src;
-	return (
-		<img
-			src={url}
-			alt=''
-			style={{ width: 28, height: 28, objectFit: 'cover', borderRadius: '50%' }}
-		/>
-	);
-};
 
 export const Component = () => {
 	const [isOpen, setIsOpen] = useState(false);
@@ -62,9 +51,15 @@ export const Component = () => {
 
 	const formik = useFormik<FormikValues>({
 		initialValues: {
+			avatar: '',
 			nickName: '',
 			phonenumber: '',
-			status: '0'
+			intro: '',
+			business: '',
+			status: '0',
+			previewCount: '',
+			isMember: '0',
+			isMerchant: '0'
 		},
 		validationSchema: Yup.object().shape({
 			nickName: Yup.string().required('请输入用户昵称')
@@ -72,9 +67,15 @@ export const Component = () => {
 		onSubmit(values) {
 			updateWxUser({
 				id: editId,
+				avatar: values.avatar || undefined,
 				nickName: values.nickName,
 				phonenumber: values.phonenumber || undefined,
-				status: Number(values.status)
+				intro: values.intro || undefined,
+				business: values.business || undefined,
+				status: Number(values.status),
+				previewCount: values.previewCount === '' ? undefined : Number(values.previewCount),
+				isMember: Number(values.isMember),
+				isMerchant: Number(values.isMerchant)
 			}).then(() => {
 				message.success('修改成功');
 				onCancel();
@@ -89,9 +90,15 @@ export const Component = () => {
 			const record = result.data;
 			formik.resetForm();
 			formik.setValues({
+				avatar: record.avatar ?? '',
 				nickName: record.nickName ?? '',
 				phonenumber: record.phonenumber ?? '',
-				status: record.status != null ? String(record.status) : '0'
+				intro: record.intro ?? '',
+				business: record.business ?? '',
+				status: record.status != null ? String(record.status) : '0',
+				previewCount: record.previewCount != null ? String(record.previewCount) : '',
+				isMember: record.isMember != null ? String(record.isMember) : '0',
+				isMerchant: record.isMerchant != null ? String(record.isMerchant) : '0'
 			});
 			setIsOpen(true);
 		});
@@ -196,7 +203,7 @@ export const Component = () => {
 						flex: 0,
 						width: 80,
 						renderCell({ value }) {
-							return renderAvatar(value);
+							return <ImagePreview value={value} borderRadius='50%' />;
 						}
 					},
 					{
@@ -216,6 +223,42 @@ export const Component = () => {
 									size='small'
 									color={value == 0 ? 'success' : 'error'}
 									label={value == 0 ? '正常' : '停用'}
+								/>
+							);
+						}
+					},
+					{
+						field: 'previewCount',
+						headerName: '剩余预览次数',
+						flex: 0,
+						width: 120
+					},
+					{
+						field: 'isMember',
+						headerName: '会员',
+						flex: 0,
+						width: 100,
+						renderCell({ value }) {
+							return (
+								<Chip
+									size='small'
+									color={value == 1 ? 'warning' : 'default'}
+									label={value == 1 ? '是' : '否'}
+								/>
+							);
+						}
+					},
+					{
+						field: 'isMerchant',
+						headerName: '商人',
+						flex: 0,
+						width: 100,
+						renderCell({ value }) {
+							return (
+								<Chip
+									size='small'
+									color={value == 1 ? 'primary' : 'default'}
+									label={value == 1 ? '是' : '否'}
 								/>
 							);
 						}
@@ -265,6 +308,9 @@ export const Component = () => {
 				onClose={onCancel}
 			>
 				<Form labelCol={{ flex: '0 0 100px' }} formik={formik}>
+					<Form.Item name='avatar' label='用户头像'>
+						<Upload />
+					</Form.Item>
 					<Form.Item required name='nickName' label='用户昵称'>
 						<Input size='small' placeholder='请输入用户昵称' />
 					</Form.Item>
@@ -277,6 +323,31 @@ export const Component = () => {
 							<Radio value='1' label='停用' />
 						</RadioGroup>
 					</Form.Item>
+					<Form.Item name='previewCount' label='剩余预览次数'>
+						<Input size='small' placeholder='请输入剩余预览次数' />
+					</Form.Item>
+					<Form.Item name='isMember' label='会员'>
+						<RadioGroup row>
+							<Radio value='1' label='是' />
+							<Radio value='0' label='否' />
+						</RadioGroup>
+					</Form.Item>
+					<Form.Item name='isMerchant' label='是否商人'>
+						<RadioGroup row>
+							<Radio value='1' label='是' />
+							<Radio value='0' label='否' />
+						</RadioGroup>
+					</Form.Item>
+					{formik.values.isMerchant === '1' && (
+						<>
+							<Form.Item name='intro' label='简介'>
+								<Input.TextArea minRows={3} placeholder='请输入简介' />
+							</Form.Item>
+							<Form.Item name='business' label='常用业务'>
+								<Input.TextArea minRows={3} placeholder='请输入常用业务' />
+							</Form.Item>
+						</>
+					)}
 				</Form>
 			</Modal>
 		</PageOverlay>
