@@ -1,48 +1,30 @@
-import {
-	useEffect,
-	useState } from 'react';
-import { Button,
-	Chip,
-	Stack } from '@mui/material';
-import type { GridRowId } from '@mui/x-data-grid';
-import { useFormik,
-	type FormikValues } from 'formik';
-import {
-	DeleteRegular,
-	SearchRegular
-} from '@fluentui/react-icons';
-import {
-	Form,
-	getColumnData,
-	PageOverlay,
-	Input,
-	Table,
-	confirm,
-	message
-} from '@/plugins';
+import { useEffect, useState } from 'react';
+import { App, Button, Form, Input, Space, Table, Tag } from 'antd';
+import { DeleteOutlined, SearchOutlined } from '@ant-design/icons';
 import { useTable } from '@/core';
 import { usePermission } from '@/authority';
 import { cleanLogininfor, deleteLogininfor } from '@/service';
 
 export const Component = () => {
+	const { message, modal } = App.useApp();
 	const { hasPermi } = usePermission();
-	const [selectKeys, setSelectKeys] = useState<GridRowId[]>([]);
+	const [selectKeys, setSelectKeys] = useState<(string | number)[]>([]);
 
-	const { tableProps, getData } = useTable('/monitor/logininfor/list');
+	const { tableProps, getData } = useTable('/monitor/logininfor/list', () => searchForm.getFieldsValue());
 
-	const search = useFormik<FormikValues>({
-		initialValues: { userName: '', ipaddr: '', status: '' },
-		onSubmit(values) {
-			getData(values);
-		},
-		onReset() {
-			getData();
-		}
-	});
+	const [searchForm] = Form.useForm();
+
+	const onSearch = (values: AnyObject) => {
+		getData(values);
+	};
+
+	const onReset = () => {
+		searchForm.resetFields();
+		getData();
+	};
 
 	const onDelete = (ids: string | number) => {
-		confirm({
-			type: 'warning',
+		modal.confirm({
 			title: '系统提示',
 			content: '是否确认删除所选登录日志?',
 			onOk() {
@@ -64,8 +46,7 @@ export const Component = () => {
 	};
 
 	const onClean = () => {
-		confirm({
-			type: 'warning',
+		modal.confirm({
 			title: '系统提示',
 			content: '是否确认清空所有登录日志数据?',
 			onOk() {
@@ -78,102 +59,100 @@ export const Component = () => {
 		});
 	};
 
+	const columns = [
+		{
+			title: '访问编号',
+			dataIndex: 'id'
+		},
+		{
+			title: '用户名称',
+			dataIndex: 'userName'
+		},
+		{
+			title: '登录地址',
+			dataIndex: 'ipaddr'
+		},
+		{
+			title: '登录地点',
+			dataIndex: 'loginLocation'
+		},
+		{
+			title: '浏览器',
+			dataIndex: 'browser'
+		},
+		{
+			title: '操作系统',
+			dataIndex: 'os'
+		},
+		{
+			title: '登录状态',
+			dataIndex: 'status',
+			render: (value: any) => (
+				<Tag color={value == 0 ? 'success' : 'error'}>
+					{value == 0 ? '成功' : '失败'}
+				</Tag>
+			)
+		},
+		{
+			title: '操作信息',
+			dataIndex: 'msg'
+		},
+		{
+			title: '登录日期',
+			dataIndex: 'loginTime'
+		}
+	];
+
 	useEffect(() => {
 		getData();
 	}, []);
 
 	return (
-		<PageOverlay>
+		<div className='p-4 flex flex-col gap-4'>
 			<div className='flex items-center justify-between'>
-				<Form layout='inline' formik={search}>
+				<Form form={searchForm} layout='inline' onFinish={onSearch}>
 					<Form.Item name='userName' label='用户名称'>
-						<Input size='small' placeholder='请输入用户名称' />
+						<Input placeholder='请输入用户名称' />
 					</Form.Item>
 					<Form.Item name='ipaddr' label='登录地址'>
-						<Input size='small' placeholder='请输入登录地址' />
+						<Input placeholder='请输入登录地址' />
 					</Form.Item>
 					<Form.Item>
-						<Stack direction='row' spacing={2}>
-							<Button variant='contained' type='submit' startIcon={<SearchRegular />}>
+						<Space>
+							<Button type='primary' htmlType='submit' icon={<SearchOutlined />}>
 								查询
 							</Button>
-							<Button variant='outlined' type='reset'>
-								重置
-							</Button>
-						</Stack>
+							<Button onClick={onReset}>重置</Button>
+						</Space>
 					</Form.Item>
 				</Form>
-				<Stack direction='row' spacing={2}>
+				<Space>
 					{hasPermi('monitor:logininfor:remove') && (
-						<Button color='warning' variant='contained' onClick={onClean}>
+						<Button danger type='primary' onClick={onClean}>
 							清空
 						</Button>
 					)}
 					{hasPermi('monitor:logininfor:remove') && (
 						<Button
-							color='error'
-							variant='contained'
-							startIcon={<DeleteRegular />}
+							danger
+							type='primary'
+							icon={<DeleteOutlined />}
 							disabled={selectKeys.length == 0}
 							onClick={onBatchDelete}
 						>
 							批量删除
 						</Button>
 					)}
-				</Stack>
+				</Space>
 			</div>
 			<Table
 				{...tableProps}
-				checkboxSelection
-				onRowSelectionModelChange={(model) => setSelectKeys(Array.from(model.ids))}
-				columns={getColumnData([
-					{
-						field: 'id',
-						headerName: '访问编号'
-					},
-					{
-						field: 'userName',
-						headerName: '用户名称'
-					},
-					{
-						field: 'ipaddr',
-						headerName: '登录地址'
-					},
-					{
-						field: 'loginLocation',
-						headerName: '登录地点'
-					},
-					{
-						field: 'browser',
-						headerName: '浏览器'
-					},
-					{
-						field: 'os',
-						headerName: '操作系统'
-					},
-					{
-						field: 'status',
-						headerName: '登录状态',
-						renderCell({ value }) {
-							return (
-								<Chip
-									size='small'
-									color={value == 0 ? 'success' : 'error'}
-									label={value == 0 ? '成功' : '失败'}
-								/>
-							);
-						}
-					},
-					{
-						field: 'msg',
-						headerName: '操作信息'
-					},
-					{
-						field: 'loginTime',
-						headerName: '登录日期'
-					}
-				])}
+				rowSelection={{
+					selectedRowKeys: selectKeys,
+					onChange: (keys) => setSelectKeys(keys as (string | number)[])
+				}}
+				columns={columns}
 			/>
-		</PageOverlay>
+		</div>
 	);
 };

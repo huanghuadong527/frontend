@@ -1,27 +1,24 @@
-import * as Yup from 'yup';
 import { useEffect, useState } from 'react';
-import { Button, IconButton, RadioGroup, Stack } from '@mui/material';
-import type { GridRowId } from '@mui/x-data-grid';
-import { useFormik, type FormikValues } from 'formik';
 import {
-	AddRegular,
-	EditRegular,
-	DeleteRegular,
-	SearchRegular,
-	CheckmarkRegular
-} from '@fluentui/react-icons';
+	CheckOutlined,
+	DeleteOutlined,
+	EditOutlined,
+	PlusOutlined,
+	SearchOutlined
+} from '@ant-design/icons';
 import {
+	App,
+	Button,
 	Form,
-	getColumnData,
-	PageOverlay,
 	Input,
 	Modal,
 	Radio,
+	Space,
 	Table,
-	Upload,
-	confirm,
-	message
-} from '@/plugins';
+	Tag
+} from 'antd';
+import type { TableColumnsType } from 'antd';
+import { ImageUpload } from '@/components/image-upload';
 import { useTable } from '@/core';
 import {
 	addViolation,
@@ -33,70 +30,59 @@ import {
 const renderYesNo = (value: unknown) => (value == 1 ? '是' : '否');
 
 export const Component = () => {
+	const { message, modal } = App.useApp();
+	const [searchForm] = Form.useForm();
+	const [form] = Form.useForm();
 	const [isOpen, setIsOpen] = useState(false);
 	const [editId, setEditId] = useState<string | number>('');
-	const [selectKeys, setSelectKeys] = useState<GridRowId[]>([]);
+	const [selectKeys, setSelectKeys] = useState<(string | number)[]>([]);
 
-	const { tableProps, getData } = useTable('/game/wm/violation/list');
+	const { tableProps, getData } = useTable('/game/wm/violation/list', () => searchForm.getFieldsValue());
 
-	const search = useFormik<FormikValues>({
-		initialValues: { violator: '', behavior: '' },
-		onSubmit(values) {
-			getData({
-				violator: values.violator || undefined,
-				behavior: values.behavior || undefined
+	const onSearch = (values: AnyObject) => {
+		getData({
+			violator: values.violator || undefined,
+			behavior: values.behavior || undefined
+		});
+	};
+
+	const onReset = () => {
+		searchForm.resetFields();
+		getData();
+	};
+
+	const onFinish = (values: AnyObject) => {
+		const params = {
+			violator: values.violator,
+			behavior: values.behavior || undefined,
+			url: values.url || undefined,
+			isShow: Number(values.isShow),
+			isTop: Number(values.isTop),
+			isNewZone: Number(values.isNewZone),
+			isAudit: 1
+		};
+		if (editId) {
+			updateViolation({ ...params, id: editId }).then(() => {
+				message.success('修改成功');
+				onCancel();
+				getData();
 			});
-		},
-		onReset() {
-			getData();
+		} else {
+			addViolation(params).then(() => {
+				message.success('新增成功');
+				onCancel();
+				getData();
+			});
 		}
-	});
-
-	const formik = useFormik<FormikValues>({
-		initialValues: {
-			violator: '',
-			behavior: '',
-			url: '',
-			isShow: '1',
-			isTop: '0',
-			isNewZone: '0'
-		},
-		validationSchema: Yup.object().shape({
-			violator: Yup.string().required('请输入违规人')
-		}),
-		onSubmit(values) {
-			const params = {
-				violator: values.violator,
-				behavior: values.behavior || undefined,
-				url: values.url || undefined,
-				isShow: Number(values.isShow),
-				isTop: Number(values.isTop),
-				isNewZone: Number(values.isNewZone),
-				isAudit: 1
-			};
-			if (editId) {
-				updateViolation({ ...params, id: editId }).then(() => {
-					message.success('修改成功');
-					onCancel();
-					getData();
-				});
-			} else {
-				addViolation(params).then(() => {
-					message.success('新增成功');
-					onCancel();
-					getData();
-				});
-			}
-		}
-	});
+	};
 
 	const onEdit = (id?: string | number) => {
 		if (id) {
 			setEditId(id);
 			getViolationById(id).then((result) => {
 				const record = result.data;
-				formik.resetForm();
-				formik.setValues({
+				form.resetFields();
+				form.setFieldsValue({
 					violator: record.violator ?? '',
 					behavior: record.behavior ?? '',
 					url: record.url ?? '',
@@ -108,24 +94,23 @@ export const Component = () => {
 			});
 		} else {
 			setEditId('');
-			formik.resetForm();
+			form.resetFields();
 			setIsOpen(true);
 		}
 	};
 
 	const onSave = () => {
-		formik.handleSubmit();
+		form.submit();
 	};
 
 	const onCancel = () => {
 		setIsOpen(false);
 		setEditId('');
-		formik.resetForm();
+		form.resetFields();
 	};
 
 	const onDelete = (id: string | number) => {
-		confirm({
-			type: 'warning',
+		modal.confirm({
 			title: '系统提示',
 			content: '是否确认删除该违规记录?',
 			onOk() {
@@ -142,8 +127,7 @@ export const Component = () => {
 			message.warning('请选择要删除的违规记录');
 			return;
 		}
-		confirm({
-			type: 'warning',
+		modal.confirm({
 			title: '系统提示',
 			content: `是否确认删除选中的 ${selectKeys.length} 项数据?`,
 			onOk() {
@@ -157,12 +141,11 @@ export const Component = () => {
 	};
 
 	const onAudit = (row: AnyObject) => {
-		confirm({
-			type: 'warning',
+		modal.confirm({
 			title: '审核',
 			content: '请选择审核结果',
-			confirmationText: '通过',
-			cancellationText: '拒绝',
+			okText: '通过',
+			cancelText: '拒绝',
 			onOk() {
 				updateViolation({ ...row, isAudit: 1 }).then(() => {
 					message.success('已通过审核');
@@ -182,178 +165,165 @@ export const Component = () => {
 		getData();
 	}, []);
 
+	const columns: TableColumnsType<AnyObject> = [
+		{ title: '编号', dataIndex: 'id' },
+		{ title: '违规人', dataIndex: 'violator' },
+		{ title: '违规行为', dataIndex: 'behavior' },
+		{
+			title: '是否展示',
+			dataIndex: 'isShow',
+			render: (value) => renderYesNo(value)
+		},
+		{
+			title: '是否置顶',
+			dataIndex: 'isTop',
+			render: (value) => renderYesNo(value)
+		},
+		{
+			title: '是否新区',
+			dataIndex: 'isNewZone',
+			render: (value) => renderYesNo(value)
+		},
+		{
+			title: '审核状态',
+			dataIndex: 'isAudit',
+			render: (value) => {
+				if (value == 2) return <Tag color='error'>已拒绝</Tag>;
+				return value == 1 ? <Tag color='success'>已通过</Tag> : <Tag color='warning'>待审核</Tag>;
+			}
+		},
+		{ title: '创建时间', dataIndex: 'createTime' },
+		{
+			title: '操作',
+			dataIndex: 'action',
+			width: 220,
+			render: (_v, row) => (
+				<>
+					{row.isAudit == 0 && (
+						<Button
+							type='link'
+							size='small'
+							icon={<CheckOutlined />}
+							title='审核'
+							onClick={() => onAudit(row)}
+						/>
+					)}
+					<Button
+						type='link'
+						size='small'
+						icon={<EditOutlined />}
+						title='编辑'
+						onClick={() => onEdit(row.id)}
+					/>
+					<Button
+						type='link'
+						size='small'
+						danger
+						icon={<DeleteOutlined />}
+						title='删除'
+						onClick={() => onDelete(row.id)}
+					/>
+				</>
+			)
+		}
+	];
+
 	return (
-		<PageOverlay>
+		<div className='p-4 flex flex-col gap-4'>
 			<div className='flex items-center justify-between'>
-				<Form layout='inline' formik={search}>
+				<Form form={searchForm} layout='inline' onFinish={onSearch}>
 					<Form.Item name='violator' label='违规人'>
-						<Input size='small' placeholder='请输入违规人' />
+						<Input placeholder='请输入违规人' />
 					</Form.Item>
 					<Form.Item name='behavior' label='违规行为'>
-						<Input size='small' placeholder='请输入违规行为' />
+						<Input placeholder='请输入违规行为' />
 					</Form.Item>
 					<Form.Item>
-						<Stack direction='row' spacing={2}>
-							<Button
-								variant='contained'
-								type='submit'
-								startIcon={<SearchRegular />}
-							>
+						<Space>
+							<Button type='primary' htmlType='submit' icon={<SearchOutlined />}>
 								查询
 							</Button>
-							<Button variant='outlined' type='reset'>
-								重置
-							</Button>
-						</Stack>
+							<Button onClick={onReset}>重置</Button>
+						</Space>
 					</Form.Item>
 				</Form>
-				<Stack direction='row' spacing={2}>
-					<Button
-						variant='contained'
-						startIcon={<AddRegular />}
-						onClick={() => onEdit()}
-					>
+				<Space>
+					<Button type='primary' icon={<PlusOutlined />} onClick={() => onEdit()}>
 						新建
 					</Button>
 					<Button
-						color='error'
-						variant='contained'
-						startIcon={<DeleteRegular />}
+						type='primary'
+						danger
+						icon={<DeleteOutlined />}
 						disabled={selectKeys.length == 0}
 						onClick={onBatchDelete}
 					>
 						批量删除
 					</Button>
-				</Stack>
+				</Space>
 			</div>
 			<Table
 				{...tableProps}
-				checkboxSelection
-				onRowSelectionModelChange={(model) =>
-					setSelectKeys(Array.from(model.ids))
-				}
-				columns={getColumnData([
-					{
-						field: 'id',
-						headerName: '编号'
-					},
-					{
-						field: 'violator',
-						headerName: '违规人'
-					},
-					{
-						field: 'behavior',
-						headerName: '违规行为'
-					},
-					{
-						field: 'isShow',
-						headerName: '是否展示',
-						renderCell({ value }) {
-							return renderYesNo(value);
-						}
-					},
-					{
-						field: 'isTop',
-						headerName: '是否置顶',
-						renderCell({ value }) {
-							return renderYesNo(value);
-						}
-					},
-					{
-						field: 'isNewZone',
-						headerName: '是否新区',
-						renderCell({ value }) {
-							return renderYesNo(value);
-						}
-					},
-					{
-						field: 'isAudit',
-						headerName: '审核状态',
-						renderCell({ value }) {
-							if (value == 2) return '已拒绝';
-							return value == 1 ? '已通过' : '待审核';
-						}
-					},
-					{
-						field: 'createTime',
-						headerName: '创建时间'
-					},
-					{
-						field: 'action',
-						headerName: '操作',
-						flex: 0,
-						width: 220,
-						renderCell({ row }) {
-							return (
-								<>
-									{row.isAudit == 0 && (
-										<IconButton
-											color='primary'
-											size='small'
-											title='审核'
-											onClick={() => onAudit(row)}
-										>
-											<CheckmarkRegular />
-										</IconButton>
-									)}
-									<IconButton
-										color='primary'
-										size='small'
-										title='编辑'
-										onClick={() => onEdit(row.id)}
-									>
-										<EditRegular />
-									</IconButton>
-									<IconButton
-										color='error'
-										size='small'
-										title='删除'
-										onClick={() => onDelete(row.id)}
-									>
-										<DeleteRegular />
-									</IconButton>
-								</>
-							);
-						}
-					}
-				])}
+				rowSelection={{
+					selectedRowKeys: selectKeys,
+					onChange: (keys) => setSelectKeys(keys as (string | number)[])
+				}}
+				columns={columns}
 			/>
 			<Modal
 				title={editId ? '编辑违规' : '新增违规'}
 				open={isOpen}
 				onOk={onSave}
-				onClose={onCancel}
+				onCancel={onCancel}
+				destroyOnHidden
+				forceRender
 			>
-				<Form labelCol={{ flex: '0 0 100px' }} formik={formik}>
-					<Form.Item required name='violator' label='违规人'>
-						<Input size='small' placeholder='请输入违规人' />
+				<Form
+					form={form}
+					labelCol={{ flex: '0 0 100px' }}
+					onFinish={onFinish}
+					initialValues={{
+						violator: '',
+						behavior: '',
+						url: '',
+						isShow: '1',
+						isTop: '0',
+						isNewZone: '0'
+					}}
+				>
+					<Form.Item
+						name='violator'
+						label='违规人'
+						rules={[{ required: true, message: '请输入违规人' }]}
+					>
+						<Input placeholder='请输入违规人' />
 					</Form.Item>
 					<Form.Item name='behavior' label='违规行为'>
-						<Input.TextArea minRows={3} placeholder='请输入违规行为' />
+						<Input.TextArea rows={3} placeholder='请输入违规行为' />
 					</Form.Item>
 					<Form.Item name='url' label='违规图片'>
-						<Upload multiple />
+						<ImageUpload multiple />
 					</Form.Item>
 					<Form.Item name='isShow' label='是否展示'>
-						<RadioGroup row>
-							<Radio value='1' label='是' />
-							<Radio value='0' label='否' />
-						</RadioGroup>
+						<Radio.Group>
+							<Radio value='1'>是</Radio>
+							<Radio value='0'>否</Radio>
+						</Radio.Group>
 					</Form.Item>
 					<Form.Item name='isTop' label='是否置顶'>
-						<RadioGroup row>
-							<Radio value='1' label='是' />
-							<Radio value='0' label='否' />
-						</RadioGroup>
+						<Radio.Group>
+							<Radio value='1'>是</Radio>
+							<Radio value='0'>否</Radio>
+						</Radio.Group>
 					</Form.Item>
 					<Form.Item name='isNewZone' label='是否新区'>
-						<RadioGroup row>
-							<Radio value='1' label='是' />
-							<Radio value='0' label='否' />
-						</RadioGroup>
+						<Radio.Group>
+							<Radio value='1'>是</Radio>
+							<Radio value='0'>否</Radio>
+						</Radio.Group>
 					</Form.Item>
 				</Form>
 			</Modal>
-		</PageOverlay>
+		</div>
 	);
 };

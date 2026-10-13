@@ -1,32 +1,21 @@
-import * as Yup from 'yup';
+import { useEffect, useState } from 'react';
 import {
-	useEffect,
-	useState } from 'react';
-import { Button,
-	Chip,
-	IconButton,
-	RadioGroup,
-	Stack } from '@mui/material';
-import type { GridRowId } from '@mui/x-data-grid';
-import { useFormik,
-	type FormikValues } from 'formik';
+	DeleteOutlined,
+	EditOutlined,
+	PlusOutlined,
+	SearchOutlined
+} from '@ant-design/icons';
 import {
-	AddRegular,
-	EditRegular,
-	DeleteRegular,
-	SearchRegular
-} from '@fluentui/react-icons';
-import {
+	App,
+	Button,
 	Form,
-	getColumnData,
-	PageOverlay,
 	Input,
 	Modal,
 	Radio,
+	Space,
 	Table,
-	confirm,
-	message
-} from '@/plugins';
+	Tag
+} from 'antd';
 import { useTable } from '@/core';
 import {
 	addMaterial,
@@ -36,55 +25,47 @@ import {
 } from '@/service';
 
 export const Component = () => {
+	const { message, modal } = App.useApp();
 	const [isOpen, setIsOpen] = useState(false);
 	const [editId, setEditId] = useState<string | number>('');
-	const [selectKeys, setSelectKeys] = useState<GridRowId[]>([]);
+	const [selectKeys, setSelectKeys] = useState<(string | number)[]>([]);
+	const [searchForm] = Form.useForm();
+	const [form] = Form.useForm();
 
-	const { tableProps, getData } = useTable('/shop/material/list');
+	const { tableProps, getData } = useTable('/shop/material/list', () => searchForm.getFieldsValue());
 
-	const search = useFormik<FormikValues>({
-		initialValues: { materialName: '' },
-		onSubmit(values) {
-			getData(values);
-		},
-		onReset() {
-			getData();
+	const onSearch = (values: AnyObject) => {
+		getData(values);
+	};
+
+	const onReset = () => {
+		searchForm.resetFields();
+		getData();
+	};
+
+	const onFinish = (values: AnyObject) => {
+		if (editId) {
+			updateMaterial({ ...values, id: editId }).then(() => {
+				message.success('修改成功');
+				onCancel();
+				getData();
+			});
+		} else {
+			addMaterial(values).then(() => {
+				message.success('新增成功');
+				onCancel();
+				getData();
+			});
 		}
-	});
-
-	const formik = useFormik<FormikValues>({
-		initialValues: {
-			materialName: '',
-			materialUrl: '',
-			status: '0'
-		},
-		validationSchema: Yup.object().shape({
-			materialName: Yup.string().required('请输入材质名称')
-		}),
-		onSubmit(values) {
-			if (editId) {
-				updateMaterial({ ...values, id: editId }).then(() => {
-					message.success('修改成功');
-					onCancel();
-					getData();
-				});
-			} else {
-				addMaterial(values).then(() => {
-					message.success('新增成功');
-					onCancel();
-					getData();
-				});
-			}
-		}
-	});
+	};
 
 	const onEdit = (id?: string | number) => {
 		if (id) {
 			setEditId(id);
 			getMaterialById(id).then((result) => {
 				const record = result.data;
-				formik.resetForm();
-				formik.setValues({
+				form.resetFields();
+				form.setFieldsValue({
 					materialName: record.materialName,
 					materialUrl: record.materialUrl,
 					status: String(record.status ?? '0')
@@ -93,24 +74,23 @@ export const Component = () => {
 			});
 		} else {
 			setEditId('');
-			formik.resetForm();
+			form.resetFields();
 			setIsOpen(true);
 		}
 	};
 
 	const onSave = () => {
-		formik.handleSubmit();
+		form.submit();
 	};
 
 	const onCancel = () => {
 		setIsOpen(false);
 		setEditId('');
-		formik.resetForm();
+		form.resetFields();
 	};
 
 	const onDelete = (id: string | number) => {
-		confirm({
-			type: 'warning',
+		modal.confirm({
 			title: '系统提示',
 			content: '是否确认删除该材质?',
 			onOk() {
@@ -127,8 +107,7 @@ export const Component = () => {
 			message.warning('请选择要删除的材质');
 			return;
 		}
-		confirm({
-			type: 'warning',
+		modal.confirm({
 			title: '系统提示',
 			content: `是否确认删除选中的 ${selectKeys.length} 项数据?`,
 			onOk() {
@@ -141,128 +120,125 @@ export const Component = () => {
 		});
 	};
 
+	const columns = [
+		{ title: '材质编号', dataIndex: 'id' },
+		{ title: '材质名称', dataIndex: 'materialName' },
+		{ title: '材质贴图', dataIndex: 'materialUrl' },
+		{
+			title: '状态',
+			dataIndex: 'status',
+			render: (value: any) => (
+				<Tag color={value == 0 ? 'success' : 'error'}>
+					{value == 0 ? '正常' : '停用'}
+				</Tag>
+			)
+		},
+		{ title: '创建时间', dataIndex: 'createTime' },
+		{
+			title: '操作',
+			dataIndex: 'action',
+			width: 100,
+			render: (_: any, row: AnyObject) => (
+				<>
+					<Button
+						type='link'
+						size='small'
+						icon={<EditOutlined />}
+						title='编辑'
+						onClick={() => onEdit(row.id)}
+					/>
+					<Button
+						type='link'
+						danger
+						size='small'
+						icon={<DeleteOutlined />}
+						title='删除'
+						onClick={() => onDelete(row.id)}
+					/>
+				</>
+			)
+		}
+	];
+
 	useEffect(() => {
 		getData();
 	}, []);
 
 	return (
-		<PageOverlay>
+		<div className='p-4 flex flex-col gap-4'>
 			<div className='flex items-center justify-between'>
-				<Form layout='inline' formik={search}>
+				<Form form={searchForm} layout='inline' onFinish={onSearch}>
 					<Form.Item name='materialName' label='材质名称'>
-						<Input size='small' placeholder='请输入材质名称' />
+						<Input placeholder='请输入材质名称' />
 					</Form.Item>
 					<Form.Item>
-						<Stack direction='row' spacing={2}>
-							<Button variant='contained' type='submit' startIcon={<SearchRegular />}>
+						<Space>
+							<Button type='primary' htmlType='submit' icon={<SearchOutlined />}>
 								查询
 							</Button>
-							<Button variant='outlined' type='reset'>
-								重置
-							</Button>
-						</Stack>
+							<Button onClick={onReset}>重置</Button>
+						</Space>
 					</Form.Item>
 				</Form>
-				<Stack direction='row' spacing={2}>
-					<Button variant='contained' startIcon={<AddRegular />} onClick={() => onEdit()}>
+				<Space>
+					<Button type='primary' icon={<PlusOutlined />} onClick={() => onEdit()}>
 						新建
 					</Button>
 					<Button
-						color='error'
-						variant='contained'
-						startIcon={<DeleteRegular />}
+						type='primary'
+						danger
+						icon={<DeleteOutlined />}
 						disabled={selectKeys.length == 0}
 						onClick={onBatchDelete}
 					>
 						批量删除
 					</Button>
-				</Stack>
+				</Space>
 			</div>
 			<Table
 				{...tableProps}
-				checkboxSelection
-				onRowSelectionModelChange={(model) => setSelectKeys(Array.from(model.ids))}
-				columns={getColumnData([
-					{
-						field: 'id',
-						headerName: '材质编号'
-					},
-					{
-						field: 'materialName',
-						headerName: '材质名称'
-					},
-					{
-						field: 'materialUrl',
-						headerName: '材质贴图'
-					},
-					{
-						field: 'status',
-						headerName: '状态',
-						renderCell({ value }) {
-							return (
-								<Chip
-									size='small'
-									color={value == 0 ? 'success' : 'error'}
-									label={value == 0 ? '正常' : '停用'}
-								/>
-							);
-						}
-					},
-					{
-						field: 'createTime',
-						headerName: '创建时间'
-					},
-					{
-						field: 'action',
-						headerName: '操作',
-						flex: 0,
-						width: 100,
-						renderCell({ row }) {
-							return (
-								<>
-									<IconButton
-										color='primary'
-										size='small'
-										title='编辑'
-										onClick={() => onEdit(row.id)}
-									>
-										<EditRegular />
-									</IconButton>
-									<IconButton
-										color='error'
-										size='small'
-										title='删除'
-										onClick={() => onDelete(row.id)}
-									>
-										<DeleteRegular />
-									</IconButton>
-								</>
-							);
-						}
-					}
-				])}
+				rowSelection={{
+					selectedRowKeys: selectKeys,
+					onChange: (keys) => setSelectKeys(keys as (string | number)[])
+				}}
+				columns={columns}
 			/>
 			<Modal
 				title={editId ? '编辑材质' : '新增材质'}
 				open={isOpen}
 				onOk={onSave}
-				onClose={onCancel}
+				onCancel={onCancel}
+				destroyOnHidden
+				forceRender
 			>
-				<Form labelCol={{ flex: '0 0 100px' }} formik={formik}>
-					<Form.Item required name='materialName' label='材质名称'>
-						<Input size='small' placeholder='请输入材质名称' />
+				<Form
+					form={form}
+					labelCol={{ flex: '0 0 100px' }}
+					onFinish={onFinish}
+					initialValues={{
+						materialName: '',
+						materialUrl: '',
+						status: '0'
+					}}
+				>
+					<Form.Item
+						name='materialName'
+						label='材质名称'
+						rules={[{ required: true, message: '请输入材质名称' }]}
+					>
+						<Input placeholder='请输入材质名称' />
 					</Form.Item>
 					<Form.Item name='materialUrl' label='材质贴图'>
-						<Input size='small' placeholder='请输入材质贴图地址' />
+						<Input placeholder='请输入材质贴图地址' />
 					</Form.Item>
 					<Form.Item name='status' label='状态'>
-						<RadioGroup row>
-							<Radio value='0' label='正常' />
-							<Radio value='1' label='停用' />
-						</RadioGroup>
+						<Radio.Group>
+							<Radio value='0'>正常</Radio>
+							<Radio value='1'>停用</Radio>
+						</Radio.Group>
 					</Form.Item>
 				</Form>
 			</Modal>
-		</PageOverlay>
+		</div>
 	);
 };

@@ -1,28 +1,25 @@
-import * as Yup from 'yup';
 import { useEffect, useState } from 'react';
-import { Button, IconButton, Stack } from '@mui/material';
-import type { GridRowId } from '@mui/x-data-grid';
-import { useFormik, type FormikValues } from 'formik';
 import {
-	AddRegular,
-	ArrowSyncRegular,
-	EditRegular,
-	DeleteRegular,
-	SearchRegular,
-	CheckmarkRegular,
-	ArrowUpRegular,
-	ArrowDownRegular
-} from '@fluentui/react-icons';
+	ArrowDownOutlined,
+	ArrowUpOutlined,
+	CheckOutlined,
+	DeleteOutlined,
+	EditOutlined,
+	PlusOutlined,
+	SearchOutlined,
+	SyncOutlined
+} from '@ant-design/icons';
 import {
+	App,
+	Button,
 	Form,
-	getColumnData,
-	PageOverlay,
 	Input,
 	Modal,
+	Space,
 	Table,
-	confirm,
-	message
-} from '@/plugins';
+	Tag
+} from 'antd';
+import type { TableColumnsType } from 'antd';
 import { useTable } from '@/core';
 import {
 	addWmNotice,
@@ -39,66 +36,56 @@ const renderContent = (value: unknown) => {
 };
 
 export const Component = () => {
+	const { message, modal } = App.useApp();
+	const [searchForm] = Form.useForm();
+	const [form] = Form.useForm();
 	const [isOpen, setIsOpen] = useState(false);
 	const [editId, setEditId] = useState<string | number>('');
-	const [selectKeys, setSelectKeys] = useState<GridRowId[]>([]);
+	const [selectKeys, setSelectKeys] = useState<(string | number)[]>([]);
 	const [syncing, setSyncing] = useState(false);
 
-	const { tableProps, getData } = useTable('/game/wm/notice/list');
+	const { tableProps, getData } = useTable('/game/wm/notice/list', () => searchForm.getFieldsValue());
 
-	const search = useFormik<FormikValues>({
-		initialValues: { title: '' },
-		onSubmit(values) {
-			getData({ title: values.title || undefined });
-		},
-		onReset() {
-			getData();
-		}
-	});
+	const onSearch = (values: AnyObject) => {
+		getData({ title: values.title || undefined });
+	};
 
-	const formik = useFormik<FormikValues>({
-		initialValues: {
-			title: '',
-			publishTime: '',
-			content: '',
-			url: '',
-			noticeId: ''
-		},
-		validationSchema: Yup.object().shape({
-			title: Yup.string().required('请输入公告标题')
-		}),
-		onSubmit(values) {
-			const params = {
-				title: values.title,
-				publishTime: values.publishTime || undefined,
-				content: values.content || undefined,
-				url: values.url || undefined,
-				noticeId: values.noticeId || undefined,
-				isAudit: 1
-			};
-			if (editId) {
-				updateWmNotice({ ...params, id: editId }).then(() => {
-					message.success('修改成功');
-					onCancel();
-					getData();
-				});
-			} else {
-				addWmNotice({ ...params, isShelf: 1 }).then(() => {
-					message.success('新增成功');
-					onCancel();
-					getData();
-				});
-			}
+	const onReset = () => {
+		searchForm.resetFields();
+		getData();
+	};
+
+	const onFinish = (values: AnyObject) => {
+		const params = {
+			title: values.title,
+			publishTime: values.publishTime || undefined,
+			content: values.content || undefined,
+			url: values.url || undefined,
+			noticeId: values.noticeId || undefined,
+			isAudit: 1
+		};
+		if (editId) {
+			updateWmNotice({ ...params, id: editId }).then(() => {
+				message.success('修改成功');
+				onCancel();
+				getData();
+			});
+		} else {
+			addWmNotice({ ...params, isShelf: 1 }).then(() => {
+				message.success('新增成功');
+				onCancel();
+				getData();
+			});
 		}
-	});
+	};
 
 	const onEdit = (id?: string | number) => {
 		if (id) {
 			setEditId(id);
 			getWmNoticeById(id).then((result) => {
 				const record = result.data;
-				formik.resetForm();
-				formik.setValues({
+				form.resetFields();
+				form.setFieldsValue({
 					title: record.title ?? '',
 					publishTime: record.publishTime ?? '',
 					content: record.content ?? '',
@@ -109,24 +96,23 @@ export const Component = () => {
 			});
 		} else {
 			setEditId('');
-			formik.resetForm();
+			form.resetFields();
 			setIsOpen(true);
 		}
 	};
 
 	const onSave = () => {
-		formik.handleSubmit();
+		form.submit();
 	};
 
 	const onCancel = () => {
 		setIsOpen(false);
 		setEditId('');
-		formik.resetForm();
+		form.resetFields();
 	};
 
 	const onDelete = (id: string | number) => {
-		confirm({
-			type: 'warning',
+		modal.confirm({
 			title: '系统提示',
 			content: '是否确认删除该公告?',
 			onOk() {
@@ -143,8 +129,7 @@ export const Component = () => {
 			message.warning('请选择要删除的公告');
 			return;
 		}
-		confirm({
-			type: 'warning',
+		modal.confirm({
 			title: '系统提示',
 			content: `是否确认删除选中的 ${selectKeys.length} 项数据?`,
 			onOk() {
@@ -168,12 +153,11 @@ export const Component = () => {
 	};
 
 	const onAudit = (row: AnyObject) => {
-		confirm({
-			type: 'warning',
+		modal.confirm({
 			title: '审核',
 			content: '请选择审核结果',
-			confirmationText: '通过',
-			cancellationText: '拒绝',
+			okText: '通过',
+			cancelText: '拒绝',
 			onOk() {
 				updateWmNotice({ ...row, isAudit: 1 }).then(() => {
 					message.success('已通过审核');
@@ -201,174 +185,172 @@ export const Component = () => {
 		getData();
 	}, []);
 
+	const columns: TableColumnsType<AnyObject> = [
+		{ title: '编号', dataIndex: 'id' },
+		{ title: '公告编号', dataIndex: 'noticeId' },
+		{ title: '公告标题', dataIndex: 'title' },
+		{ title: '发布时间', dataIndex: 'publishTime' },
+		{
+			title: '内容页地址',
+			dataIndex: 'url',
+			render: (value) => {
+				if (!value) return '--';
+				return (
+					<a href={value} target='_blank' rel='noreferrer' title={value}>
+						{renderContent(value)}
+					</a>
+				);
+			}
+		},
+		{
+			title: '内容',
+			dataIndex: 'content',
+			render: (value) => renderContent(value)
+		},
+		{
+			title: '审核状态',
+			dataIndex: 'isAudit',
+			render: (value) => {
+				if (value == 2) return <Tag color='error'>已拒绝</Tag>;
+				return value == 1 ? <Tag color='success'>已通过</Tag> : <Tag color='warning'>待审核</Tag>;
+			}
+		},
+		{
+			title: '是否上架',
+			dataIndex: 'isShelf',
+			render: (value) => (value == 1 ? <Tag color='success'>已上架</Tag> : <Tag color='default'>已下架</Tag>)
+		},
+		{
+			title: '操作',
+			dataIndex: 'action',
+			width: 220,
+			render: (_v, row) => (
+				<>
+					{row.isAudit == 0 && (
+						<Button
+							type='link'
+							size='small'
+							icon={<CheckOutlined />}
+							title='审核'
+							onClick={() => onAudit(row)}
+						/>
+					)}
+					<Button
+						type='link'
+						size='small'
+						danger={row.isShelf == 1}
+						icon={row.isShelf == 1 ? <ArrowDownOutlined /> : <ArrowUpOutlined />}
+						title={row.isShelf == 1 ? '下架' : '上架'}
+						onClick={() => onShelf(row)}
+					/>
+					<Button
+						type='link'
+						size='small'
+						icon={<EditOutlined />}
+						title='编辑'
+						onClick={() => onEdit(row.id)}
+					/>
+					<Button
+						type='link'
+						size='small'
+						danger
+						icon={<DeleteOutlined />}
+						title='删除'
+						onClick={() => onDelete(row.id)}
+					/>
+				</>
+			)
+		}
+	];
+
 	return (
-		<PageOverlay>
+		<div className='p-4 flex flex-col gap-4'>
 			<div className='flex items-center justify-between'>
-				<Form layout='inline' formik={search}>
+				<Form form={searchForm} layout='inline' onFinish={onSearch}>
 					<Form.Item name='title' label='公告标题'>
-						<Input size='small' placeholder='请输入公告标题' />
+						<Input placeholder='请输入公告标题' />
 					</Form.Item>
 					<Form.Item>
-						<Stack direction='row' spacing={2}>
-							<Button
-								variant='contained'
-								type='submit'
-								startIcon={<SearchRegular />}
-							>
+						<Space>
+							<Button type='primary' htmlType='submit' icon={<SearchOutlined />}>
 								查询
 							</Button>
-							<Button variant='outlined' type='reset'>
-								重置
-							</Button>
-						</Stack>
+							<Button onClick={onReset}>重置</Button>
+						</Space>
 					</Form.Item>
 				</Form>
-				<Stack direction='row' spacing={2}>
-					<Button
-						variant='contained'
-						startIcon={<AddRegular />}
-						onClick={() => onEdit()}
-					>
+				<Space>
+					<Button type='primary' icon={<PlusOutlined />} onClick={() => onEdit()}>
 						新建
 					</Button>
 					<Button
-						color='error'
-						variant='contained'
-						startIcon={<DeleteRegular />}
+						type='primary'
+						danger
+						icon={<DeleteOutlined />}
 						disabled={selectKeys.length == 0}
 						onClick={onBatchDelete}
 					>
 						批量删除
 					</Button>
 					<Button
-						variant='contained'
-						startIcon={<ArrowSyncRegular />}
+						type='primary'
+						icon={<SyncOutlined />}
 						disabled={syncing}
 						onClick={onSync}
 					>
 						同步公告
 					</Button>
-				</Stack>
+				</Space>
 			</div>
 			<Table
 				{...tableProps}
-				checkboxSelection
-				onRowSelectionModelChange={(model) =>
-					setSelectKeys(Array.from(model.ids))
-				}
-				columns={getColumnData([
-					{ field: 'id', headerName: '编号' },
-					{ field: 'noticeId', headerName: '公告编号' },
-					{ field: 'title', headerName: '公告标题' },
-					{ field: 'publishTime', headerName: '发布时间' },
-					{
-						field: 'url',
-						headerName: '内容页地址',
-						flex: 1,
-						renderCell({ value }) {
-							if (!value) return '--';
-							return (
-								<a href={value} target='_blank' rel='noreferrer' title={value}>
-									{renderContent(value)}
-								</a>
-							);
-						}
-					},
-					{
-						field: 'content',
-						headerName: '内容',
-						flex: 2,
-						renderCell({ value }) {
-							return renderContent(value);
-						}
-					},
-					{
-						field: 'isAudit',
-						headerName: '审核状态',
-						renderCell({ value }) {
-							if (value == 2) return '已拒绝';
-							return value == 1 ? '已通过' : '待审核';
-						}
-					},
-					{
-						field: 'isShelf',
-						headerName: '是否上架',
-						renderCell({ value }) {
-							return value == 1 ? '上架' : '下架';
-						}
-					},
-					{
-						field: 'action',
-						headerName: '操作',
-						flex: 0,
-						width: 220,
-						renderCell({ row }) {
-							return (
-								<>
-									{row.isAudit == 0 && (
-										<IconButton
-											color='primary'
-											size='small'
-											title='审核'
-											onClick={() => onAudit(row)}
-										>
-											<CheckmarkRegular />
-										</IconButton>
-									)}
-									<IconButton
-										color={row.isShelf == 1 ? 'warning' : 'success'}
-										size='small'
-										title={row.isShelf == 1 ? '下架' : '上架'}
-										onClick={() => onShelf(row)}
-									>
-										{row.isShelf == 1 ? <ArrowDownRegular /> : <ArrowUpRegular />}
-									</IconButton>
-									<IconButton
-										color='primary'
-										size='small'
-										title='编辑'
-										onClick={() => onEdit(row.id)}
-									>
-										<EditRegular />
-									</IconButton>
-									<IconButton
-										color='error'
-										size='small'
-										title='删除'
-										onClick={() => onDelete(row.id)}
-									>
-										<DeleteRegular />
-									</IconButton>
-								</>
-							);
-						}
-					}
-				])}
+				rowSelection={{
+					selectedRowKeys: selectKeys,
+					onChange: (keys) => setSelectKeys(keys as (string | number)[])
+				}}
+				columns={columns}
 			/>
 			<Modal
 				title={editId ? '编辑公告' : '新增公告'}
 				open={isOpen}
 				onOk={onSave}
-				onClose={onCancel}
+				onCancel={onCancel}
+				destroyOnHidden
+				forceRender
 			>
-				<Form labelCol={{ flex: '0 0 100px' }} formik={formik}>
-					<Form.Item required name='title' label='公告标题'>
-						<Input size='small' placeholder='请输入公告标题' />
+				<Form
+					form={form}
+					labelCol={{ flex: '0 0 100px' }}
+					onFinish={onFinish}
+					initialValues={{
+						title: '',
+						publishTime: '',
+						content: '',
+						url: '',
+						noticeId: ''
+					}}
+				>
+					<Form.Item
+						name='title'
+						label='公告标题'
+						rules={[{ required: true, message: '请输入公告标题' }]}
+					>
+						<Input placeholder='请输入公告标题' />
 					</Form.Item>
 					<Form.Item name='publishTime' label='发布时间'>
-						<Input size='small' placeholder='请输入发布时间，如 2026-09-09' />
+						<Input placeholder='请输入发布时间，如 2026-09-09' />
 					</Form.Item>
 					<Form.Item name='url' label='内容页地址'>
-						<Input size='small' placeholder='请输入内容页地址' />
+						<Input placeholder='请输入内容页地址' />
 					</Form.Item>
 					<Form.Item name='noticeId' label='公告编号'>
-						<Input size='small' placeholder='请输入公告编号' />
+						<Input placeholder='请输入公告编号' />
 					</Form.Item>
 					<Form.Item name='content' label='公告内容'>
-						<Input.TextArea minRows={8} placeholder='请输入公告内容' />
+						<Input.TextArea rows={8} placeholder='请输入公告内容' />
 					</Form.Item>
 				</Form>
 			</Modal>
-		</PageOverlay>
+		</div>
 	);
 };

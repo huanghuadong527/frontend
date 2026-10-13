@@ -1,32 +1,22 @@
-import * as Yup from 'yup';
 import xe from 'xe-utils';
+import { useEffect, useMemo, useState, type Key } from 'react';
 import {
-	useEffect,
-	useState } from 'react';
-import { Button,
-	Chip,
-	IconButton,
-	RadioGroup,
-	Stack } from '@mui/material';
-import { useFormik,
-	type FormikValues } from 'formik';
-import {
-	AddRegular,
-	EditRegular,
-	DeleteRegular
-} from '@fluentui/react-icons';
-import {
+	App,
+	Button,
 	Form,
-	getColumnData,
-	PageOverlay,
 	Input,
 	Modal,
 	Radio,
+	Space,
 	Table,
-	TreeSelect,
-	confirm,
-	message
-} from '@/plugins';
+	Tag,
+	TreeSelect
+} from 'antd';
+import {
+	DeleteOutlined,
+	EditOutlined,
+	PlusOutlined
+} from '@ant-design/icons';
 import {
 	addMenu,
 	deleteMenu,
@@ -37,23 +27,36 @@ import {
 } from '@/service';
 import { usePermission } from '@/authority';
 
-const flattenTree = (tree: AnyObject[], depth = 0, result: AnyObject[] = []) => {
+const collectExpandableIds = (tree: AnyObject[], ids: Key[] = []) => {
 	tree.forEach((node) => {
-		result.push({ ...node, __depth: depth });
 		if (node.children?.length) {
-			flattenTree(node.children, depth + 1, result);
+			ids.push(node.id);
+			collectExpandableIds(node.children, ids);
 		}
 	});
-	return result;
+	return ids;
 };
 
 export const Component = () => {
+	const { message, modal } = App.useApp();
 	const { hasPermi } = usePermission();
 	const [isOpen, setIsOpen] = useState(false);
 	const [editId, setEditId] = useState<string | number>('');
 	const [rows, setRows] = useState<AnyObject[]>([]);
 	const [loading, setLoading] = useState(false);
 	const [parentTree, setParentTree] = useState<AnyObject[]>([]);
+	const [expandedRowKeys, setExpandedRowKeys] = useState<readonly Key[]>([]);
+
+	const expandableIds = useMemo(() => collectExpandableIds(rows), [rows]);
+	const allExpanded =
+		expandableIds.length > 0 && expandedRowKeys.length >= expandableIds.length;
+
+	const toggleExpandAll = () => {
+		setExpandedRowKeys(allExpanded ? [] : expandableIds);
+	};
+
+	const [form] = Form.useForm();
+	const menuType = Form.useWatch('menuType', form);
 
 	const getData = () => {
 		setLoading(true);
@@ -61,7 +64,7 @@ export const Component = () => {
 			.then((result) => {
 				setLoading(false);
 				const tree = xe.toArrayTree(result.data || []);
-				setRows(flattenTree(tree));
+				setRows(tree);
 			})
 			.catch(() => setLoading(false));
 	};
@@ -72,72 +75,50 @@ export const Component = () => {
 		});
 	};
 
-	const formik = useFormik<FormikValues>({
-		initialValues: {
-			parentId: '',
-			menuName: '',
-			orderNum: 0,
-			menuType: 'M',
-			path: '',
-			perms: '',
-			icon: '',
-			status: '0',
-			isFrame: '1'
-		},
-		validationSchema: Yup.object().shape({
-			menuName: Yup.string().required('请输入菜单名称')
-		}),
-		onSubmit(values) {
-			const params = { ...values, parentId: values.parentId || 0 };
-			if (editId) {
-				updateMenu({ ...params, id: editId }).then(() => {
-					message.success('修改成功');
-					onCancel();
-					getData();
-					getParentData();
-				});
-			} else {
-				addMenu(params).then(() => {
-					message.success('新增成功');
-					onCancel();
-					getData();
-					getParentData();
-				});
-			}
+	const onFinish = (values: AnyObject) => {
+		const params = { ...values, parentId: values.parentId || 0 };
+		if (editId) {
+			updateMenu({ ...params, id: editId }).then(() => {
+				message.success('修改成功');
+				onCancel();
+				getData();
+				getParentData();
+			});
+		} else {
+			addMenu(params).then(() => {
+				message.success('新增成功');
+				onCancel();
+				getData();
+				getParentData();
+			});
 		}
-	});
+	};
 
 	const onEdit = (id?: string | number, parentId?: string | number) => {
 		if (id) {
 			setEditId(id);
 			getMenuById(id).then((result) => {
-				formik.resetForm();
-				formik.setValues(result.data);
+				form.setFieldsValue(result.data);
 				setIsOpen(true);
 			});
 		} else {
 			setEditId('');
-			formik.resetForm();
+			form.resetFields();
 			if (parentId) {
-				formik.setFieldValue('parentId', parentId);
+				form.setFieldValue('parentId', parentId);
 			}
 			setIsOpen(true);
 		}
 	};
 
-	const onSave = () => {
-		formik.handleSubmit();
-	};
-
 	const onCancel = () => {
 		setIsOpen(false);
 		setEditId('');
-		formik.resetForm();
+		form.resetFields();
 	};
 
 	const onDelete = (id: string | number) => {
-		confirm({
-			type: 'warning',
+		modal.confirm({
 			title: '系统提示',
 			content: '是否确认删除该菜单?',
 			onOk() {
@@ -150,187 +131,205 @@ export const Component = () => {
 		});
 	};
 
+	const columns = [
+		{
+			title: '菜单名称',
+			dataIndex: 'menuName'
+		},
+		{
+			title: '类型',
+			dataIndex: 'menuType',
+			render: (value: any) => {
+				return value == 'M' ? '目录' : value == 'C' ? '菜单' : '按钮';
+			}
+		},
+		{
+			title: '菜单地址',
+			dataIndex: 'path'
+		},
+		{
+			title: '图标',
+			dataIndex: 'icon'
+		},
+		{
+			title: '排序',
+			dataIndex: 'orderNum'
+		},
+		{
+			title: '权限标识',
+			dataIndex: 'perms',
+			render: (value: any) => {
+				return value || '--';
+			}
+		},
+		{
+			title: '状态',
+			dataIndex: 'status',
+			render: (value: any) => {
+				return (
+					<Tag color={value == 0 ? 'success' : 'error'}>
+						{value == 0 ? '正常' : '停用'}
+					</Tag>
+				);
+			}
+		},
+		{
+			title: '创建时间',
+			dataIndex: 'createTime'
+		},
+		{
+			title: '操作',
+			dataIndex: 'action',
+			width: 160,
+			render: (_: any, row: AnyObject) => {
+				return (
+					<>
+						{hasPermi('system:menu:edit') && (
+							<Button
+								type='link'
+								size='small'
+								icon={<EditOutlined />}
+								title='编辑'
+								onClick={() => onEdit(row.id)}
+							/>
+						)}
+						{hasPermi('system:menu:add') && (
+							<Button
+								type='link'
+								size='small'
+								icon={<PlusOutlined />}
+								title='添加'
+								disabled={row.menuType == 'F'}
+								onClick={() => onEdit(undefined, row.id)}
+							/>
+						)}
+						{hasPermi('system:menu:remove') && (
+							<Button
+								type='link'
+								size='small'
+								danger
+								icon={<DeleteOutlined />}
+								title='删除'
+								onClick={() => onDelete(row.id)}
+							/>
+						)}
+					</>
+				);
+			}
+		}
+	];
+
 	useEffect(() => {
 		getData();
 		getParentData();
 	}, []);
 
-	const menuType = formik.values.menuType;
-
 	return (
-		<PageOverlay>
+		<div className='p-4 flex flex-col gap-4'>
 			<div className='flex items-center justify-end'>
-				<Stack direction='row' spacing={2}>
+				<Space>
 					{hasPermi('system:menu:add') && (
 						<Button
-							variant='contained'
-							startIcon={<AddRegular />}
+							type='primary'
+							icon={<PlusOutlined />}
 							onClick={() => onEdit()}
 						>
 							新建
 						</Button>
 					)}
-				</Stack>
+					<Button onClick={toggleExpandAll}>
+						{allExpanded ? '折叠' : '展开'}
+					</Button>
+				</Space>
 			</div>
 			<Table
 				loading={loading}
-				rows={rows}
-				columns={getColumnData([
-					{
-						field: 'menuName',
-						headerName: '菜单名称',
-						renderCell({ row }) {
-							return (
-								<div style={{ paddingLeft: (row.__depth ?? 0) * 24 }}>
-									{row.menuName}
-								</div>
-							);
-						}
-					},
-					{
-						field: 'menuType',
-						headerName: '类型',
-						flex: 0.5,
-						renderCell({ value }) {
-							return value == 'M' ? '目录' : value == 'C' ? '菜单' : '按钮';
-						}
-					},
-					{
-						field: 'path',
-						headerName: '菜单地址'
-					},
-					{
-						field: 'icon',
-						headerName: '图标',
-						flex: 0.5
-					},
-					{
-						field: 'orderNum',
-						headerName: '排序',
-						flex: 0.4
-					},
-					{
-						field: 'perms',
-						headerName: '权限标识',
-						renderCell({ value }) {
-							return value || '--';
-						}
-					},
-					{
-						field: 'status',
-						headerName: '状态',
-						flex: 0.5,
-						renderCell({ value }) {
-							return (
-								<Chip
-									size='small'
-									color={value == 0 ? 'success' : 'error'}
-									label={value == 0 ? '正常' : '停用'}
-								/>
-							);
-						}
-					},
-					{
-						field: 'createTime',
-						headerName: '创建时间'
-					},
-					{
-						field: 'id',
-						headerName: '操作',
-						flex: 0,
-						width: 160,
-						renderCell({ row }) {
-							return (
-								<>
-									{hasPermi('system:menu:edit') && (
-										<IconButton
-											color='primary'
-											size='small'
-											title='编辑'
-											onClick={() => onEdit(row.id)}
-										>
-											<EditRegular />
-										</IconButton>
-									)}
-									{hasPermi('system:menu:add') && (
-										<IconButton
-											color='success'
-											size='small'
-											title='添加'
-											disabled={row.menuType == 'F'}
-											onClick={() => onEdit(undefined, row.id)}
-										>
-											<AddRegular />
-										</IconButton>
-									)}
-									{hasPermi('system:menu:remove') && (
-										<IconButton
-											color='error'
-											size='small'
-											title='删除'
-											onClick={() => onDelete(row.id)}
-										>
-											<DeleteRegular />
-										</IconButton>
-									)}
-								</>
-							);
-						}
-					}
-				])}
+				dataSource={rows}
+				rowKey='id'
+				pagination={false}
+				columns={columns}
+				expandable={{
+					expandedRowKeys,
+					onExpandedRowsChange: setExpandedRowKeys
+				}}
 			/>
 			<Modal
 				title={editId ? '编辑菜单' : '新增菜单'}
 				open={isOpen}
-				onOk={onSave}
-				onClose={onCancel}
+				destroyOnHidden
+				forceRender
+				onOk={() => form.submit()}
+				onCancel={onCancel}
 			>
-				<Form labelCol={{ flex: '0 0 100px' }} formik={formik}>
+				<Form
+					form={form}
+					labelCol={{ flex: '0 0 100px' }}
+					initialValues={{
+						parentId: '',
+						menuName: '',
+						orderNum: 0,
+						menuType: 'M',
+						path: '',
+						perms: '',
+						icon: '',
+						status: '0',
+						isFrame: '1'
+					}}
+					onFinish={onFinish}
+				>
 					<Form.Item name='parentId' label='上级菜单'>
-						<TreeSelect placeholder='请选择上级菜单' treeData={parentTree} />
+						<TreeSelect
+							placeholder='请选择上级菜单'
+							treeData={parentTree}
+							fieldNames={{ value: 'id' }}
+						/>
 					</Form.Item>
-					<Form.Item required name='menuName' label='菜单名称'>
-						<Input size='small' placeholder='请输入菜单名称' />
+					<Form.Item
+						name='menuName'
+						label='菜单名称'
+						rules={[{ required: true, message: '请输入菜单名称' }]}
+					>
+						<Input placeholder='请输入菜单名称' />
 					</Form.Item>
 					<Form.Item name='orderNum' label='显示排序'>
-						<Input size='small' placeholder='请输入显示排序' />
+						<Input placeholder='请输入显示排序' />
 					</Form.Item>
 					<Form.Item name='menuType' label='菜单类型'>
-						<RadioGroup row>
-							<Radio value='M' label='目录' />
-							<Radio value='C' label='菜单' />
-							<Radio value='F' label='按钮' />
-						</RadioGroup>
+						<Radio.Group>
+							<Radio value='M'>目录</Radio>
+							<Radio value='C'>菜单</Radio>
+							<Radio value='F'>按钮</Radio>
+						</Radio.Group>
 					</Form.Item>
 					{menuType == 'C' && (
 						<Form.Item name='path' label='菜单地址'>
-							<Input size='small' placeholder='请输入菜单地址' />
+							<Input placeholder='请输入菜单地址' />
 						</Form.Item>
 					)}
 					{menuType == 'F' && (
 						<Form.Item name='perms' label='权限字符'>
-							<Input size='small' placeholder='请输入权限字符' />
+							<Input placeholder='请输入权限字符' />
 						</Form.Item>
 					)}
 					{menuType == 'M' && (
 						<Form.Item name='icon' label='菜单图标'>
-							<Input size='small' placeholder='请输入图标名称' />
+							<Input placeholder='请输入图标名称' />
 						</Form.Item>
 					)}
 					<Form.Item name='status' label='菜单状态'>
-						<RadioGroup row>
-							<Radio value='0' label='正常' />
-							<Radio value='1' label='停用' />
-						</RadioGroup>
+						<Radio.Group>
+							<Radio value='0'>正常</Radio>
+							<Radio value='1'>停用</Radio>
+						</Radio.Group>
 					</Form.Item>
 					<Form.Item name='isFrame' label='是否外链'>
-						<RadioGroup row>
-							<Radio value='0' label='是' />
-							<Radio value='1' label='否' />
-						</RadioGroup>
+						<Radio.Group>
+							<Radio value='0'>是</Radio>
+							<Radio value='1'>否</Radio>
+						</Radio.Group>
 					</Form.Item>
 				</Form>
 			</Modal>
-		</PageOverlay>
+		</div>
 	);
 };

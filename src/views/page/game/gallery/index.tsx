@@ -1,29 +1,26 @@
-import * as Yup from 'yup';
 import { useEffect, useState } from 'react';
-import { Button, IconButton, RadioGroup, Stack } from '@mui/material';
-import type { GridRowId } from '@mui/x-data-grid';
-import { useFormik, type FormikValues } from 'formik';
 import {
-	AddRegular,
-	EditRegular,
-	DeleteRegular,
-	SearchRegular,
-	CheckmarkRegular
-} from '@fluentui/react-icons';
+	CheckOutlined,
+	DeleteOutlined,
+	EditOutlined,
+	PlusOutlined,
+	SearchOutlined
+} from '@ant-design/icons';
 import {
+	App,
+	Button,
 	Form,
-	getColumnData,
-	PageOverlay,
-	ImagePreview,
+	Image,
 	Input,
 	Modal,
 	Radio,
+	Space,
 	Table,
-	Upload,
-	confirm,
-	message
-} from '@/plugins';
-import { useTable } from '@/core';
+	Tag
+} from 'antd';
+import type { TableColumnsType } from 'antd';
+import { ImageUpload } from '@/components/image-upload';
+import { API_UPLOAD, useTable } from '@/core';
 import {
 	addGallery,
 	deleteGallery,
@@ -34,65 +31,55 @@ import {
 const renderYesNo = (value: unknown) => (value == 1 ? '是' : '否');
 
 export const Component = () => {
+	const { message, modal } = App.useApp();
+	const [searchForm] = Form.useForm();
+	const [form] = Form.useForm();
 	const [isOpen, setIsOpen] = useState(false);
 	const [editId, setEditId] = useState<string | number>('');
-	const [selectKeys, setSelectKeys] = useState<GridRowId[]>([]);
+	const [selectKeys, setSelectKeys] = useState<(string | number)[]>([]);
 
-	const { tableProps, getData } = useTable('/game/wm/gallery/list');
+	const { tableProps, getData } = useTable('/game/wm/gallery/list', () => searchForm.getFieldsValue());
 
-	const search = useFormik<FormikValues>({
-		initialValues: { name: '' },
-		onSubmit(values) {
-			getData({ name: values.name || undefined });
-		},
-		onReset() {
-			getData();
+	const onSearch = (values: AnyObject) => {
+		getData({ name: values.name || undefined });
+	};
+
+	const onReset = () => {
+		searchForm.resetFields();
+		getData();
+	};
+
+	const onFinish = (values: AnyObject) => {
+		const params = {
+			name: values.name,
+			image: values.image || undefined,
+			description: values.description || undefined,
+			isOnSale: Number(values.isOnSale),
+			isRecommend: Number(values.isRecommend),
+			isAudit: 1
+		};
+		if (editId) {
+			updateGallery({ ...params, id: editId }).then(() => {
+				message.success('修改成功');
+				onCancel();
+				getData();
+			});
+		} else {
+			addGallery(params).then(() => {
+				message.success('新增成功');
+				onCancel();
+				getData();
+			});
 		}
-	});
-
-	const formik = useFormik<FormikValues>({
-		initialValues: {
-			name: '',
-			image: '',
-			description: '',
-			isOnSale: '1',
-			isRecommend: '0'
-		},
-		validationSchema: Yup.object().shape({
-			name: Yup.string().required('请输入画廊名称')
-		}),
-		onSubmit(values) {
-			const params = {
-				name: values.name,
-				image: values.image || undefined,
-				description: values.description || undefined,
-				isOnSale: Number(values.isOnSale),
-				isRecommend: Number(values.isRecommend),
-				isAudit: 1
-			};
-			if (editId) {
-				updateGallery({ ...params, id: editId }).then(() => {
-					message.success('修改成功');
-					onCancel();
-					getData();
-				});
-			} else {
-				addGallery(params).then(() => {
-					message.success('新增成功');
-					onCancel();
-					getData();
-				});
-			}
-		}
-	});
+	};
 
 	const onEdit = (id?: string | number) => {
 		if (id) {
 			setEditId(id);
 			getGalleryById(id).then((result) => {
 				const record = result.data;
-				formik.resetForm();
-				formik.setValues({
+				form.resetFields();
+				form.setFieldsValue({
 					name: record.name ?? '',
 					image: record.image ?? '',
 					description: record.description ?? '',
@@ -103,24 +90,23 @@ export const Component = () => {
 			});
 		} else {
 			setEditId('');
-			formik.resetForm();
+			form.resetFields();
 			setIsOpen(true);
 		}
 	};
 
 	const onSave = () => {
-		formik.handleSubmit();
+		form.submit();
 	};
 
 	const onCancel = () => {
 		setIsOpen(false);
 		setEditId('');
-		formik.resetForm();
+		form.resetFields();
 	};
 
 	const onDelete = (id: string | number) => {
-		confirm({
-			type: 'warning',
+		modal.confirm({
 			title: '系统提示',
 			content: '是否确认删除该画廊?',
 			onOk() {
@@ -137,8 +123,7 @@ export const Component = () => {
 			message.warning('请选择要删除的画廊');
 			return;
 		}
-		confirm({
-			type: 'warning',
+		modal.confirm({
 			title: '系统提示',
 			content: `是否确认删除选中的 ${selectKeys.length} 项数据?`,
 			onOk() {
@@ -152,12 +137,11 @@ export const Component = () => {
 	};
 
 	const onAudit = (row: AnyObject) => {
-		confirm({
-			type: 'warning',
+		modal.confirm({
 			title: '审核',
 			content: '请选择审核结果',
-			confirmationText: '通过',
-			cancellationText: '拒绝',
+			okText: '通过',
+			cancelText: '拒绝',
 			onOk() {
 				updateGallery({ ...row, isAudit: 1 }).then(() => {
 					message.success('已通过审核');
@@ -177,148 +161,162 @@ export const Component = () => {
 		getData();
 	}, []);
 
+	const columns: TableColumnsType<AnyObject> = [
+		{ title: '编号', dataIndex: 'id' },
+		{
+			title: '图片',
+			dataIndex: 'image',
+			width: 80,
+			render: (value) => (
+				<Image
+					src={value ? API_UPLOAD + value : ''}
+					width={40}
+					height={40}
+					style={{ objectFit: 'cover' }}
+				/>
+			)
+		},
+		{ title: '画廊名称', dataIndex: 'name' },
+		{ title: '描述', dataIndex: 'description' },
+		{
+			title: '是否上架',
+			dataIndex: 'isOnSale',
+			render: (value) => renderYesNo(value)
+		},
+		{
+			title: '主页推荐',
+			dataIndex: 'isRecommend',
+			render: (value) => renderYesNo(value)
+		},
+		{
+			title: '审核状态',
+			dataIndex: 'isAudit',
+			render: (value) => {
+				if (value == 2) return <Tag color='error'>已拒绝</Tag>;
+				return value == 1 ? <Tag color='success'>已通过</Tag> : <Tag color='warning'>待审核</Tag>;
+			}
+		},
+		{
+			title: '操作',
+			dataIndex: 'action',
+			width: 220,
+			render: (_v, row) => (
+				<>
+					{row.isAudit == 0 && (
+						<Button
+							type='link'
+							size='small'
+							icon={<CheckOutlined />}
+							title='审核'
+							onClick={() => onAudit(row)}
+						/>
+					)}
+					<Button
+						type='link'
+						size='small'
+						icon={<EditOutlined />}
+						title='编辑'
+						onClick={() => onEdit(row.id)}
+					/>
+					<Button
+						type='link'
+						size='small'
+						danger
+						icon={<DeleteOutlined />}
+						title='删除'
+						onClick={() => onDelete(row.id)}
+					/>
+				</>
+			)
+		}
+	];
+
 	return (
-		<PageOverlay>
+		<div className='p-4 flex flex-col gap-4'>
 			<div className='flex items-center justify-between'>
-				<Form layout='inline' formik={search}>
+				<Form form={searchForm} layout='inline' onFinish={onSearch}>
 					<Form.Item name='name' label='画廊名称'>
-						<Input size='small' placeholder='请输入画廊名称' />
+						<Input placeholder='请输入画廊名称' />
 					</Form.Item>
 					<Form.Item>
-						<Stack direction='row' spacing={2}>
-							<Button variant='contained' type='submit' startIcon={<SearchRegular />}>
+						<Space>
+							<Button type='primary' htmlType='submit' icon={<SearchOutlined />}>
 								查询
 							</Button>
-							<Button variant='outlined' type='reset'>
-								重置
-							</Button>
-						</Stack>
+							<Button onClick={onReset}>重置</Button>
+						</Space>
 					</Form.Item>
 				</Form>
-				<Stack direction='row' spacing={2}>
-					<Button variant='contained' startIcon={<AddRegular />} onClick={() => onEdit()}>
+				<Space>
+					<Button type='primary' icon={<PlusOutlined />} onClick={() => onEdit()}>
 						新建
 					</Button>
 					<Button
-						color='error'
-						variant='contained'
-						startIcon={<DeleteRegular />}
+						type='primary'
+						danger
+						icon={<DeleteOutlined />}
 						disabled={selectKeys.length == 0}
 						onClick={onBatchDelete}
 					>
 						批量删除
 					</Button>
-				</Stack>
+				</Space>
 			</div>
 			<Table
 				{...tableProps}
-				checkboxSelection
-				onRowSelectionModelChange={(model) => setSelectKeys(Array.from(model.ids))}
-				columns={getColumnData([
-					{ field: 'id', headerName: '编号' },
-					{
-						field: 'image',
-						headerName: '图片',
-						flex: 0,
-						width: 80,
-						renderCell({ value }) {
-							return <ImagePreview value={value} />;
-						}
-					},
-					{ field: 'name', headerName: '画廊名称' },
-					{ field: 'description', headerName: '描述' },
-					{
-						field: 'isOnSale',
-						headerName: '是否上架',
-						renderCell({ value }) {
-							return renderYesNo(value);
-						}
-					},
-					{
-						field: 'isRecommend',
-						headerName: '主页推荐',
-						renderCell({ value }) {
-							return renderYesNo(value);
-						}
-					},
-					{
-						field: 'isAudit',
-						headerName: '审核状态',
-						renderCell({ value }) {
-							if (value == 2) return '已拒绝';
-							return value == 1 ? '已通过' : '待审核';
-						}
-					},
-					{
-						field: 'action',
-						headerName: '操作',
-						flex: 0,
-						width: 220,
-						renderCell({ row }) {
-							return (
-								<>
-									{row.isAudit == 0 && (
-										<IconButton
-											color='primary'
-											size='small'
-											title='审核'
-											onClick={() => onAudit(row)}
-										>
-											<CheckmarkRegular />
-										</IconButton>
-									)}
-									<IconButton
-										color='primary'
-										size='small'
-										title='编辑'
-										onClick={() => onEdit(row.id)}
-									>
-										<EditRegular />
-									</IconButton>
-									<IconButton
-										color='error'
-										size='small'
-										title='删除'
-										onClick={() => onDelete(row.id)}
-									>
-										<DeleteRegular />
-									</IconButton>
-								</>
-							);
-						}
-					}
-				])}
+				rowSelection={{
+					selectedRowKeys: selectKeys,
+					onChange: (keys) => setSelectKeys(keys as (string | number)[])
+				}}
+				columns={columns}
 			/>
 			<Modal
 				title={editId ? '编辑画廊' : '新增画廊'}
 				open={isOpen}
 				onOk={onSave}
-				onClose={onCancel}
+				onCancel={onCancel}
+				destroyOnHidden
+				forceRender
 			>
-				<Form labelCol={{ flex: '0 0 100px' }} formik={formik}>
-					<Form.Item required name='name' label='画廊名称'>
-						<Input size='small' placeholder='请输入画廊名称' />
+				<Form
+					form={form}
+					labelCol={{ flex: '0 0 100px' }}
+					onFinish={onFinish}
+					initialValues={{
+						name: '',
+						image: '',
+						description: '',
+						isOnSale: '1',
+						isRecommend: '0'
+					}}
+				>
+					<Form.Item
+						name='name'
+						label='画廊名称'
+						rules={[{ required: true, message: '请输入画廊名称' }]}
+					>
+						<Input placeholder='请输入画廊名称' />
 					</Form.Item>
 					<Form.Item name='image' label='图片'>
-						<Upload />
+						<ImageUpload />
 					</Form.Item>
 					<Form.Item name='description' label='描述'>
-						<Input.TextArea minRows={3} placeholder='请输入描述' />
+						<Input.TextArea rows={3} placeholder='请输入描述' />
 					</Form.Item>
 					<Form.Item name='isOnSale' label='是否上架'>
-						<RadioGroup row>
-							<Radio value='1' label='是' />
-							<Radio value='0' label='否' />
-						</RadioGroup>
+						<Radio.Group>
+							<Radio value='1'>是</Radio>
+							<Radio value='0'>否</Radio>
+						</Radio.Group>
 					</Form.Item>
 					<Form.Item name='isRecommend' label='主页推荐'>
-						<RadioGroup row>
-							<Radio value='1' label='是' />
-							<Radio value='0' label='否' />
-						</RadioGroup>
+						<Radio.Group>
+							<Radio value='1'>是</Radio>
+							<Radio value='0'>否</Radio>
+						</Radio.Group>
 					</Form.Item>
 				</Form>
 			</Modal>
-		</PageOverlay>
+		</div>
 	);
 };

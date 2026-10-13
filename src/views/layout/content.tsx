@@ -6,8 +6,10 @@ export const Content = () => {
 	return (
 		<div className='min-w-0 flex flex-col flex-1'>
 			<Tabs />
-			<div className='min-h-0 flex-1 px-4 py-4'>
-				<Outlet />
+			<div className='min-h-0 flex-1 p-2 md:p-4'>
+				<div className='page-card h-full bg-white rounded-sm overflow-auto'>
+					<Outlet />
+				</div>
 			</div>
 		</div>
 	);

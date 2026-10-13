@@ -1,34 +1,35 @@
-import { useContext, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import Vditor from 'vditor';
 import 'vditor/dist/index.css';
 import lutePath from 'vditor/dist/js/lute/lute.min.js?url';
 import 'vditor/dist/js/i18n/zh_CN.js';
 import 'vditor/dist/js/icons/ant.js';
-import { FormContext } from '@/context';
+import { App } from 'antd';
 import { API_UPLOAD } from '@/core';
-import { message } from '@/plugins/message';
 import { uploadImage } from '@/service/common';
 
 interface MarkdownEditorProps {
-	name?: string;
 	value?: string;
+	onChange?: (value: string) => void;
 	height?: number | string;
 	placeholder?: string;
 }
 
 /**
- * Markdown 编辑器（基于 Vditor），配合 Form.Item 使用。
- * lute / i18n / 图标均为本地资源，无需单独打包；关闭了依赖 CDN 的代码高亮等功能。
+ * Markdown 编辑器（基于 Vditor），配合 antd Form.Item 使用。
+ * 通过 value/onChange 与表单双向绑定。
  */
 export const MarkdownEditor = ({
-	name,
 	value = '',
+	onChange,
 	height = 360,
 	placeholder
 }: MarkdownEditorProps) => {
-	const form = useContext(FormContext);
+	const { message } = App.useApp();
 	const containerRef = useRef<HTMLDivElement>(null);
 	const vditorRef = useRef<Vditor | null>(null);
+	const onChangeRef = useRef(onChange);
+	onChangeRef.current = onChange;
 
 	useEffect(() => {
 		const el = containerRef.current;
@@ -48,8 +49,7 @@ export const MarkdownEditor = ({
 				markdown: {
 					codeBlockPreview: false,
 					mathBlockPreview: false,
-					// 图片存储为根相对路径(/upload/...)，渲染时统一加资源前缀；
-					// linkPrefix 只作用于预览 img src，回写 markdown 仍保持相对路径
+					// 图片存储为根相对路径(/upload/...)，渲染时统一加资源前缀
 					linkPrefix: API_UPLOAD
 				}
 			},
@@ -100,9 +100,7 @@ export const MarkdownEditor = ({
 				}
 			},
 			input(inputValue) {
-				if (form.formik && name) {
-					form.formik.setFieldValue(name, inputValue);
-				}
+				onChangeRef.current?.(inputValue);
 			}
 		});
 

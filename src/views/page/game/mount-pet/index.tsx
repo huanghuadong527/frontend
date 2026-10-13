@@ -1,31 +1,28 @@
-import * as Yup from 'yup';
 import { useEffect, useState } from 'react';
-import { Button, IconButton, MenuItem, Stack, Typography } from '@mui/material';
-import type { GridRowId } from '@mui/x-data-grid';
-import { useFormik, type FormikValues } from 'formik';
 import {
-	AddRegular,
-	EditRegular,
-	DeleteRegular,
-	SearchRegular,
-	CheckmarkRegular,
-	ArrowUpRegular,
-	ArrowDownRegular
-} from '@fluentui/react-icons';
+	ArrowDownOutlined,
+	ArrowUpOutlined,
+	CheckOutlined,
+	DeleteOutlined,
+	EditOutlined,
+	PlusOutlined,
+	SearchOutlined
+} from '@ant-design/icons';
 import {
+	App,
+	Button,
 	Form,
-	getColumnData,
-	PageOverlay,
-	ImagePreview,
+	Image,
 	Input,
 	Modal,
 	Select,
+	Space,
 	Table,
-	Upload,
-	confirm,
-	message
-} from '@/plugins';
-import { useTable } from '@/core';
+	Tag
+} from 'antd';
+import type { TableColumnsType } from 'antd';
+import { ImageUpload } from '@/components/image-upload';
+import { API_UPLOAD, useTable } from '@/core';
 import {
 	addMountPet,
 	deleteMountPet,
@@ -52,6 +49,13 @@ const RACE_OPTIONS = [
 
 const MAX_IMAGE_SIZE = 1024 * 1024;
 
+type ImageItem = {
+	image: string;
+	server: string;
+	playerName: string;
+	description: string;
+};
+
 const getOptionLabel = (options: typeof TYPE_OPTIONS, value: unknown) =>
 	options.find((item) => item.value == value)?.label ?? '--';
 
@@ -62,109 +66,109 @@ const renderContent = (value: unknown) => {
 };
 
 export const Component = () => {
+	const { message, modal } = App.useApp();
+	const [searchForm] = Form.useForm();
+	const [form] = Form.useForm();
 	const [isOpen, setIsOpen] = useState(false);
 	const [editId, setEditId] = useState<string | number>('');
-	const [selectKeys, setSelectKeys] = useState<GridRowId[]>([]);
+	const [selectKeys, setSelectKeys] = useState<(string | number)[]>([]);
+	const [imageList, setImageList] = useState<ImageItem[]>([]);
+	const [previewOpen, setPreviewOpen] = useState(false);
+	const [previewImage, setPreviewImage] = useState('');
 
-	const { tableProps, getData } = useTable('/game/wm/mount-pet/list');
+	const { tableProps, getData } = useTable('/game/wm/mount-pet/list', () => searchForm.getFieldsValue());
 
-	const search = useFormik<FormikValues>({
-		initialValues: { name: '', type: '' },
-		onSubmit(values) {
-			getData({
-				name: values.name || undefined,
-				type: values.type === '' ? undefined : Number(values.type)
+	const onSearch = (values: AnyObject) => {
+		getData({
+			name: values.name || undefined,
+			type: values.type === '' || values.type == null ? undefined : Number(values.type)
+		});
+	};
+
+	const onReset = () => {
+		searchForm.resetFields();
+		getData();
+	};
+
+	const onFinish = (values: AnyObject) => {
+		const images = imageList
+			.filter((item) => item.image)
+			.map((item) => ({
+				image: item.image,
+				server: item.server || undefined,
+				playerName: item.playerName || undefined,
+				description: item.description || undefined
+			}));
+		const params = {
+			name: values.name,
+			type: values.type === '' ? null : Number(values.type),
+			petType: values.petType === '' ? null : Number(values.petType),
+			race: values.race === '' ? null : Number(values.race),
+			sort: values.sort === '' ? null : Number(values.sort),
+			description: values.description || undefined,
+			images,
+			isAudit: 1
+		};
+		if (editId) {
+			updateMountPet({ ...params, id: editId }).then(() => {
+				message.success('修改成功');
+				onCancel();
+				getData();
 			});
-		},
-		onReset() {
-			getData();
+		} else {
+			addMountPet({ ...params, isShelf: 1 }).then(() => {
+				message.success('新增成功');
+				onCancel();
+				getData();
+			});
 		}
-	});
-
-	const formik = useFormik<FormikValues>({
-		initialValues: {
-			name: '',
-			type: '',
-			petType: '',
-			race: '',
-			sort: '',
-			description: '',
-			image: ''
-		},
-		validationSchema: Yup.object().shape({
-			name: Yup.string().required('请输入名称')
-		}),
-		onSubmit(values) {
-			const images = (values.image || '')
-				.split(',')
-				.filter(Boolean)
-				.map((image: string) => ({ image }));
-			const params = {
-				name: values.name,
-				type: values.type === '' ? null : Number(values.type),
-				petType: values.petType === '' ? null : Number(values.petType),
-				race: values.race === '' ? null : Number(values.race),
-				sort: values.sort === '' ? null : Number(values.sort),
-				description: values.description || undefined,
-				images,
-				isAudit: 1
-			};
-			if (editId) {
-				updateMountPet({ ...params, id: editId }).then(() => {
-					message.success('修改成功');
-					onCancel();
-					getData();
-				});
-			} else {
-				addMountPet({ ...params, isShelf: 1 }).then(() => {
-					message.success('新增成功');
-					onCancel();
-					getData();
-				});
-			}
-		}
-	});
+	};
 
 	const onEdit = (id?: string | number) => {
 		if (id) {
 			setEditId(id);
 			getMountPetById(id).then((result) => {
 				const record = result.data;
-				formik.resetForm();
-				formik.setValues({
+				form.resetFields();
+				form.setFieldsValue({
 					name: record.name ?? '',
 					type: record.type != null ? String(record.type) : '',
 					petType: record.petType != null ? String(record.petType) : '',
 					race: record.race != null ? String(record.race) : '',
 					sort: record.sort != null ? String(record.sort) : '',
-					description: record.description ?? '',
-					image: (record.images ?? [])
-						.map((img: AnyObject) => img.image)
-						.filter(Boolean)
-						.join(',')
+					description: record.description ?? ''
 				});
+				setImageList(
+					(record.images ?? []).map((img: AnyObject) => ({
+						image: img.image ?? '',
+						server: img.server ?? '',
+						playerName: img.playerName ?? '',
+						description: img.description ?? ''
+					}))
+				);
 				setIsOpen(true);
 			});
 		} else {
 			setEditId('');
-			formik.resetForm();
+			form.resetFields();
+			setImageList([]);
 			setIsOpen(true);
 		}
 	};
 
 	const onSave = () => {
-		formik.handleSubmit();
+		form.submit();
 	};
 
 	const onCancel = () => {
 		setIsOpen(false);
 		setEditId('');
-		formik.resetForm();
+		form.resetFields();
+		setImageList([]);
 	};
 
 	const onDelete = (id: string | number) => {
-		confirm({
-			type: 'warning',
+		modal.confirm({
 			title: '系统提示',
 			content: '是否确认删除该骑宠?',
 			onOk() {
@@ -181,8 +185,7 @@ export const Component = () => {
 			message.warning('请选择要删除的骑宠');
 			return;
 		}
-		confirm({
-			type: 'warning',
+		modal.confirm({
 			title: '系统提示',
 			content: `是否确认删除选中的 ${selectKeys.length} 项数据?`,
 			onOk() {
@@ -204,12 +207,11 @@ export const Component = () => {
 				getData();
 			});
 		};
-		confirm({
-			type: 'warning',
+		modal.confirm({
 			title: '审核',
 			content: '请选择审核结果',
-			confirmationText: '通过',
-			cancellationText: '拒绝',
+			okText: '通过',
+			cancelText: '拒绝',
 			onOk() {
 				doAudit(1);
 			},
@@ -229,237 +231,290 @@ export const Component = () => {
 		});
 	};
 
+	const updateImageItem = (index: number, key: keyof ImageItem, value: string) => {
+		setImageList((prev) =>
+			prev.map((item, i) => (i === index ? { ...item, [key]: value } : item))
+		);
+	};
+
+	const addImageItem = () => {
+		setImageList((prev) => [
+			...prev,
+			{ image: '', server: '', playerName: '', description: '' }
+		]);
+	};
+
+	const removeImageItem = (index: number) => {
+		setImageList((prev) => prev.filter((_, i) => i !== index));
+	};
+
+	const handlePreview = (image: string) => {
+		setPreviewImage(API_UPLOAD + image);
+		setPreviewOpen(true);
+	};
+
 	useEffect(() => {
 		getData();
 	}, []);
 
+	const columns: TableColumnsType<AnyObject> = [
+		{ title: '编号', dataIndex: 'id' },
+		{
+			title: '图片',
+			dataIndex: 'image',
+			width: 130,
+			render: (_v, row) => {
+				const images = Array.isArray(row.images) ? row.images : [];
+				if (!images.length) return '--';
+				const urls = images
+					.map((img: AnyObject) => (img.image ? API_UPLOAD + img.image : ''))
+					.filter(Boolean);
+				return (
+					<Space size={4} align='center'>
+						<Image.PreviewGroup items={urls}>
+							{images.slice(0, 3).map((img: AnyObject) => (
+								<Image
+									key={img.id ?? img.image}
+									src={img.image ? API_UPLOAD + img.image : ''}
+									width={30}
+									height={30}
+									style={{ objectFit: 'cover' }}
+								/>
+							))}
+						</Image.PreviewGroup>
+						{images.length > 3 ? (
+							<span className='text-xs'>+{images.length - 3}</span>
+						) : null}
+					</Space>
+				);
+			}
+		},
+		{ title: '名称', dataIndex: 'name' },
+		{
+			title: '类型',
+			dataIndex: 'type',
+			render: (value) => getOptionLabel(TYPE_OPTIONS, value)
+		},
+		{
+			title: '宠物类型',
+			dataIndex: 'petType',
+			render: (value) => getOptionLabel(PET_TYPE_OPTIONS, value)
+		},
+		{
+			title: '种族',
+			dataIndex: 'race',
+			render: (value) => getOptionLabel(RACE_OPTIONS, value)
+		},
+		{ title: '顺序', dataIndex: 'sort' },
+		{
+			title: '描述',
+			dataIndex: 'description',
+			render: (value) => renderContent(value)
+		},
+		{
+			title: '审核状态',
+			dataIndex: 'isAudit',
+			render: (value) => {
+				if (value == 2) return <Tag color='error'>已拒绝</Tag>;
+				return value == 1 ? <Tag color='success'>已通过</Tag> : <Tag color='warning'>待审核</Tag>;
+			}
+		},
+		{
+			title: '是否上架',
+			dataIndex: 'isShelf',
+			render: (value) => (value == 1 ? <Tag color='success'>已上架</Tag> : <Tag color='default'>已下架</Tag>)
+		},
+		{
+			title: '操作',
+			dataIndex: 'action',
+			width: 220,
+			render: (_v, row) => (
+				<>
+					{row.isAudit == 0 && (
+						<Button
+							type='link'
+							size='small'
+							icon={<CheckOutlined />}
+							title='审核'
+							onClick={() => onAudit(row)}
+						/>
+					)}
+					<Button
+						type='link'
+						size='small'
+						danger={row.isShelf == 1}
+						icon={row.isShelf == 1 ? <ArrowDownOutlined /> : <ArrowUpOutlined />}
+						title={row.isShelf == 1 ? '下架' : '上架'}
+						onClick={() => onShelf(row)}
+					/>
+					<Button
+						type='link'
+						size='small'
+						icon={<EditOutlined />}
+						title='编辑'
+						onClick={() => onEdit(row.id)}
+					/>
+					<Button
+						type='link'
+						size='small'
+						danger
+						icon={<DeleteOutlined />}
+						title='删除'
+						onClick={() => onDelete(row.id)}
+					/>
+				</>
+			)
+		}
+	];
+
 	return (
-		<PageOverlay>
+		<div className='p-4 flex flex-col gap-4'>
 			<div className='flex items-center justify-between'>
-				<Form layout='inline' formik={search}>
+				<Form form={searchForm} layout='inline' onFinish={onSearch}>
 					<Form.Item name='name' label='名称'>
-						<Input size='small' placeholder='请输入名称' />
+						<Input placeholder='请输入名称' />
 					</Form.Item>
 					<Form.Item name='type' label='类型'>
-						<Select placeholder='请选择类型'>
-							{TYPE_OPTIONS.map((item) => (
-								<MenuItem key={item.value} value={String(item.value)}>
-									{item.label}
-								</MenuItem>
-							))}
-						</Select>
+						<Select
+							placeholder='请选择类型'
+							options={TYPE_OPTIONS.map((item) => ({
+								value: String(item.value),
+								label: item.label
+							}))}
+						/>
 					</Form.Item>
 					<Form.Item>
-						<Stack direction='row' spacing={2}>
-							<Button
-								variant='contained'
-								type='submit'
-								startIcon={<SearchRegular />}
-							>
+						<Space>
+							<Button type='primary' htmlType='submit' icon={<SearchOutlined />}>
 								查询
 							</Button>
-							<Button variant='outlined' type='reset'>
-								重置
-							</Button>
-						</Stack>
+							<Button onClick={onReset}>重置</Button>
+						</Space>
 					</Form.Item>
 				</Form>
-				<Stack direction='row' spacing={2}>
-					<Button
-						variant='contained'
-						startIcon={<AddRegular />}
-						onClick={() => onEdit()}
-					>
+				<Space>
+					<Button type='primary' icon={<PlusOutlined />} onClick={() => onEdit()}>
 						新建
 					</Button>
 					<Button
-						color='error'
-						variant='contained'
-						startIcon={<DeleteRegular />}
+						type='primary'
+						danger
+						icon={<DeleteOutlined />}
 						disabled={selectKeys.length == 0}
 						onClick={onBatchDelete}
 					>
 						批量删除
 					</Button>
-				</Stack>
+				</Space>
 			</div>
 			<Table
 				{...tableProps}
-				checkboxSelection
-				onRowSelectionModelChange={(model) =>
-					setSelectKeys(Array.from(model.ids))
-				}
-				columns={getColumnData([
-					{ field: 'id', headerName: '编号' },
-					{
-						field: 'image',
-						headerName: '图片',
-						flex: 0,
-						width: 130,
-						renderCell({ row }) {
-							const images = Array.isArray(row.images) ? row.images : [];
-							if (!images.length) return '--';
-							const urls = images
-								.map((img: AnyObject) => img.image)
-								.filter(Boolean);
-							return (
-								<Stack direction='row' spacing={0.5} alignItems='center'>
-									{images.slice(0, 3).map((img: AnyObject) => (
-										<ImagePreview
-											key={img.id ?? img.image}
-											value={img.image}
-											images={urls}
-										/>
-									))}
-									{images.length > 3 ? (
-										<Typography variant='caption'>+{images.length - 3}</Typography>
-									) : null}
-								</Stack>
-							);
-						}
-					},
-					{ field: 'name', headerName: '名称' },
-					{
-						field: 'type',
-						headerName: '类型',
-						renderCell({ value }) {
-							return getOptionLabel(TYPE_OPTIONS, value);
-						}
-					},
-					{
-						field: 'petType',
-						headerName: '宠物类型',
-						renderCell({ value }) {
-							return getOptionLabel(PET_TYPE_OPTIONS, value);
-						}
-					},
-					{
-						field: 'race',
-						headerName: '种族',
-						renderCell({ value }) {
-							return getOptionLabel(RACE_OPTIONS, value);
-						}
-					},
-					{ field: 'sort', headerName: '顺序' },
-					{
-						field: 'description',
-						headerName: '描述',
-						flex: 1,
-						renderCell({ value }) {
-							return renderContent(value);
-						}
-					},
-					{
-						field: 'isAudit',
-						headerName: '审核状态',
-						renderCell({ value }) {
-							if (value == 2) return '已拒绝';
-							return value == 1 ? '已通过' : '待审核';
-						}
-					},
-					{
-						field: 'isShelf',
-						headerName: '是否上架',
-						renderCell({ value }) {
-							return value == 1 ? '上架' : '下架';
-						}
-					},
-					{
-						field: 'action',
-						headerName: '操作',
-						flex: 0,
-						width: 220,
-						renderCell({ row }) {
-							return (
-								<>
-									{row.isAudit == 0 && (
-										<IconButton
-											color='primary'
-											size='small'
-											title='审核'
-											onClick={() => onAudit(row)}
-										>
-											<CheckmarkRegular />
-										</IconButton>
-									)}
-									<IconButton
-										color={row.isShelf == 1 ? 'warning' : 'success'}
-										size='small'
-										title={row.isShelf == 1 ? '下架' : '上架'}
-										onClick={() => onShelf(row)}
-									>
-										{row.isShelf == 1 ? <ArrowDownRegular /> : <ArrowUpRegular />}
-									</IconButton>
-									<IconButton
-										color='primary'
-										size='small'
-										title='编辑'
-										onClick={() => onEdit(row.id)}
-									>
-										<EditRegular />
-									</IconButton>
-									<IconButton
-										color='error'
-										size='small'
-										title='删除'
-										onClick={() => onDelete(row.id)}
-									>
-										<DeleteRegular />
-									</IconButton>
-								</>
-							);
-						}
-					}
-				])}
+				rowSelection={{
+					selectedRowKeys: selectKeys,
+					onChange: (keys) => setSelectKeys(keys as (string | number)[])
+				}}
+				columns={columns}
 			/>
 			<Modal
 				title={editId ? '编辑骑宠' : '新增骑宠'}
 				open={isOpen}
 				onOk={onSave}
-				onClose={onCancel}
+				onCancel={onCancel}
+				destroyOnHidden
+				forceRender
 			>
-				<Form labelCol={{ flex: '0 0 100px' }} formik={formik}>
-					<Form.Item required name='name' label='名称'>
-						<Input size='small' placeholder='请输入名称' />
+				<Form
+					form={form}
+					labelCol={{ flex: '0 0 100px' }}
+					onFinish={onFinish}
+					initialValues={{
+						name: '',
+						type: '',
+						petType: '',
+						race: '',
+						sort: '',
+						description: ''
+					}}
+				>
+					<Form.Item
+						name='name'
+						label='名称'
+						rules={[{ required: true, message: '请输入名称' }]}
+					>
+						<Input placeholder='请输入名称' />
 					</Form.Item>
 					<Form.Item name='type' label='类型'>
-						<Select placeholder='请选择类型'>
-							{TYPE_OPTIONS.map((item) => (
-								<MenuItem key={item.value} value={String(item.value)}>
-									{item.label}
-								</MenuItem>
-							))}
-						</Select>
+						<Select
+							placeholder='请选择类型'
+							options={TYPE_OPTIONS.map((item) => ({
+								value: String(item.value),
+								label: item.label
+							}))}
+						/>
 					</Form.Item>
 					<Form.Item name='petType' label='宠物类型'>
-						<Select placeholder='请选择宠物类型'>
-							{PET_TYPE_OPTIONS.map((item) => (
-								<MenuItem key={item.value} value={String(item.value)}>
-									{item.label}
-								</MenuItem>
-							))}
-						</Select>
+						<Select
+							placeholder='请选择宠物类型'
+							options={PET_TYPE_OPTIONS.map((item) => ({
+								value: String(item.value),
+								label: item.label
+							}))}
+						/>
 					</Form.Item>
 					<Form.Item name='race' label='种族'>
-						<Select placeholder='请选择种族'>
-							{RACE_OPTIONS.map((item) => (
-								<MenuItem key={item.value} value={String(item.value)}>
-									{item.label}
-								</MenuItem>
-							))}
-						</Select>
+						<Select
+							placeholder='请选择种族'
+							options={RACE_OPTIONS.map((item) => ({
+								value: String(item.value),
+								label: item.label
+							}))}
+						/>
 					</Form.Item>
 					<Form.Item name='sort' label='顺序'>
-						<Input size='small' placeholder='请输入顺序' />
-					</Form.Item>
-					<Form.Item name='image' label='图片'>
-						<Upload multiple maxSize={MAX_IMAGE_SIZE} />
+						<Input placeholder='请输入顺序' />
 					</Form.Item>
 					<Form.Item name='description' label='描述'>
-						<Input.TextArea minRows={3} placeholder='请输入描述' />
+						<Input.TextArea rows={3} placeholder='请输入描述' />
+					</Form.Item>
+					<Form.Item label='图片'>
+						<div className='flex flex-wrap gap-3'>
+							{imageList.map((item, index) => (
+								<div key={index} className='relative'>
+									<ImageUpload
+										value={item.image}
+										maxSize={MAX_IMAGE_SIZE}
+										onPreview={() => handlePreview(item.image)}
+										onChange={(value) => {
+											if (value) {
+												updateImageItem(index, 'image', value);
+											} else {
+												removeImageItem(index);
+											}
+										}}
+									/>
+								</div>
+							))}
+							<div
+								style={{ width: 102, height: 102 }}
+								className='flex flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-gray-300 text-gray-400 cursor-pointer hover:border-blue-500 hover:text-blue-500'
+								onClick={addImageItem}
+							>
+								<PlusOutlined />
+								<span className='text-xs'>上传</span>
+							</div>
+						</div>
 					</Form.Item>
 				</Form>
 			</Modal>
-		</PageOverlay>
+			<Image
+				styles={{ root: { display: 'none' } }}
+				preview={{
+					open: previewOpen,
+					onOpenChange: (open) => setPreviewOpen(open),
+					afterOpenChange: (open) => !open && setPreviewImage('')
+				}}
+				src={previewImage || undefined}
+			/>
+		</div>
 	);
 };

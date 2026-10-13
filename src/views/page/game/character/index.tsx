@@ -1,40 +1,29 @@
-import * as Yup from 'yup';
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import {
+	CheckOutlined,
+	CloudUploadOutlined,
+	DeleteOutlined,
+	DownloadOutlined,
+	EditOutlined,
+	PlusOutlined,
+	SearchOutlined
+} from '@ant-design/icons';
+import {
+	App,
 	Button,
-	IconButton,
-	MenuItem,
-	RadioGroup,
-	Stack,
-	Typography
-} from '@mui/material';
-import type { GridRowId } from '@mui/x-data-grid';
-import { useFormik, type FormikValues } from 'formik';
-import {
-	AddRegular,
-	ArrowDownloadRegular,
-	EditRegular,
-	DeleteRegular,
-	SearchRegular,
-	CloudArrowUpRegular,
-	CheckmarkRegular
-} from '@fluentui/react-icons';
-import {
-	Autocomplete,
 	Form,
-	getColumnData,
-	PageOverlay,
-	ImagePreview,
+	Image,
 	Input,
 	Modal,
 	Radio,
 	Select,
+	Space,
 	Table,
-	Upload,
-	confirm,
-	message
-} from '@/plugins';
-import { useTable } from '@/core';
+	Tag
+} from 'antd';
+import type { TableColumnsType } from 'antd';
+import { ImageUpload } from '@/components/image-upload';
+import { API_UPLOAD, useTable } from '@/core';
 import {
 	addCharacter,
 	deleteCharacter,
@@ -62,76 +51,60 @@ const ROLE_OPTIONS = [
 const renderYesNo = (value: unknown) => (value == 1 ? '是' : '否');
 
 export const Component = () => {
+	const { message, modal } = App.useApp();
 	const fileRef = useRef<HTMLInputElement>(null);
+	const [searchForm] = Form.useForm();
+	const [form] = Form.useForm();
 	const [isOpen, setIsOpen] = useState(false);
 	const [editId, setEditId] = useState<string | number>('');
-	const [selectKeys, setSelectKeys] = useState<GridRowId[]>([]);
+	const [selectKeys, setSelectKeys] = useState<(string | number)[]>([]);
 	const [fileName, setFileName] = useState('');
 
-	const { tableProps, getData } = useTable('/game/wm/character/list');
+	const { tableProps, getData } = useTable('/game/wm/character/list', () => searchForm.getFieldsValue());
 
-	const search = useFormik<FormikValues>({
-		initialValues: { name: '', sharer: '' },
-		onSubmit(values) {
-			getData({
-				name: values.name || undefined,
-				sharer: values.sharer || undefined
+	const onSearch = (values: AnyObject) => {
+		getData({
+			name: values.name || undefined,
+			sharer: values.sharer || undefined
+		});
+	};
+
+	const onReset = () => {
+		searchForm.resetFields();
+		getData();
+	};
+
+	const onFinish = (values: AnyObject) => {
+		const params = {
+			name: values.name,
+			roles: Array.isArray(values.roles)
+				? values.roles.join(',')
+				: values.roles,
+			tags: Array.isArray(values.tags) ? values.tags.join(',') : values.tags,
+			sharer: values.sharer || undefined,
+			isTop: Number(values.isTop),
+			isVisible: Number(values.isVisible),
+			isRecommend: Number(values.isRecommend),
+			isMemberOnly: Number(values.isMemberOnly),
+			isAudit: 1,
+			downloadUrl: values.downloadUrl || undefined,
+			url: values.url || undefined,
+			sort: values.sort === '' ? null : Number(values.sort)
+		};
+		if (editId) {
+			updateCharacter({ ...params, id: editId }).then(() => {
+				message.success('修改成功');
+				onCancel();
+				getData();
 			});
-		},
-		onReset() {
-			getData();
+		} else {
+			addCharacter(params).then(() => {
+				message.success('新增成功');
+				onCancel();
+				getData();
+			});
 		}
-	});
-
-	const formik = useFormik<FormikValues>({
-		initialValues: {
-			name: '',
-			roles: [],
-			tags: [],
-			sharer: '',
-			isTop: '0',
-			isVisible: '1',
-			isRecommend: '0',
-			isMemberOnly: '0',
-			downloadUrl: '',
-			url: '',
-			sort: ''
-		},
-		validationSchema: Yup.object().shape({
-			name: Yup.string().required('请输入代码名称')
-		}),
-		onSubmit(values) {
-			const params = {
-				name: values.name,
-				roles: Array.isArray(values.roles)
-					? values.roles.join(',')
-					: values.roles,
-				tags: Array.isArray(values.tags) ? values.tags.join(',') : values.tags,
-				sharer: values.sharer || undefined,
-				isTop: Number(values.isTop),
-				isVisible: Number(values.isVisible),
-				isRecommend: Number(values.isRecommend),
-				isMemberOnly: Number(values.isMemberOnly),
-				isAudit: 1,
-				downloadUrl: values.downloadUrl || undefined,
-				url: values.url || undefined,
-				sort: values.sort === '' ? null : Number(values.sort)
-			};
-			if (editId) {
-				updateCharacter({ ...params, id: editId }).then(() => {
-					message.success('修改成功');
-					onCancel();
-					getData();
-				});
-			} else {
-				addCharacter(params).then(() => {
-					message.success('新增成功');
-					onCancel();
-					getData();
-				});
-			}
-		}
-	});
+	};
 
 	const onUpload = (e: ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];
@@ -140,7 +113,7 @@ export const Component = () => {
 		const formData = new FormData();
 		formData.append('file', file);
 		uploadFile(formData).then((result) => {
-			formik.setFieldValue('downloadUrl', result.data);
+			form.setFieldsValue({ downloadUrl: result.data });
 			setFileName(file.name);
 		});
 	};
@@ -150,8 +123,8 @@ export const Component = () => {
 			setEditId(id);
 			getCharacterById(id).then((result) => {
 				const record = result.data;
-				formik.resetForm();
-				formik.setValues({
+				form.resetFields();
+				form.setFieldsValue({
 					name: record.name ?? '',
 					roles: record.roles ? record.roles.split(',') : [],
 					tags: record.tags ? record.tags.split(',') : [],
@@ -171,26 +144,25 @@ export const Component = () => {
 			});
 		} else {
 			setEditId('');
-			formik.resetForm();
+			form.resetFields();
 			setFileName('');
 			setIsOpen(true);
 		}
 	};
 
 	const onSave = () => {
-		formik.handleSubmit();
+		form.submit();
 	};
 
 	const onCancel = () => {
 		setIsOpen(false);
 		setEditId('');
 		setFileName('');
-		formik.resetForm();
+		form.resetFields();
 	};
 
 	const onDelete = (id: string | number) => {
-		confirm({
-			type: 'warning',
+		modal.confirm({
 			title: '系统提示',
 			content: '是否确认删除该代码?',
 			onOk() {
@@ -207,8 +179,7 @@ export const Component = () => {
 			message.warning('请选择要删除的代码');
 			return;
 		}
-		confirm({
-			type: 'warning',
+		modal.confirm({
 			title: '系统提示',
 			content: `是否确认删除选中的 ${selectKeys.length} 项数据?`,
 			onOk() {
@@ -236,12 +207,11 @@ export const Component = () => {
 	};
 
 	const onAudit = (row: AnyObject) => {
-		confirm({
-			type: 'warning',
+		modal.confirm({
 			title: '审核',
 			content: '请选择审核结果',
-			confirmationText: '通过',
-			cancellationText: '拒绝',
+			okText: '通过',
+			cancelText: '拒绝',
 			onOk() {
 				updateCharacter({ ...row, isAudit: 1 }).then(() => {
 					message.success('已通过审核');
@@ -261,259 +231,241 @@ export const Component = () => {
 		getData();
 	}, []);
 
+	const columns: TableColumnsType<AnyObject> = [
+		{ title: '编号', dataIndex: 'id' },
+		{ title: '代码名称', dataIndex: 'name' },
+		{ title: '排序', dataIndex: 'sort' },
+		{ title: '可用角色', dataIndex: 'roles' },
+		{ title: '标签', dataIndex: 'tags' },
+		{ title: '分享人', dataIndex: 'sharer' },
+		{
+			title: '是否置顶',
+			dataIndex: 'isTop',
+			render: (value) => renderYesNo(value)
+		},
+		{
+			title: '是否可见',
+			dataIndex: 'isVisible',
+			render: (value) => renderYesNo(value)
+		},
+		{
+			title: '是否推荐',
+			dataIndex: 'isRecommend',
+			render: (value) => renderYesNo(value)
+		},
+		{
+			title: '会员专属',
+			dataIndex: 'isMemberOnly',
+			render: (value) => renderYesNo(value)
+		},
+		{
+			title: '审核状态',
+			dataIndex: 'isAudit',
+			render: (value) => {
+				if (value == 2) return <Tag color='error'>已拒绝</Tag>;
+				return value == 1 ? <Tag color='success'>已通过</Tag> : <Tag color='warning'>待审核</Tag>;
+			}
+		},
+		{
+			title: '预览图片',
+			dataIndex: 'url',
+			width: 80,
+			render: (value) => (
+				<Image
+					src={value ? API_UPLOAD + value : ''}
+					width={40}
+					height={40}
+					style={{ objectFit: 'cover' }}
+				/>
+			)
+		},
+		{
+			title: '下载地址',
+			dataIndex: 'downloadUrl',
+			render: (value, row) => {
+				if (!value) return '--';
+				return (
+					<Button
+						size='small'
+						icon={<DownloadOutlined />}
+						onClick={() => onDownload(row)}
+					>
+						{getFileName(value)}
+					</Button>
+				);
+			}
+		},
+		{
+			title: '操作',
+			dataIndex: 'action',
+			width: 220,
+			render: (_v, row) => (
+				<>
+					{row.isAudit == 0 && (
+						<Button
+							type='link'
+							size='small'
+							icon={<CheckOutlined />}
+							title='审核'
+							onClick={() => onAudit(row)}
+						/>
+					)}
+					<Button
+						type='link'
+						size='small'
+						icon={<EditOutlined />}
+						title='编辑'
+						onClick={() => onEdit(row.id)}
+					/>
+					<Button
+						type='link'
+						size='small'
+						danger
+						icon={<DeleteOutlined />}
+						title='删除'
+						onClick={() => onDelete(row.id)}
+					/>
+				</>
+			)
+		}
+	];
+
 	return (
-		<PageOverlay>
+		<div className='p-4 flex flex-col gap-4'>
 			<div className='flex items-center justify-between'>
-				<Form layout='inline' formik={search}>
+				<Form form={searchForm} layout='inline' onFinish={onSearch}>
 					<Form.Item name='name' label='代码名称'>
-						<Input size='small' placeholder='请输入代码名称' />
+						<Input placeholder='请输入代码名称' />
 					</Form.Item>
 					<Form.Item name='sharer' label='分享人'>
-						<Input size='small' placeholder='请输入分享人' />
+						<Input placeholder='请输入分享人' />
 					</Form.Item>
 					<Form.Item>
-						<Stack direction='row' spacing={2}>
-							<Button
-								variant='contained'
-								type='submit'
-								startIcon={<SearchRegular />}
-							>
+						<Space>
+							<Button type='primary' htmlType='submit' icon={<SearchOutlined />}>
 								查询
 							</Button>
-							<Button variant='outlined' type='reset'>
-								重置
-							</Button>
-						</Stack>
+							<Button onClick={onReset}>重置</Button>
+						</Space>
 					</Form.Item>
 				</Form>
-				<Stack direction='row' spacing={2}>
-					<Button
-						variant='contained'
-						startIcon={<AddRegular />}
-						onClick={() => onEdit()}
-					>
+				<Space>
+					<Button type='primary' icon={<PlusOutlined />} onClick={() => onEdit()}>
 						新建
 					</Button>
 					<Button
-						color='error'
-						variant='contained'
-						startIcon={<DeleteRegular />}
+						type='primary'
+						danger
+						icon={<DeleteOutlined />}
 						disabled={selectKeys.length == 0}
 						onClick={onBatchDelete}
 					>
 						批量删除
 					</Button>
-				</Stack>
+				</Space>
 			</div>
 			<Table
 				{...tableProps}
-				checkboxSelection
-				onRowSelectionModelChange={(model) =>
-					setSelectKeys(Array.from(model.ids))
-				}
-				columns={getColumnData([
-					{
-						field: 'id',
-						headerName: '编号'
-					},
-					{
-						field: 'name',
-						headerName: '代码名称'
-					},
-					{
-						field: 'sort',
-						headerName: '排序'
-					},
-					{
-						field: 'roles',
-						headerName: '可用角色'
-					},
-					{
-						field: 'tags',
-						headerName: '标签'
-					},
-					{
-						field: 'sharer',
-						headerName: '分享人'
-					},
-					{
-						field: 'isTop',
-						headerName: '是否置顶',
-						renderCell({ value }) {
-							return renderYesNo(value);
-						}
-					},
-					{
-						field: 'isVisible',
-						headerName: '是否可见',
-						renderCell({ value }) {
-							return renderYesNo(value);
-						}
-					},
-					{
-						field: 'isRecommend',
-						headerName: '是否推荐',
-						renderCell({ value }) {
-							return renderYesNo(value);
-						}
-					},
-					{
-						field: 'isMemberOnly',
-						headerName: '会员专属',
-						renderCell({ value }) {
-							return renderYesNo(value);
-						}
-					},
-					{
-						field: 'isAudit',
-						headerName: '审核状态',
-						renderCell({ value }) {
-							if (value == 2) return '已拒绝';
-							return value == 1 ? '已通过' : '待审核';
-						}
-					},
-					{
-						field: 'url',
-						headerName: '预览图片',
-						flex: 0,
-						width: 80,
-						renderCell({ value }) {
-							return <ImagePreview value={value} />;
-						}
-					},
-					{
-						field: 'downloadUrl',
-						headerName: '下载地址',
-						flex: 1,
-						renderCell({ value, row }) {
-							if (!value) return '--';
-							return (
-								<Button
-									size='small'
-									startIcon={<ArrowDownloadRegular />}
-									onClick={() => onDownload(row)}
-								>
-									{getFileName(value)}
-								</Button>
-							);
-						}
-					},
-					{
-						field: 'action',
-						headerName: '操作',
-						flex: 0,
-						width: 220,
-						renderCell({ row }) {
-							return (
-								<>
-									{row.isAudit == 0 && (
-										<IconButton
-											color='primary'
-											size='small'
-											title='审核'
-											onClick={() => onAudit(row)}
-										>
-											<CheckmarkRegular />
-										</IconButton>
-									)}
-									<IconButton
-										color='primary'
-										size='small'
-										title='编辑'
-										onClick={() => onEdit(row.id)}
-									>
-										<EditRegular />
-									</IconButton>
-									<IconButton
-										color='error'
-										size='small'
-										title='删除'
-										onClick={() => onDelete(row.id)}
-									>
-										<DeleteRegular />
-									</IconButton>
-								</>
-							);
-						}
-					}
-				])}
+				rowSelection={{
+					selectedRowKeys: selectKeys,
+					onChange: (keys) => setSelectKeys(keys as (string | number)[])
+				}}
+				columns={columns}
 			/>
 			<Modal
 				title={editId ? '编辑代码' : '新增代码'}
 				open={isOpen}
 				onOk={onSave}
-				onClose={onCancel}
+				onCancel={onCancel}
+				destroyOnHidden
+				forceRender
 			>
-				<Form labelCol={{ flex: '0 0 100px' }} formik={formik}>
-					<Form.Item required name='name' label='代码名称'>
-						<Input size='small' placeholder='请输入代码名称' />
+				<Form
+					form={form}
+					labelCol={{ flex: '0 0 100px' }}
+					onFinish={onFinish}
+					initialValues={{
+						name: '',
+						roles: [],
+						tags: [],
+						sharer: '',
+						isTop: '0',
+						isVisible: '1',
+						isRecommend: '0',
+						isMemberOnly: '0',
+						downloadUrl: '',
+						url: '',
+						sort: ''
+					}}
+				>
+					<Form.Item
+						name='name'
+						label='代码名称'
+						rules={[{ required: true, message: '请输入代码名称' }]}
+					>
+						<Input placeholder='请输入代码名称' />
 					</Form.Item>
 					<Form.Item name='roles' label='可用角色'>
-						<Select multiple placeholder='请选择可用角色'>
-							{ROLE_OPTIONS.map((item) => (
-								<MenuItem key={item} value={item}>
-									{item}
-								</MenuItem>
-							))}
-						</Select>
-					</Form.Item>
-					<Form.Item name='sort' label='排序'>
-						<Input size='small' placeholder='请输入排序' />
-					</Form.Item>
-					<Form.Item name='tags' label='标签'>
-						<Autocomplete
-							multiple
-							freeSolo
-							size='small'
-							options={[]}
-							placeholder='请输入标签'
+						<Select
+							mode='multiple'
+							placeholder='请选择可用角色'
+							options={ROLE_OPTIONS.map((item) => ({
+								value: item,
+								label: item
+							}))}
 						/>
 					</Form.Item>
+					<Form.Item name='sort' label='排序'>
+						<Input placeholder='请输入排序' />
+					</Form.Item>
+					<Form.Item name='tags' label='标签'>
+						<Select mode='tags' placeholder='请输入标签' />
+					</Form.Item>
 					<Form.Item name='sharer' label='分享人'>
-						<Input size='small' placeholder='请输入分享人' />
+						<Input placeholder='请输入分享人' />
 					</Form.Item>
 					<Form.Item name='isTop' label='是否置顶'>
-						<RadioGroup row>
-							<Radio value='1' label='是' />
-							<Radio value='0' label='否' />
-						</RadioGroup>
+						<Radio.Group>
+							<Radio value='1'>是</Radio>
+							<Radio value='0'>否</Radio>
+						</Radio.Group>
 					</Form.Item>
 					<Form.Item name='isVisible' label='是否可见'>
-						<RadioGroup row>
-							<Radio value='1' label='是' />
-							<Radio value='0' label='否' />
-						</RadioGroup>
+						<Radio.Group>
+							<Radio value='1'>是</Radio>
+							<Radio value='0'>否</Radio>
+						</Radio.Group>
 					</Form.Item>
 					<Form.Item name='isRecommend' label='是否推荐'>
-						<RadioGroup row>
-							<Radio value='1' label='是' />
-							<Radio value='0' label='否' />
-						</RadioGroup>
+						<Radio.Group>
+							<Radio value='1'>是</Radio>
+							<Radio value='0'>否</Radio>
+						</Radio.Group>
 					</Form.Item>
 					<Form.Item name='isMemberOnly' label='会员专属'>
-						<RadioGroup row>
-							<Radio value='1' label='是' />
-							<Radio value='0' label='否' />
-						</RadioGroup>
+						<Radio.Group>
+							<Radio value='1'>是</Radio>
+							<Radio value='0'>否</Radio>
+						</Radio.Group>
 					</Form.Item>
 					<Form.Item name='url' label='预览图片'>
-						<Upload />
+						<ImageUpload />
 					</Form.Item>
 					<Form.Item label='下载地址'>
-						<Stack direction='row' spacing={1} alignItems='center'>
+						<Space align='center'>
 							<Button
-								variant='contained'
-								startIcon={<CloudArrowUpRegular />}
+								type='primary'
+								icon={<CloudUploadOutlined />}
 								onClick={() => fileRef.current?.click()}
 							>
 								上传文件
 							</Button>
-							<Typography variant='body2'>{fileName || '--'}</Typography>
+							<span>{fileName || '--'}</span>
 							<input ref={fileRef} type='file' hidden onChange={onUpload} />
-						</Stack>
+						</Space>
 					</Form.Item>
 				</Form>
 			</Modal>
-		</PageOverlay>
+		</div>
 	);
 };

@@ -1,4 +1,5 @@
-import { Container } from '@mui/material';
+import { useState } from 'react';
+import { Drawer, Grid, Layout } from 'antd';
 import { PermisProvider } from '@/authority';
 
 import { Header } from './header';
@@ -6,24 +7,30 @@ import { Sider } from './sider';
 import { Content } from './content';
 
 export const Index = () => {
+	const screens = Grid.useBreakpoint();
+	const isMobile = screens.lg === false;
+	const [drawerOpen, setDrawerOpen] = useState(false);
+
 	return (
 		<PermisProvider>
-			<Container
-				disableGutters
-				className='h-screen min-h-0 flex flex-col'
-				maxWidth={false}
-				sx={{ backgroundColor: 'background.default' }}
-			>
-				<Header></Header>
-				<Container
-					disableGutters
-					className='min-h-0 flex flex-1'
-					maxWidth={false}
+			<Layout className='h-screen min-h-0 flex flex-col'>
+				<Header isMobile={isMobile} onOpenMenu={() => setDrawerOpen(true)} />
+				<div className='min-h-0 flex flex-1'>
+					{isMobile ? null : <Sider />}
+					<Content />
+				</div>
+			</Layout>
+			{isMobile ? (
+				<Drawer
+					placement='left'
+					size={220}
+					open={drawerOpen}
+					onClose={() => setDrawerOpen(false)}
+					styles={{ body: { padding: 0 } }}
 				>
-					<Sider></Sider>
-					<Content></Content>
-				</Container>
-			</Container>
+					<Sider onNavigate={() => setDrawerOpen(false)} />
+				</Drawer>
+			) : null}
 		</PermisProvider>
 	);
 };

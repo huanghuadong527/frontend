@@ -1,85 +1,56 @@
-import * as Yup from 'yup';
+import { useEffect, useState } from 'react';
 import {
-	useEffect,
-	useState } from 'react';
-import { Button,
-	IconButton,
-	Stack } from '@mui/material';
-import type { GridRowId } from '@mui/x-data-grid';
-import { useFormik,
-	type FormikValues } from 'formik';
-import {
-	AddRegular,
-	EditRegular,
-	DeleteRegular,
-	SearchRegular
-} from '@fluentui/react-icons';
-import {
-	Form,
-	getColumnData,
-	PageOverlay,
-	Input,
-	Modal,
-	Table,
-	confirm,
-	message
-} from '@/plugins';
+	DeleteOutlined,
+	EditOutlined,
+	PlusOutlined,
+	SearchOutlined
+} from '@ant-design/icons';
+import { App, Button, Form, Input, Modal, Space, Table } from 'antd';
 import { useTable } from '@/core';
 import { addWord, deleteWord, getWordById, updateWord } from '@/service';
 
 export const Component = () => {
+	const { message, modal } = App.useApp();
 	const [isOpen, setIsOpen] = useState(false);
 	const [editId, setEditId] = useState<string | number>('');
-	const [selectKeys, setSelectKeys] = useState<GridRowId[]>([]);
+	const [selectKeys, setSelectKeys] = useState<(string | number)[]>([]);
+	const [searchForm] = Form.useForm();
+	const [form] = Form.useForm();
 
-	const { tableProps, getData } = useTable('/study/word/list');
+	const { tableProps, getData } = useTable('/study/word/list', () => searchForm.getFieldsValue());
 
-	const search = useFormik<FormikValues>({
-		initialValues: { name: '', type: '' },
-		onSubmit(values) {
-			getData(values);
-		},
-		onReset() {
-			getData();
+	const onSearch = (values: AnyObject) => {
+		getData(values);
+	};
+
+	const onReset = () => {
+		searchForm.resetFields();
+		getData();
+	};
+
+	const onFinish = (values: AnyObject) => {
+		if (editId) {
+			updateWord({ ...values, id: editId }).then(() => {
+				message.success('修改成功');
+				onCancel();
+				getData();
+			});
+		} else {
+			addWord(values).then(() => {
+				message.success('新增成功');
+				onCancel();
+				getData();
+			});
 		}
-	});
-
-	const formik = useFormik<FormikValues>({
-		initialValues: {
-			name: '',
-			type: '',
-			trans: '',
-			ukphone: '',
-			usphone: '',
-			count: ''
-		},
-		validationSchema: Yup.object().shape({
-			name: Yup.string().required('请输入单词')
-		}),
-		onSubmit(values) {
-			if (editId) {
-				updateWord({ ...values, id: editId }).then(() => {
-					message.success('修改成功');
-					onCancel();
-					getData();
-				});
-			} else {
-				addWord(values).then(() => {
-					message.success('新增成功');
-					onCancel();
-					getData();
-				});
-			}
-		}
-	});
+	};
 
 	const onEdit = (id?: string | number) => {
 		if (id) {
 			setEditId(id);
 			getWordById(id).then((result) => {
 				const record = result.data;
-				formik.resetForm();
-				formik.setValues({
+				form.resetFields();
+				form.setFieldsValue({
 					name: record.name ?? '',
 					type: record.type ?? '',
 					trans: record.trans ?? '',
@@ -91,24 +62,23 @@ export const Component = () => {
 			});
 		} else {
 			setEditId('');
-			formik.resetForm();
+			form.resetFields();
 			setIsOpen(true);
 		}
 	};
 
 	const onSave = () => {
-		formik.handleSubmit();
+		form.submit();
 	};
 
 	const onCancel = () => {
 		setIsOpen(false);
 		setEditId('');
-		formik.resetForm();
+		form.resetFields();
 	};
 
 	const onDelete = (id: string | number) => {
-		confirm({
-			type: 'warning',
+		modal.confirm({
 			title: '系统提示',
 			content: '是否确认删除该单词?',
 			onOk() {
@@ -125,8 +95,7 @@ export const Component = () => {
 			message.warning('请选择要删除的单词');
 			return;
 		}
-		confirm({
-			type: 'warning',
+		modal.confirm({
 			title: '系统提示',
 			content: `是否确认删除选中的 ${selectKeys.length} 项数据?`,
 			onOk() {
@@ -139,132 +108,130 @@ export const Component = () => {
 		});
 	};
 
+	const columns = [
+		{ title: '编号', dataIndex: 'id' },
+		{ title: '单词', dataIndex: 'name' },
+		{ title: '类型', dataIndex: 'type' },
+		{ title: '翻译', dataIndex: 'trans' },
+		{ title: '英音', dataIndex: 'ukphone' },
+		{ title: '美音', dataIndex: 'usphone' },
+		{
+			title: '操作',
+			dataIndex: 'action',
+			width: 100,
+			render: (_: any, row: AnyObject) => (
+				<>
+					<Button
+						type='link'
+						size='small'
+						icon={<EditOutlined />}
+						title='编辑'
+						onClick={() => onEdit(row.id)}
+					/>
+					<Button
+						type='link'
+						danger
+						size='small'
+						icon={<DeleteOutlined />}
+						title='删除'
+						onClick={() => onDelete(row.id)}
+					/>
+				</>
+			)
+		}
+	];
+
 	useEffect(() => {
 		getData();
 	}, []);
 
 	return (
-		<PageOverlay>
+		<div className='p-4 flex flex-col gap-4'>
 			<div className='flex items-center justify-between'>
-				<Form layout='inline' formik={search}>
+				<Form form={searchForm} layout='inline' onFinish={onSearch}>
 					<Form.Item name='name' label='单词'>
-						<Input size='small' placeholder='请输入单词' />
+						<Input placeholder='请输入单词' />
 					</Form.Item>
 					<Form.Item name='type' label='类型'>
-						<Input size='small' placeholder='请输入类型' />
+						<Input placeholder='请输入类型' />
 					</Form.Item>
 					<Form.Item>
-						<Stack direction='row' spacing={2}>
-							<Button variant='contained' type='submit' startIcon={<SearchRegular />}>
+						<Space>
+							<Button type='primary' htmlType='submit' icon={<SearchOutlined />}>
 								查询
 							</Button>
-							<Button variant='outlined' type='reset'>
-								重置
-							</Button>
-						</Stack>
+							<Button onClick={onReset}>重置</Button>
+						</Space>
 					</Form.Item>
 				</Form>
-				<Stack direction='row' spacing={2}>
-					<Button variant='contained' startIcon={<AddRegular />} onClick={() => onEdit()}>
+				<Space>
+					<Button type='primary' icon={<PlusOutlined />} onClick={() => onEdit()}>
 						新建
 					</Button>
 					<Button
-						color='error'
-						variant='contained'
-						startIcon={<DeleteRegular />}
+						type='primary'
+						danger
+						icon={<DeleteOutlined />}
 						disabled={selectKeys.length == 0}
 						onClick={onBatchDelete}
 					>
 						批量删除
 					</Button>
-				</Stack>
+				</Space>
 			</div>
 			<Table
 				{...tableProps}
-				checkboxSelection
-				onRowSelectionModelChange={(model) => setSelectKeys(Array.from(model.ids))}
-				columns={getColumnData([
-					{
-						field: 'id',
-						headerName: '编号'
-					},
-					{
-						field: 'name',
-						headerName: '单词'
-					},
-					{
-						field: 'type',
-						headerName: '类型'
-					},
-					{
-						field: 'trans',
-						headerName: '翻译'
-					},
-					{
-						field: 'ukphone',
-						headerName: '英音'
-					},
-					{
-						field: 'usphone',
-						headerName: '美音'
-					},
-					{
-						field: 'action',
-						headerName: '操作',
-						flex: 0,
-						width: 100,
-						renderCell({ row }) {
-							return (
-								<>
-									<IconButton
-										color='primary'
-										size='small'
-										title='编辑'
-										onClick={() => onEdit(row.id)}
-									>
-										<EditRegular />
-									</IconButton>
-									<IconButton
-										color='error'
-										size='small'
-										title='删除'
-										onClick={() => onDelete(row.id)}
-									>
-										<DeleteRegular />
-									</IconButton>
-								</>
-							);
-						}
-					}
-				])}
+				rowSelection={{
+					selectedRowKeys: selectKeys,
+					onChange: (keys) => setSelectKeys(keys as (string | number)[])
+				}}
+				columns={columns}
 			/>
 			<Modal
 				title={editId ? '编辑单词' : '新增单词'}
 				open={isOpen}
 				onOk={onSave}
-				onClose={onCancel}
+				onCancel={onCancel}
+				destroyOnHidden
+				forceRender
 			>
-				<Form labelCol={{ flex: '0 0 90px' }} formik={formik}>
-					<Form.Item required name='name' label='单词'>
-						<Input size='small' placeholder='请输入单词' />
+				<Form
+					form={form}
+					labelCol={{ flex: '0 0 90px' }}
+					onFinish={onFinish}
+					initialValues={{
+						name: '',
+						type: '',
+						trans: '',
+						ukphone: '',
+						usphone: '',
+						count: ''
+					}}
+				>
+					<Form.Item
+						name='name'
+						label='单词'
+						rules={[{ required: true, message: '请输入单词' }]}
+					>
+						<Input placeholder='请输入单词' />
 					</Form.Item>
 					<Form.Item name='type' label='类型'>
-						<Input size='small' placeholder='请输入类型' />
+						<Input placeholder='请输入类型' />
 					</Form.Item>
 					<Form.Item name='trans' label='翻译'>
-						<Input.TextArea placeholder='请输入翻译' />
+						<Input.TextArea rows={3} placeholder='请输入翻译' />
 					</Form.Item>
 					<Form.Item name='ukphone' label='英音'>
-						<Input size='small' placeholder='请输入英音' />
+						<Input placeholder='请输入英音' />
 					</Form.Item>
 					<Form.Item name='usphone' label='美音'>
-						<Input size='small' placeholder='请输入美音' />
+						<Input placeholder='请输入美音' />
 					</Form.Item>
 					<Form.Item name='count' label='出现次数'>
-						<Input size='small' placeholder='请输入出现次数' />
+						<Input placeholder='请输入出现次数' />
 					</Form.Item>
 				</Form>
 			</Modal>
-		</PageOverlay>
+		</div>
 	);
 };

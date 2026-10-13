@@ -1,31 +1,21 @@
-import * as Yup from 'yup';
 import xe from 'xe-utils';
+import { useEffect, useState } from 'react';
 import {
-	useEffect,
-	useState } from 'react';
-import { Button,
-	Chip,
-	IconButton,
-	RadioGroup } from '@mui/material';
-import { useFormik,
-	type FormikValues } from 'formik';
-import {
-	AddRegular,
-	EditRegular,
-	DeleteRegular
-} from '@fluentui/react-icons';
-import {
+	App,
+	Button,
 	Form,
-	getColumnData,
-	PageOverlay,
 	Input,
 	Modal,
 	Radio,
 	Table,
-	TreeSelect,
-	confirm,
-	message
-} from '@/plugins';
+	Tag,
+	TreeSelect
+} from 'antd';
+import {
+	DeleteOutlined,
+	EditOutlined,
+	PlusOutlined
+} from '@ant-design/icons';
 import {
 	addDept,
 	deleteDept,
@@ -47,12 +37,15 @@ const flattenTree = (tree: AnyObject[], depth = 0, result: AnyObject[] = []) => 
 };
 
 export const Component = () => {
+	const { message, modal } = App.useApp();
 	const { hasPermi } = usePermission();
 	const [isOpen, setIsOpen] = useState(false);
 	const [editId, setEditId] = useState<string | number>('');
 	const [rows, setRows] = useState<AnyObject[]>([]);
 	const [loading, setLoading] = useState(false);
 	const [parentTree, setParentTree] = useState<AnyObject[]>([]);
+
+	const [form] = Form.useForm();
 
 	const getData = () => {
 		setLoading(true);
@@ -71,70 +64,50 @@ export const Component = () => {
 		});
 	};
 
-	const formik = useFormik<FormikValues>({
-		initialValues: {
-			parentId: '',
-			deptName: '',
-			orderNum: 0,
-			status: '0',
-			leader: '',
-			email: '',
-			phone: ''
-		},
-		validationSchema: Yup.object().shape({
-			deptName: Yup.string().required('请输入部门名称')
-		}),
-		onSubmit(values) {
-			const params = { ...values, parentId: values.parentId || 0 };
-			if (editId) {
-				updateDept({ ...params, id: editId }).then(() => {
-					message.success('修改成功');
-					onCancel();
-					getData();
-					getParentData();
-				});
-			} else {
-				addDept(params).then(() => {
-					message.success('新增成功');
-					onCancel();
-					getData();
-					getParentData();
-				});
-			}
+	const onFinish = (values: AnyObject) => {
+		const params = { ...values, parentId: values.parentId || 0 };
+		if (editId) {
+			updateDept({ ...params, id: editId }).then(() => {
+				message.success('修改成功');
+				onCancel();
+				getData();
+				getParentData();
+			});
+		} else {
+			addDept(params).then(() => {
+				message.success('新增成功');
+				onCancel();
+				getData();
+				getParentData();
+			});
 		}
-	});
+	};
 
 	const onEdit = (id?: string | number, parentId?: string | number) => {
 		if (id) {
 			setEditId(id);
 			getDeptById(id).then((result) => {
-				formik.resetForm();
-				formik.setValues(result.data);
+				form.setFieldsValue(result.data);
 				setIsOpen(true);
 			});
 		} else {
 			setEditId('');
-			formik.resetForm();
+			form.resetFields();
 			if (parentId) {
-				formik.setFieldValue('parentId', parentId);
+				form.setFieldValue('parentId', parentId);
 			}
 			setIsOpen(true);
 		}
 	};
 
-	const onSave = () => {
-		formik.handleSubmit();
-	};
-
 	const onCancel = () => {
 		setIsOpen(false);
 		setEditId('');
-		formik.resetForm();
+		form.resetFields();
 	};
 
 	const onDelete = (id: string | number) => {
-		confirm({
-			type: 'warning',
+		modal.confirm({
 			title: '系统提示',
 			content: '是否确认删除该部门?',
 			onOk() {
@@ -147,18 +120,90 @@ export const Component = () => {
 		});
 	};
 
+	const columns = [
+		{
+			title: '部门名称',
+			dataIndex: 'deptName',
+			render: (_: any, row: AnyObject) => {
+				return (
+					<div style={{ paddingLeft: (row.__depth ?? 0) * 24 }}>
+						{row.deptName}
+					</div>
+				);
+			}
+		},
+		{
+			title: '排序',
+			dataIndex: 'orderNum'
+		},
+		{
+			title: '状态',
+			dataIndex: 'status',
+			render: (value: any) => {
+				return (
+					<Tag color={value == 0 ? 'success' : 'error'}>
+						{value == 0 ? '正常' : '停用'}
+					</Tag>
+				);
+			}
+		},
+		{
+			title: '创建时间',
+			dataIndex: 'createTime'
+		},
+		{
+			title: '操作',
+			dataIndex: 'action',
+			width: 160,
+			render: (_: any, row: AnyObject) => {
+				return (
+					<>
+						{hasPermi('system:dept:edit') && (
+							<Button
+								type='link'
+								size='small'
+								icon={<EditOutlined />}
+								title='编辑'
+								onClick={() => onEdit(row.id)}
+							/>
+						)}
+						{hasPermi('system:dept:add') && (
+							<Button
+								type='link'
+								size='small'
+								icon={<PlusOutlined />}
+								title='添加'
+								onClick={() => onEdit(undefined, row.id)}
+							/>
+						)}
+						{hasPermi('system:dept:remove') && (
+							<Button
+								type='link'
+								size='small'
+								danger
+								icon={<DeleteOutlined />}
+								title='删除'
+								onClick={() => onDelete(row.id)}
+							/>
+						)}
+					</>
+				);
+			}
+		}
+	];
+
 	useEffect(() => {
 		getData();
 		getParentData();
 	}, []);
 
 	return (
-		<PageOverlay>
+		<div className='p-4 flex flex-col gap-4'>
 			<div className='flex items-center justify-end'>
 				{hasPermi('system:dept:add') && (
 					<Button
-						variant='contained'
-						startIcon={<AddRegular />}
+						type='primary'
+						icon={<PlusOutlined />}
 						onClick={() => onEdit()}
 					>
 						新建
@@ -167,119 +212,67 @@ export const Component = () => {
 			</div>
 			<Table
 				loading={loading}
-				rows={rows}
-				columns={getColumnData([
-					{
-						field: 'deptName',
-						headerName: '部门名称',
-						renderCell({ row }) {
-							return (
-								<div style={{ paddingLeft: (row.__depth ?? 0) * 24 }}>
-									{row.deptName}
-								</div>
-							);
-						}
-					},
-					{
-						field: 'orderNum',
-						headerName: '排序',
-						flex: 0.4
-					},
-					{
-						field: 'status',
-						headerName: '状态',
-						flex: 0.5,
-						renderCell({ value }) {
-							return (
-								<Chip
-									size='small'
-									color={value == 0 ? 'success' : 'error'}
-									label={value == 0 ? '正常' : '停用'}
-								/>
-							);
-						}
-					},
-					{
-						field: 'createTime',
-						headerName: '创建时间'
-					},
-					{
-						field: 'id',
-						headerName: '操作',
-						flex: 0,
-						width: 160,
-						renderCell({ row }) {
-							return (
-								<>
-									{hasPermi('system:dept:edit') && (
-										<IconButton
-											color='primary'
-											size='small'
-											title='编辑'
-											onClick={() => onEdit(row.id)}
-										>
-											<EditRegular />
-										</IconButton>
-									)}
-									{hasPermi('system:dept:add') && (
-										<IconButton
-											color='success'
-											size='small'
-											title='添加'
-											onClick={() => onEdit(undefined, row.id)}
-										>
-											<AddRegular />
-										</IconButton>
-									)}
-									{hasPermi('system:dept:remove') && (
-										<IconButton
-											color='error'
-											size='small'
-											title='删除'
-											onClick={() => onDelete(row.id)}
-										>
-											<DeleteRegular />
-										</IconButton>
-									)}
-								</>
-							);
-						}
-					}
-				])}
+				dataSource={rows}
+				rowKey='id'
+				pagination={false}
+				columns={columns}
 			/>
 			<Modal
 				title={editId ? '编辑部门' : '新增部门'}
 				open={isOpen}
-				onOk={onSave}
-				onClose={onCancel}
+				destroyOnHidden
+				forceRender
+				onOk={() => form.submit()}
+				onCancel={onCancel}
 			>
-				<Form labelCol={{ flex: '0 0 100px' }} formik={formik}>
+				<Form
+					form={form}
+					labelCol={{ flex: '0 0 100px' }}
+					initialValues={{
+						parentId: '',
+						deptName: '',
+						orderNum: 0,
+						status: '0',
+						leader: '',
+						email: '',
+						phone: ''
+					}}
+					onFinish={onFinish}
+				>
 					<Form.Item name='parentId' label='上级部门'>
-						<TreeSelect placeholder='请选择上级部门' treeData={parentTree} />
+						<TreeSelect
+							placeholder='请选择上级部门'
+							treeData={parentTree}
+							fieldNames={{ value: 'id' }}
+						/>
 					</Form.Item>
-					<Form.Item required name='deptName' label='部门名称'>
-						<Input size='small' placeholder='请输入部门名称' />
+					<Form.Item
+						name='deptName'
+						label='部门名称'
+						rules={[{ required: true, message: '请输入部门名称' }]}
+					>
+						<Input placeholder='请输入部门名称' />
 					</Form.Item>
 					<Form.Item name='orderNum' label='显示排序'>
-						<Input size='small' placeholder='请输入显示排序' />
+						<Input placeholder='请输入显示排序' />
 					</Form.Item>
 					<Form.Item name='status' label='状态'>
-						<RadioGroup row>
-							<Radio value='0' label='正常' />
-							<Radio value='1' label='停用' />
-						</RadioGroup>
+						<Radio.Group>
+							<Radio value='0'>正常</Radio>
+							<Radio value='1'>停用</Radio>
+						</Radio.Group>
 					</Form.Item>
 					<Form.Item name='leader' label='负责人'>
-						<Input size='small' placeholder='请输入负责人' />
+						<Input placeholder='请输入负责人' />
 					</Form.Item>
 					<Form.Item name='email' label='邮箱'>
-						<Input size='small' placeholder='请输入邮箱' />
+						<Input placeholder='请输入邮箱' />
 					</Form.Item>
 					<Form.Item name='phone' label='联系电话'>
-						<Input size='small' placeholder='请输入联系电话' />
+						<Input placeholder='请输入联系电话' />
 					</Form.Item>
 				</Form>
 			</Modal>
-		</PageOverlay>
+		</div>
 	);
 };

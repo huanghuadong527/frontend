@@ -33,5 +33,8 @@ interface StatusOverlayProps {
 	children?: ReactNode;
 }
 
-type TreeItemsType = AnyObject &
-	import('@mui/x-tree-view').TreeViewDefaultItemModelProperties;
+type TreeItemsType = AnyObject & {
+	id?: string | number;
+	label?: ReactNode;
+	children?: TreeItemsType[];
+};

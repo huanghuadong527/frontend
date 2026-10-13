@@ -1,22 +1,14 @@
 import type { HTMLAttributes } from 'react';
-import { Box, Stack } from '@mui/material';
 
-interface NavBtnProps extends HTMLAttributes<any> {}
+interface NavBtnProps extends HTMLAttributes<HTMLDivElement> {}
 
 export const NavBtn = ({ children, ...params }: NavBtnProps) => {
 	return (
-		<Box
+		<div
 			{...params}
-			className='h-full flex px-2.5 items-center cursor-pointer'
-			sx={{
-				'&:hover': {
-					bgcolor: 'action.selected'
-				}
-			}}
+			className='h-full flex px-2.5 items-center cursor-pointer hover:bg-black/10'
 		>
-			<Stack className='items-center' direction='row' spacing={1}>
-				{children}
-			</Stack>
-		</Box>
+			<div className='flex items-center gap-1'>{children}</div>
+		</div>
 	);
 };

@@ -1,41 +1,24 @@
 import {
-	BuildingBankRegular,
-	ProhibitedRegular,
-	AppsRegular,
-	PhoneRegular,
-	LockClosedRegular,
-	MailRegular,
-	PeopleRegular,
-	DocumentRegular,
-	PersonRegular,
-	PowerRegular,
-	ChevronUpDownRegular
-} from '@fluentui/react-icons';
-import {
-	Avatar,
-	Box,
-	Button,
-	Card,
-	CardActions,
-	CardHeader,
-	Popover,
-	RadioGroup,
-	Stack,
-	Typography
-} from '@mui/material';
-import {
-	usePopupState,
-	bindTrigger,
-	bindPopover
-} from 'material-ui-popup-state/hooks';
-import * as Yup from 'yup';
+	AppstoreOutlined,
+	BankOutlined,
+	DownOutlined,
+	FileTextOutlined,
+	LockOutlined,
+	MailOutlined,
+	PhoneOutlined,
+	PoweroffOutlined,
+	StopOutlined,
+	TeamOutlined,
+	UserOutlined
+} from '@ant-design/icons';
+import { App, Avatar, Button, Form, Input, Modal, Popover, Radio } from 'antd';
+import type { ReactNode } from 'react';
 import { useState } from 'react';
-import { useFormik, type FormikValues } from 'formik';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router';
 import { usePermis } from '@/authority';
+import { ImageUpload } from '@/components/image-upload';
 import { API_UPLOAD } from '@/core';
-import { Form, Input, Modal, Radio, Upload, message } from '@/plugins';
 import { updateSystemUserInfo, updateSystemUserPwd } from '@/service';
 import { clear, setTheme, useStore } from '@/store';
 
@@ -50,16 +33,37 @@ const THEME_COLORS = [
 	'#faad14'
 ];
 
+const getSrc = (value?: string) => (value ? API_UPLOAD + value : '');
+
+const InfoRow = ({
+	icon,
+	value
+}: {
+	icon: ReactNode;
+	value: ReactNode;
+}) => (
+	<div className='flex items-center gap-1.5'>
+		<span className='w-6 flex justify-center text-gray-400'>{icon}</span>
+		<span
+			className='w-32 truncate'
+			title={typeof value === 'string' ? value : undefined}
+		>
+			{value}
+		</span>
+	</div>
+);
+
 export const NavAvatar = () => {
-	const popupState = usePopupState({
-		variant: 'popover',
-		popupId: 'navAvatarPopover'
-	});
+	const { message } = App.useApp();
 	const { user } = usePermis();
 	const dispatch = useDispatch();
 	const navigate = useNavigate();
 	const theme = useStore((state) => state.root.theme);
 
+	const [profileForm] = Form.useForm();
+	const [psdForm] = Form.useForm();
+
+	const [popoverOpen, setPopoverOpen] = useState(false);
 	const [profileVisible, setProfileVisible] = useState(false);
 	const [psdVisible, setPsdVisible] = useState(false);
 	const [settingVisible, setSettingVisible] = useState(false);
@@ -70,75 +74,53 @@ export const NavAvatar = () => {
 		navigate('/login');
 	};
 
-	const profileFormik = useFormik<FormikValues>({
-		initialValues: {
+	const onFinishProfile = (values: AnyObject) => {
+		updateSystemUserInfo({
+			nickName: values.nickName,
+			sex: Number(values.sex),
+			phonenumber: values.phonenumber,
+			email: values.email,
+			avatar: values.avatar
+		}).then(() => {
+			message.success('已更新用户基本资料');
+			setProfileVisible(false);
+			logout();
+		});
+	};
+
+	const onFinishPsd = (values: AnyObject) => {
+		updateSystemUserPwd({
+			oldPassword: values.oldPassword,
+			newPassword: values.newPassword
+		}).then(() => {
+			message.success('密码修改成功, 请重新登录');
+			setPsdVisible(false);
+			logout();
+		});
+	};
+
+	const onOpenProfile = () => {
+		profileForm.setFieldsValue({
 			nickName: user.nickName ?? '',
 			sex: user.sex != null ? String(user.sex) : '0',
 			phonenumber: user.phonenumber ?? '',
 			email: user.email ?? '',
 			avatar: user.avatar ?? ''
-		},
-		validationSchema: Yup.object().shape({
-			nickName: Yup.string().required('请输入用户昵称')
-		}),
-		onSubmit(values) {
-			updateSystemUserInfo({
-				nickName: values.nickName,
-				sex: Number(values.sex),
-				phonenumber: values.phonenumber,
-				email: values.email,
-				avatar: values.avatar
-			}).then(() => {
-				message.success('已更新用户基本资料');
-				setProfileVisible(false);
-				logout();
-			});
-		}
-	});
-
-	const psdFormik = useFormik<FormikValues>({
-		initialValues: {
-			oldPassword: '',
-			newPassword: '',
-			confirmPassword: ''
-		},
-		validationSchema: Yup.object().shape({
-			oldPassword: Yup.string().required('请输入原密码'),
-			newPassword: Yup.string()
-				.required('请输入新密码')
-				.min(6, '密码不能少于6个字符'),
-			confirmPassword: Yup.string()
-				.required('请输入确认密码')
-				.oneOf([Yup.ref('newPassword')], '两次输入的新密码不一致')
-		}),
-		onSubmit(values) {
-			updateSystemUserPwd({
-				oldPassword: values.oldPassword,
-				newPassword: values.newPassword
-			}).then(() => {
-				message.success('密码修改成功, 请重新登录');
-				setPsdVisible(false);
-				logout();
-			});
-		}
-	});
-
-	const onOpenProfile = () => {
-		profileFormik.resetForm();
+		});
 		setProfileVisible(true);
-		popupState.close();
+		setPopoverOpen(false);
 	};
 
 	const onOpenPsd = () => {
-		psdFormik.resetForm();
+		psdForm.resetFields();
 		setPsdVisible(true);
-		popupState.close();
+		setPopoverOpen(false);
 	};
 
 	const onOpenSetting = () => {
 		setThemeColor(theme);
 		setSettingVisible(true);
-		popupState.close();
+		setPopoverOpen(false);
 	};
 
 	const onSaveSetting = () => {
@@ -146,161 +128,133 @@ export const NavAvatar = () => {
 		setSettingVisible(false);
 	};
 
+	const popoverContent = (
+		<div className='py-2 w-80'>
+			<div className='px-4 pb-3 border-b border-gray-100 flex items-start justify-between'>
+				<div className='flex gap-3'>
+					<Avatar
+						size={40}
+						src={getSrc(user.avatar)}
+						icon={<UserOutlined />}
+					/>
+					<span className='self-center text-base'>{`${user.nickName}, 欢迎您`}</span>
+				</div>
+				<Button
+					type='text'
+					danger
+					size='small'
+					icon={<PoweroffOutlined />}
+					title='退出登录'
+					onClick={logout}
+				/>
+			</div>
+			<div className='px-4 py-3 flex flex-col gap-2'>
+				<div className='flex gap-4'>
+					<InfoRow
+						icon={<TeamOutlined />}
+						value={user.roles && user.roles.map((role) => role.roleName).join(',')}
+					/>
+					<InfoRow
+						icon={<BankOutlined />}
+						value={(user.dept && user.dept.deptName) || '--'}
+					/>
+				</div>
+				<div className='flex gap-4'>
+					<InfoRow icon={<UserOutlined />} value={user.userName} />
+					<InfoRow
+						icon={<StopOutlined />}
+						value={user.sex == 0 ? '男' : '女'}
+					/>
+				</div>
+				<div className='flex gap-4'>
+					<InfoRow icon={<MailOutlined />} value={user.email ?? '--'} />
+					<InfoRow
+						icon={<PhoneOutlined />}
+						value={user.phonenumber ?? '--'}
+					/>
+				</div>
+				<div className='flex gap-4'>
+					<InfoRow icon={<UserOutlined />} value={user.loginIp ?? '--'} />
+				</div>
+			</div>
+			<div className='px-4 pt-2 border-t border-gray-100 flex justify-between'>
+				<Button
+					type='text'
+					size='small'
+					icon={<FileTextOutlined />}
+					onClick={onOpenProfile}
+				>
+					基本资料
+				</Button>
+				<Button
+					type='text'
+					size='small'
+					icon={<AppstoreOutlined />}
+					onClick={onOpenSetting}
+				>
+					系统设置
+				</Button>
+				<Button
+					type='text'
+					size='small'
+					icon={<LockOutlined />}
+					onClick={onOpenPsd}
+				>
+					修改密码
+				</Button>
+			</div>
+		</div>
+	);
+
 	return (
 		<>
-			<NavBtn aria-haspopup='true' {...bindTrigger(popupState)}>
-				<Avatar
-					variant='rounded'
-					sx={{ width: '28px', height: '28px' }}
-					src={user.avatar ? API_UPLOAD + user.avatar : ''}
-				>
-					<PersonRegular />
-				</Avatar>
-				<Typography gutterBottom variant='body2'>
-					{user.userName ?? '--'}
-				</Typography>
-				<ChevronUpDownRegular />
-			</NavBtn>
 			<Popover
-				{...bindPopover(popupState)}
-				aria-hidden={false}
-				slotProps={{ paper: { elevation: 2, sx: { borderRadius: 2 } } }}
-				anchorOrigin={{
-					vertical: 'bottom',
-					horizontal: 'right'
-				}}
-				transformOrigin={{
-					vertical: 'top',
-					horizontal: 'right'
-				}}
+				content={popoverContent}
+				trigger='click'
+				placement='bottomRight'
+				open={popoverOpen}
+				onOpenChange={setPopoverOpen}
 			>
-				<Card className='px-4 py-3'>
-					<CardHeader
-						className='items-start'
-						title={
-							<div className='flex items-center justify-between mb-2'>
-								<Typography variant='body1'>
-									{`${user.nickName}, 欢迎您`}
-								</Typography>
-								<Button
-									color='error'
-									size='small'
-									title='退出登录'
-									sx={{ minWidth: 'initial' }}
-									onClick={logout}
-								>
-									<PowerRegular style={{ fontSize: 16 }} />
-								</Button>
-							</div>
-						}
-						subheader={
-							<Stack spacing={1}>
-								<Stack direction='row' spacing={1}>
-									<div className='flex items-center gap-1.5'>
-										<PeopleRegular />
-										<Typography className='w-24' variant='body2'>
-											{user.roles &&
-												user.roles.map((role) => role.roleName).join(',')}
-										</Typography>
-									</div>
-									<div className='flex items-center gap-1.5'>
-										<BuildingBankRegular />
-										<Typography className='w-24' variant='body2'>
-											{(user.dept && user.dept.deptName) || '--'}
-										</Typography>
-									</div>
-								</Stack>
-								<Stack direction='row' spacing={1}>
-									<div className='flex items-center gap-1.5'>
-										<PersonRegular />
-										<Typography className='w-24' variant='body2'>
-											{user.userName}
-										</Typography>
-									</div>
-									<div className='flex items-center gap-1.5'>
-										<ProhibitedRegular />
-										<Typography className='w-24' variant='body2'>
-											{user.sex == 0 ? '男' : '女'}
-										</Typography>
-									</div>
-								</Stack>
-								<Stack direction='row' spacing={1}>
-									<div className='flex items-center gap-1.5'>
-										<MailRegular />
-										<Typography className='w-24' variant='body2'>
-											{user.email ?? '--'}
-										</Typography>
-									</div>
-									<div className='flex items-center gap-1.5'>
-										<PhoneRegular />
-										<Typography className='w-24' variant='body2'>
-											{user.phonenumber ?? '--'}
-										</Typography>
-									</div>
-								</Stack>
-								<Stack direction='row' spacing={1}>
-									<div className='flex items-center gap-1.5'>
-										<span className='w-5 text-center'>IP</span>
-										<Typography className='w-24' variant='body2'>
-											{user.loginIp ?? '--'}
-										</Typography>
-									</div>
-								</Stack>
-							</Stack>
-						}
-						avatar={
-							<Avatar
-								aria-label='recipe'
-								src={user.avatar ? API_UPLOAD + user.avatar : ''}
-							>
-								<PersonRegular />
-							</Avatar>
-						}
+				<NavBtn>
+					<Avatar
+						shape='square'
+						size={28}
+						src={getSrc(user.avatar)}
+						icon={<UserOutlined />}
 					/>
-					<CardActions disableSpacing sx={{ justifyContent: 'space-between' }}>
-						<Button
-							size='small'
-							startIcon={<DocumentRegular />}
-							onClick={onOpenProfile}
-						>
-							基本资料
-						</Button>
-						<Button
-							size='small'
-							startIcon={<AppsRegular />}
-							onClick={onOpenSetting}
-						>
-							系统设置
-						</Button>
-						<Button
-							size='small'
-							startIcon={<LockClosedRegular />}
-							onClick={onOpenPsd}
-						>
-							修改密码
-						</Button>
-					</CardActions>
-				</Card>
+					<span className='text-sm'>{user.userName ?? '--'}</span>
+					<DownOutlined style={{ fontSize: 12 }} />
+				</NavBtn>
 			</Popover>
 
 			<Modal
 				title='基本资料'
 				open={profileVisible}
-				onOk={() => profileFormik.handleSubmit()}
-				onClose={() => setProfileVisible(false)}
+				destroyOnHidden
+				forceRender
+				onOk={() => profileForm.submit()}
+				onCancel={() => setProfileVisible(false)}
 			>
-				<Form labelCol={{ flex: '0 0 90px' }} formik={profileFormik}>
+				<Form
+					form={profileForm}
+					labelCol={{ flex: '0 0 90px' }}
+					onFinish={onFinishProfile}
+				>
 					<Form.Item name='avatar' label='用户头像'>
-						<Upload />
+						<ImageUpload />
 					</Form.Item>
-					<Form.Item required name='nickName' label='用户昵称'>
+					<Form.Item
+						name='nickName'
+						label='用户昵称'
+						rules={[{ required: true, message: '请输入用户昵称' }]}
+					>
 						<Input placeholder='请输入用户昵称' />
 					</Form.Item>
 					<Form.Item name='sex' label='性别'>
-						<RadioGroup row>
-							<Radio value='0' label='男' />
-							<Radio value='1' label='女' />
-						</RadioGroup>
+						<Radio.Group>
+							<Radio value='0'>男</Radio>
+							<Radio value='1'>女</Radio>
+						</Radio.Group>
 					</Form.Item>
 					<Form.Item name='phonenumber' label='手机号码'>
 						<Input placeholder='请输入手机号码' />
@@ -314,18 +268,46 @@ export const NavAvatar = () => {
 			<Modal
 				title='修改密码'
 				open={psdVisible}
-				onOk={() => psdFormik.handleSubmit()}
-				onClose={() => setPsdVisible(false)}
+				destroyOnHidden
+				forceRender
+				onOk={() => psdForm.submit()}
+				onCancel={() => setPsdVisible(false)}
 			>
-				<Form labelCol={{ flex: '0 0 90px' }} formik={psdFormik}>
-					<Form.Item required name='oldPassword' label='原密码'>
-						<Input type='password' placeholder='请输入原密码' />
+				<Form form={psdForm} labelCol={{ flex: '0 0 90px' }} onFinish={onFinishPsd}>
+					<Form.Item
+						name='oldPassword'
+						label='原密码'
+						rules={[{ required: true, message: '请输入原密码' }]}
+					>
+						<Input.Password placeholder='请输入原密码' />
 					</Form.Item>
-					<Form.Item required name='newPassword' label='新密码'>
-						<Input type='password' placeholder='请输入新密码' />
+					<Form.Item
+						name='newPassword'
+						label='新密码'
+						rules={[
+							{ required: true, message: '请输入新密码' },
+							{ min: 6, message: '密码不能少于6个字符' }
+						]}
+					>
+						<Input.Password placeholder='请输入新密码' />
 					</Form.Item>
-					<Form.Item required name='confirmPassword' label='确认密码'>
-						<Input type='password' placeholder='请输入确认密码' />
+					<Form.Item
+						name='confirmPassword'
+						label='确认密码'
+						dependencies={['newPassword']}
+						rules={[
+							{ required: true, message: '请输入确认密码' },
+							({ getFieldValue }) => ({
+								validator(_, value) {
+									if (!value || getFieldValue('newPassword') === value) {
+										return Promise.resolve();
+									}
+									return Promise.reject(new Error('两次输入的新密码不一致'));
+								}
+							})
+						]}
+					>
+						<Input.Password placeholder='请输入确认密码' />
 					</Form.Item>
 				</Form>
 			</Modal>
@@ -334,23 +316,20 @@ export const NavAvatar = () => {
 				title='系统设置'
 				open={settingVisible}
 				onOk={onSaveSetting}
-				onClose={() => setSettingVisible(false)}
+				onCancel={() => setSettingVisible(false)}
 			>
-				<Typography variant='body2' sx={{ mb: 1.5 }}>
-					主题色
-				</Typography>
-				<Stack direction='row' spacing={1.5}>
+				<div className='mb-2 text-sm text-gray-500'>主题色</div>
+				<div className='flex gap-3'>
 					{THEME_COLORS.map((color) => (
-						<Box
+						<div
 							key={color}
 							onClick={() => setThemeColor(color)}
-							sx={{
+							style={{
 								width: 24,
 								height: 24,
 								borderRadius: '50%',
 								cursor: 'pointer',
-								bgcolor: color,
-								border: `2px solid ${color}`,
+								backgroundColor: color,
 								boxShadow:
 									themeColor === color
 										? `0 0 0 2px #fff, 0 0 0 4px ${color}`
@@ -359,7 +338,7 @@ export const NavAvatar = () => {
 							}}
 						/>
 					))}
-				</Stack>
+				</div>
 			</Modal>
 		</>
 	);

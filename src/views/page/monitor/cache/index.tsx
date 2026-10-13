@@ -1,17 +1,7 @@
 import type { EChartsCoreOption } from 'echarts';
+import { Card, Col, Row } from 'antd';
 import { Fragment, useEffect, useMemo, useState, type ReactNode } from 'react';
-import {
-	Card,
-	CardHeader,
-	Grid,
-	Table,
-	TableBody,
-	TableCell,
-	TableContainer,
-	TableRow
-} from '@mui/material';
 import { Echarts } from '@/components/echarts';
-import { PageOverlay } from '@/plugins';
 import { getCacheData } from '@/service';
 
 const COLUMNS = 4;
@@ -19,33 +9,18 @@ const THEME_COLOR = '#1677ff';
 
 type DescItem = { label: string; value: ReactNode };
 
+const tableCls = 'w-full border-collapse text-sm';
+const labelTdCls =
+	'border border-gray-200 bg-[#fafafa] px-2 py-1 font-semibold whitespace-nowrap w-[120px]';
+const tdCls = 'border border-gray-200 px-2 py-1';
+
 const chunk = <T,>(arr: T[], size: number): T[][] =>
 	Array.from({ length: Math.ceil(arr.length / size) }, (_, i) =>
 		arr.slice(i * size, i * size + size)
 	);
 
-const labelCellSx = {
-	width: 120,
-	bgcolor: '#fafafa',
-	fontWeight: 600,
-	whiteSpace: 'nowrap'
-};
-
 const Panel = ({ title, children }: { title: string; children: ReactNode }) => (
-	<Card variant='outlined'>
-		<CardHeader
-			title={title}
-			slotProps={{
-				title: {
-					variant: 'subtitle2'
-				}
-			}}
-			sx={{
-				paddingY: '8px',
-				borderBottom: '1px solid',
-				borderColor: 'divider'
-			}}
-		/>
+	<Card title={title} size='small'>
 		{children}
 	</Card>
 );
@@ -145,57 +120,38 @@ export const Component = () => {
 	);
 
 	return (
-		<PageOverlay>
+		<div className='p-4 flex flex-col gap-4'>
 			<Panel title='基本信息'>
-				<TableContainer>
-					<Table
-						size='small'
-						sx={{
-							'& .MuiTableCell-root': {
-								borderRight: '1px solid',
-								borderBottom: '1px solid',
-								borderColor: 'divider'
-							},
-							'& .MuiTableRow-root:last-child .MuiTableCell-root': {
-								borderBottom: 'none'
-							},
-							'& .MuiTableCell-root:last-child': {
-								borderRight: 'none'
-							}
-						}}
-					>
-						<TableBody>
-							{chunk(basicInfo, COLUMNS).map((row, rowIndex) => (
-								<TableRow key={rowIndex}>
-									{row.map((item, colIndex) => (
-										<Fragment key={colIndex}>
-											<TableCell component='th' scope='row' sx={labelCellSx}>
-												{item.label}
-											</TableCell>
-											<TableCell>{item.value ?? '--'}</TableCell>
-										</Fragment>
-									))}
-									{row.length < COLUMNS && (
-										<TableCell colSpan={(COLUMNS - row.length) * 2} />
-									)}
-								</TableRow>
-							))}
-						</TableBody>
-					</Table>
-				</TableContainer>
+				<table className={tableCls}>
+					<tbody>
+						{chunk(basicInfo, COLUMNS).map((row, rowIndex) => (
+							<tr key={rowIndex}>
+								{row.map((item, colIndex) => (
+									<Fragment key={colIndex}>
+										<td className={labelTdCls}>{item.label}</td>
+										<td className={tdCls}>{item.value ?? '--'}</td>
+									</Fragment>
+								))}
+								{row.length < COLUMNS && (
+									<td className={tdCls} colSpan={(COLUMNS - row.length) * 2} />
+								)}
+							</tr>
+						))}
+					</tbody>
+				</table>
 			</Panel>
-			<Grid container spacing={2}>
-				<Grid size={{ xs: 12, lg: 6 }}>
+			<Row gutter={[16, 16]}>
+				<Col xs={24} lg={12}>
 					<Panel title='命令统计'>
 						<Echarts options={commandOptions} style={{ height: 400 }} />
 					</Panel>
-				</Grid>
-				<Grid size={{ xs: 12, lg: 6 }}>
+				</Col>
+				<Col xs={24} lg={12}>
 					<Panel title='内存信息'>
 						<Echarts options={memoryOptions} style={{ height: 400 }} />
 					</Panel>
-				</Grid>
-			</Grid>
-		</PageOverlay>
+				</Col>
+			</Row>
+		</div>
 	);
 };

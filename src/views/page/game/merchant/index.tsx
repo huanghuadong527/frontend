@@ -1,29 +1,27 @@
-import * as Yup from 'yup';
 import { useEffect, useState } from 'react';
-import { Button, Chip, IconButton, RadioGroup, Stack, Typography } from '@mui/material';
-import { useFormik, type FormikValues } from 'formik';
 import {
-	AddRegular,
-	EditRegular,
-	DeleteRegular,
-	SearchRegular,
-	CheckmarkRegular,
-	ArrowUpRegular,
-	ArrowDownRegular
-} from '@fluentui/react-icons';
+	ArrowDownOutlined,
+	ArrowUpOutlined,
+	CheckOutlined,
+	DeleteOutlined,
+	EditOutlined,
+	PlusOutlined,
+	SearchOutlined
+} from '@ant-design/icons';
 import {
+	App,
+	Button,
 	Form,
-	getColumnData,
-	PageOverlay,
-	ImagePreview,
+	Image,
 	Input,
 	Modal,
 	Radio,
+	Space,
 	Table,
-	confirm,
-	message
-} from '@/plugins';
-import { useTable } from '@/core';
+	Tag
+} from 'antd';
+import type { TableColumnsType } from 'antd';
+import { API_UPLOAD, useTable } from '@/core';
 import {
 	addMerchantBusiness,
 	deleteMerchantBusiness,
@@ -50,58 +48,49 @@ interface MerchantDetail {
 }
 
 export const Component = () => {
+	const { message, modal } = App.useApp();
+	const [searchForm] = Form.useForm();
+	const [businessForm] = Form.useForm();
 	const [detailOpen, setDetailOpen] = useState(false);
 	const [businessOpen, setBusinessOpen] = useState(false);
 	const [detail, setDetail] = useState<MerchantDetail>({});
 	const [editBusinessId, setEditBusinessId] = useState<string | number>('');
 
-	const { tableProps, getData } = useTable('/game/merchant/list');
+	const { tableProps, getData } = useTable('/game/merchant/list', () => searchForm.getFieldsValue());
 
-	const search = useFormik<FormikValues>({
-		initialValues: { nickName: '' },
-		onSubmit(values) {
-			getData({
-				nickName: values.nickName || undefined
+	const onSearch = (values: AnyObject) => {
+		getData({
+			nickName: values.nickName || undefined
+		});
+	};
+
+	const onReset = () => {
+		searchForm.resetFields();
+		getData();
+	};
+
+	const onBusinessFinish = (values: AnyObject) => {
+		const params = {
+			merchantId: detail.merchantId,
+			businessName: values.businessName,
+			businessDesc: values.businessDesc || undefined,
+			sort: values.sort === '' ? 0 : Number(values.sort),
+			status: Number(values.status)
+		};
+		if (editBusinessId) {
+			updateMerchantBusiness({ ...params, id: editBusinessId }).then(() => {
+				message.success('修改成功');
+				onBusinessCancel();
+				loadDetail(detail.merchantId as number);
 			});
-		},
-		onReset() {
-			getData();
+		} else {
+			addMerchantBusiness(params).then(() => {
+				message.success('新增成功');
+				onBusinessCancel();
+				loadDetail(detail.merchantId as number);
+			});
 		}
-	});
-
-	const businessFormik = useFormik<FormikValues>({
-		initialValues: {
-			businessName: '',
-			businessDesc: '',
-			sort: '',
-			status: '0'
-		},
-		validationSchema: Yup.object().shape({
-			businessName: Yup.string().required('请输入业务名称')
-		}),
-		onSubmit(values) {
-			const params = {
-				merchantId: detail.merchantId,
-				businessName: values.businessName,
-				businessDesc: values.businessDesc || undefined,
-				sort: values.sort === '' ? 0 : Number(values.sort),
-				status: Number(values.status)
-			};
-			if (editBusinessId) {
-				updateMerchantBusiness({ ...params, id: editBusinessId }).then(() => {
-					message.success('修改成功');
-					onBusinessCancel();
-					loadDetail(detail.merchantId as number);
-				});
-			} else {
-				addMerchantBusiness(params).then(() => {
-					message.success('新增成功');
-					onBusinessCancel();
-					loadDetail(detail.merchantId as number);
-				});
-			}
-		}
-	});
+	};
 
 	const loadDetail = (merchantId: number) => {
 		getMerchantById(merchantId).then((result) => {
@@ -123,14 +112,14 @@ export const Component = () => {
 
 	const onAddBusiness = () => {
 		setEditBusinessId('');
-		businessFormik.resetForm();
+		businessForm.resetFields();
 		setBusinessOpen(true);
 	};
 
 	const onEditBusiness = (item: BusinessItem) => {
 		setEditBusinessId(item.id as number);
-		businessFormik.resetForm();
-		businessFormik.setValues({
+		businessForm.resetFields();
+		businessForm.setFieldsValue({
 			businessName: item.businessName ?? '',
 			businessDesc: item.businessDesc ?? '',
 			sort: item.sort != null ? String(item.sort) : '',
@@ -142,16 +131,15 @@ export const Component = () => {
 	const onBusinessCancel = () => {
 		setBusinessOpen(false);
 		setEditBusinessId('');
-		businessFormik.resetForm();
+		businessForm.resetFields();
 	};
 
 	const onBusinessSave = () => {
-		businessFormik.handleSubmit();
+		businessForm.submit();
 	};
 
 	const onDeleteBusiness = (item: BusinessItem) => {
-		confirm({
-			type: 'warning',
+		modal.confirm({
 			title: '系统提示',
 			content: '是否确认删除该常用业务?',
 			onOk() {
@@ -164,12 +152,11 @@ export const Component = () => {
 	};
 
 	const onAudit = (row: AnyObject) => {
-		confirm({
-			type: 'warning',
+		modal.confirm({
 			title: '审核',
 			content: '请选择审核结果',
-			confirmationText: '通过',
-			cancellationText: '拒绝',
+			okText: '通过',
+			cancelText: '拒绝',
 			onOk() {
 				updateWxUser({ id: row.id, isAudit: 1 }).then(() => {
 					message.success('已通过审核');
@@ -197,144 +184,123 @@ export const Component = () => {
 		getData();
 	}, []);
 
+	const columns: TableColumnsType<AnyObject> = [
+		{ title: '编号', dataIndex: 'id', width: 80 },
+		{
+			title: '头像',
+			dataIndex: 'avatar',
+			width: 80,
+			render: (value) => (
+				<Image
+					src={value ? API_UPLOAD + value : ''}
+					width={40}
+					height={40}
+					style={{ objectFit: 'cover', borderRadius: '50%' }}
+				/>
+			)
+		},
+		{ title: '昵称', dataIndex: 'nickName' },
+		{
+			title: '人气值',
+			dataIndex: 'popularity',
+			width: 100,
+			render: (value) => value ?? 0
+		},
+		{
+			title: '审核状态',
+			dataIndex: 'isAudit',
+			width: 120,
+			render: (value) => {
+				const label = value == 1 ? '已通过' : value == 2 ? '已拒绝' : '待审核';
+				const color = value == 1 ? 'success' : value == 2 ? 'error' : 'warning';
+				return <Tag color={color}>{label}</Tag>;
+			}
+		},
+		{
+			title: '是否上架',
+			dataIndex: 'isShelf',
+			width: 100,
+			render: (value) => (value == 1 ? <Tag color='success'>已上架</Tag> : <Tag color='default'>已下架</Tag>)
+		},
+		{
+			title: '操作',
+			dataIndex: 'action',
+			width: 220,
+			render: (_v, row) => (
+				<>
+					<Button type='link' size='small' onClick={() => onDetail(row.id)}>
+						详情
+					</Button>
+					{row.isAudit == 0 && (
+						<Button
+							type='link'
+							size='small'
+							icon={<CheckOutlined />}
+							title='审核'
+							onClick={() => onAudit(row)}
+						/>
+					)}
+					<Button
+						type='link'
+						size='small'
+						danger={row.isShelf == 1}
+						icon={row.isShelf == 1 ? <ArrowDownOutlined /> : <ArrowUpOutlined />}
+						title={row.isShelf == 1 ? '下架' : '上架'}
+						onClick={() => onShelf(row)}
+					/>
+				</>
+			)
+		}
+	];
+
 	return (
-		<PageOverlay>
+		<div className='p-4 flex flex-col gap-4'>
 			<div className='flex items-center justify-between'>
-				<Form layout='inline' formik={search}>
+				<Form form={searchForm} layout='inline' onFinish={onSearch}>
 					<Form.Item name='nickName' label='昵称'>
-						<Input size='small' placeholder='请输入昵称' />
+						<Input placeholder='请输入昵称' />
 					</Form.Item>
 					<Form.Item>
-						<Stack direction='row' spacing={2}>
-							<Button
-								variant='contained'
-								type='submit'
-								startIcon={<SearchRegular />}
-							>
+						<Space>
+							<Button type='primary' htmlType='submit' icon={<SearchOutlined />}>
 								查询
 							</Button>
-							<Button variant='outlined' type='reset'>
-								重置
-							</Button>
-						</Stack>
+							<Button onClick={onReset}>重置</Button>
+						</Space>
 					</Form.Item>
 				</Form>
 			</div>
-			<Table
-				{...tableProps}
-				columns={getColumnData([
-					{ field: 'id', headerName: '编号', flex: 0, width: 80 },
-					{
-						field: 'avatar',
-						headerName: '头像',
-						flex: 0,
-						width: 80,
-						renderCell({ value }) {
-							return <ImagePreview value={value} borderRadius='50%' />;
-						}
-					},
-					{ field: 'nickName', headerName: '昵称' },
-					{
-						field: 'popularity',
-						headerName: '人气值',
-						flex: 0,
-						width: 100,
-						renderCell({ value }) {
-							return value ?? 0;
-						}
-					},
-					{
-						field: 'isAudit',
-						headerName: '审核状态',
-						flex: 0,
-						width: 120,
-						renderCell({ value }) {
-							const label = value == 1 ? '已通过' : value == 2 ? '已拒绝' : '待审核';
-							const color = value == 1 ? 'success' : value == 2 ? 'error' : 'warning';
-							return (
-								<Chip
-									size='small'
-									color={color}
-									label={label}
-								/>
-							);
-						}
-					},
-					{
-						field: 'isShelf',
-						headerName: '是否上架',
-						flex: 0,
-						width: 100,
-						renderCell({ value }) {
-							return value == 1 ? '上架' : '下架';
-						}
-					},
-					{
-						field: 'action',
-						headerName: '操作',
-						flex: 0,
-						width: 220,
-						renderCell({ row }) {
-							return (
-								<>
-									<Button
-										size='small'
-										variant='text'
-										onClick={() => onDetail(row.id)}
-									>
-										详情
-									</Button>
-									{row.isAudit == 0 && (
-										<IconButton
-											color='primary'
-											size='small'
-											title='审核'
-											onClick={() => onAudit(row)}
-										>
-											<CheckmarkRegular />
-										</IconButton>
-									)}
-									<IconButton
-										color={row.isShelf == 1 ? 'warning' : 'success'}
-										size='small'
-										title={row.isShelf == 1 ? '下架' : '上架'}
-										onClick={() => onShelf(row)}
-									>
-										{row.isShelf == 1 ? <ArrowDownRegular /> : <ArrowUpRegular />}
-									</IconButton>
-								</>
-							);
-						}
-					}
-				])}
-			/>
+			<Table {...tableProps} columns={columns} />
 
 			<Modal
 				title='商人详情'
 				open={detailOpen}
-				width='md'
-				footer={<></>}
-				onClose={onCloseDetail}
+				footer={null}
+				width={720}
+				onCancel={onCloseDetail}
 			>
-				<Stack spacing={2}>
-					<Stack direction='row' spacing={2} alignItems='center'>
-						<ImagePreview value={detail.avatar} borderRadius='50%' />
-						<Stack>
-							<Typography variant='subtitle1'>
-								{detail.nickName ?? '--'}
-							</Typography>
-							<Typography variant='body2' color='text.secondary'>
+				<Space direction='vertical' size={16} style={{ width: '100%' }}>
+					<Space align='center'>
+						<Image
+							src={detail.avatar ? API_UPLOAD + detail.avatar : ''}
+							width={64}
+							height={64}
+							style={{ objectFit: 'cover', borderRadius: '50%' }}
+						/>
+						<div>
+							<div className='font-medium'>{detail.nickName ?? '--'}</div>
+							<div className='text-sm text-gray-500'>
 								人气值：{detail.popularity ?? 0}
-							</Typography>
-						</Stack>
-					</Stack>
+							</div>
+						</div>
+					</Space>
 
 					<div className='flex items-center justify-between'>
-						<Typography variant='subtitle2'>常用业务</Typography>
+						<div className='text-sm font-medium'>常用业务</div>
 						<Button
 							size='small'
-							variant='contained'
-							startIcon={<AddRegular />}
+							type='primary'
+							icon={<PlusOutlined />}
 							onClick={onAddBusiness}
 						>
 							新增业务
@@ -342,89 +308,87 @@ export const Component = () => {
 					</div>
 
 					{detail.businessList && detail.businessList.length > 0 ? (
-						<Stack spacing={1}>
+						<Space direction='vertical' size={8} style={{ width: '100%' }}>
 							{detail.businessList.map((item) => (
-								<Stack
+								<div
 									key={item.id}
-									direction='row'
-									alignItems='center'
-									spacing={1}
-									sx={{
-										border: '1px solid',
-										borderColor: 'divider',
-										borderRadius: 1,
-										padding: 1
-									}}
+									className='flex items-center gap-2 rounded border border-solid border-gray-200 p-2'
 								>
-									<Stack sx={{ flex: 1 }}>
-										<Stack direction='row' spacing={1} alignItems='center'>
-											<Typography variant='body2' fontWeight={600}>
-												{item.businessName}
-											</Typography>
-											<Chip
-												size='small'
-												color={item.status == 0 ? 'success' : 'default'}
-												label={item.status == 0 ? '启用' : '停用'}
-											/>
-										</Stack>
-										<Typography
-											variant='body2'
-											color='text.secondary'
-										>
+									<div className='flex-1'>
+										<div className='flex items-center gap-2'>
+											<span className='font-semibold'>{item.businessName}</span>
+											<Tag color={item.status == 0 ? 'success' : 'default'}>
+												{item.status == 0 ? '启用' : '停用'}
+											</Tag>
+										</div>
+										<div className='text-sm text-gray-500'>
 											{item.businessDesc || '--'}
-										</Typography>
-									</Stack>
-									<IconButton
-										color='primary'
+										</div>
+									</div>
+									<Button
+										type='link'
 										size='small'
+										icon={<EditOutlined />}
 										title='编辑'
 										onClick={() => onEditBusiness(item)}
-									>
-										<EditRegular />
-									</IconButton>
-									<IconButton
-										color='error'
+									/>
+									<Button
+										type='link'
 										size='small'
+										danger
+										icon={<DeleteOutlined />}
 										title='删除'
 										onClick={() => onDeleteBusiness(item)}
-									>
-										<DeleteRegular />
-									</IconButton>
-								</Stack>
+									/>
+								</div>
 							))}
-						</Stack>
+						</Space>
 					) : (
-						<Typography variant='body2' color='text.secondary'>
-							暂无常用业务
-						</Typography>
+						<div className='text-sm text-gray-500'>暂无常用业务</div>
 					)}
-				</Stack>
+				</Space>
 			</Modal>
 
 			<Modal
 				title={editBusinessId ? '编辑常用业务' : '新增常用业务'}
 				open={businessOpen}
 				onOk={onBusinessSave}
-				onClose={onBusinessCancel}
+				onCancel={onBusinessCancel}
+				destroyOnHidden
+				forceRender
 			>
-				<Form labelCol={{ flex: '0 0 100px' }} formik={businessFormik}>
-					<Form.Item required name='businessName' label='业务名称'>
-						<Input size='small' placeholder='请输入业务名称' />
+				<Form
+					form={businessForm}
+					labelCol={{ flex: '0 0 100px' }}
+					onFinish={onBusinessFinish}
+					initialValues={{
+						businessName: '',
+						businessDesc: '',
+						sort: '',
+						status: '0'
+					}}
+				>
+					<Form.Item
+						name='businessName'
+						label='业务名称'
+						rules={[{ required: true, message: '请输入业务名称' }]}
+					>
+						<Input placeholder='请输入业务名称' />
 					</Form.Item>
 					<Form.Item name='businessDesc' label='业务描述'>
-						<Input size='small' placeholder='请输入业务描述' />
+						<Input placeholder='请输入业务描述' />
 					</Form.Item>
 					<Form.Item name='sort' label='排序'>
-						<Input size='small' placeholder='请输入排序' />
+						<Input placeholder='请输入排序' />
 					</Form.Item>
 					<Form.Item name='status' label='状态'>
-						<RadioGroup row>
-							<Radio value='0' label='启用' />
-							<Radio value='1' label='停用' />
-						</RadioGroup>
+						<Radio.Group>
+							<Radio value='0'>启用</Radio>
+							<Radio value='1'>停用</Radio>
+						</Radio.Group>
 					</Form.Item>
 				</Form>
 			</Modal>
-		</PageOverlay>
+		</div>
 	);
 };

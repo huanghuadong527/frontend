@@ -1,24 +1,6 @@
-import {
-	useEffect,
-	useState } from 'react';
-import { Button,
-	IconButton,
-	Stack } from '@mui/material';
-import { useFormik,
-	type FormikValues } from 'formik';
-import {
-	SearchRegular,
-	SignOutRegular
-} from '@fluentui/react-icons';
-import {
-	Form,
-	getColumnData,
-	PageOverlay,
-	Input,
-	Table,
-	confirm,
-	message
-} from '@/plugins';
+import { useEffect, useState } from 'react';
+import { LogoutOutlined, SearchOutlined } from '@ant-design/icons';
+import { App, Button, Form, Input, Space, Table } from 'antd';
 import { forceLogout, getOnlineList } from '@/service';
 import { usePermission } from '@/authority';
 
@@ -32,19 +14,11 @@ const formatTime = (value?: number) => {
 };
 
 export const Component = () => {
+	const { message, modal } = App.useApp();
 	const { hasPermi } = usePermission();
 	const [rows, setRows] = useState<AnyObject[]>([]);
 	const [loading, setLoading] = useState(false);
-
-	const search = useFormik<FormikValues>({
-		initialValues: { ipaddr: '', userName: '' },
-		onSubmit(values) {
-			getData(values);
-		},
-		onReset() {
-			getData();
-		}
-	});
+	const [searchForm] = Form.useForm();
 
 	const getData = (params: AnyObject = {}) => {
 		setLoading(true);
@@ -56,9 +30,17 @@ export const Component = () => {
 			.catch(() => setLoading(false));
 	};
 
+	const onSearch = (values: AnyObject) => {
+		getData(values);
+	};
+
+	const onReset = () => {
+		searchForm.resetFields();
+		getData();
+	};
+
 	const onForceLogout = (id: string | number) => {
-		confirm({
-			type: 'warning',
+		modal.confirm({
 			title: '系统提示',
 			content: '是否确认强退该用户?',
 			onOk() {
@@ -70,100 +52,71 @@ export const Component = () => {
 		});
 	};
 
+	const columns = [
+		{ title: '会话编号', dataIndex: 'id' },
+		{ title: '登录名称', dataIndex: 'userName' },
+		{ title: '部门名称', dataIndex: 'deptName' },
+		{ title: '主机', dataIndex: 'ipaddr' },
+		{ title: '登录地点', dataIndex: 'loginLocation' },
+		{ title: '浏览器', dataIndex: 'browser' },
+		{ title: '操作系统', dataIndex: 'os' },
+		{
+			title: '登录时间',
+			dataIndex: 'loginTime',
+			render: (value: any) => formatTime(value)
+		},
+		{
+			title: '操作',
+			dataIndex: 'action',
+			width: 90,
+			render: (_: any, row: AnyObject) => (
+				<>
+					{hasPermi('monitor:online:forceLogout') && (
+						<Button
+							type='link'
+							danger
+							size='small'
+							icon={<LogoutOutlined />}
+							title='强退'
+							onClick={() => onForceLogout(row.id)}
+						/>
+					)}
+				</>
+			)
+		}
+	];
+
 	useEffect(() => {
 		getData();
 	}, []);
 
 	return (
-		<PageOverlay>
+		<div className='p-4 flex flex-col gap-4'>
 			<div className='flex items-center justify-between'>
-				<Form layout='inline' formik={search}>
+				<Form form={searchForm} layout='inline' onFinish={onSearch}>
 					<Form.Item name='ipaddr' label='登录地址'>
-						<Input size='small' placeholder='请输入登录地址' />
+						<Input placeholder='请输入登录地址' />
 					</Form.Item>
 					<Form.Item name='userName' label='用户名称'>
-						<Input size='small' placeholder='请输入用户名称' />
+						<Input placeholder='请输入用户名称' />
 					</Form.Item>
 					<Form.Item>
-						<Stack direction='row' spacing={2}>
-							<Button
-								variant='contained'
-								type='submit'
-								startIcon={<SearchRegular />}
-							>
+						<Space>
+							<Button type='primary' htmlType='submit' icon={<SearchOutlined />}>
 								查询
 							</Button>
-							<Button variant='outlined' type='reset'>
-								重置
-							</Button>
-						</Stack>
+							<Button onClick={onReset}>重置</Button>
+						</Space>
 					</Form.Item>
 				</Form>
 			</div>
 			<Table
 				loading={loading}
-				rows={rows}
-				getRowId={(row) => row.id}
-				columns={getColumnData([
-					{
-						field: 'id',
-						headerName: '会话编号'
-					},
-					{
-						field: 'userName',
-						headerName: '登录名称'
-					},
-					{
-						field: 'deptName',
-						headerName: '部门名称'
-					},
-					{
-						field: 'ipaddr',
-						headerName: '主机'
-					},
-					{
-						field: 'loginLocation',
-						headerName: '登录地点'
-					},
-					{
-						field: 'browser',
-						headerName: '浏览器'
-					},
-					{
-						field: 'os',
-						headerName: '操作系统'
-					},
-					{
-						field: 'loginTime',
-						headerName: '登录时间',
-						renderCell({ value }) {
-							return formatTime(value);
-						}
-					},
-					{
-						field: 'action',
-						headerName: '操作',
-						flex: 0,
-						width: 90,
-						renderCell({ row }) {
-							return (
-								<>
-									{hasPermi('monitor:online:forceLogout') && (
-										<IconButton
-											color='error'
-											size='small'
-											title='强退'
-											onClick={() => onForceLogout(row.id)}
-										>
-											<SignOutRegular />
-										</IconButton>
-									)}
-								</>
-							);
-						}
-					}
-				])}
+				dataSource={rows}
+				rowKey='id'
+				pagination={false}
+				columns={columns}
 			/>
-		</PageOverlay>
+		</div>
 	);
 };

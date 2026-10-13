@@ -1,65 +1,21 @@
+import { Card, Col, Row } from 'antd';
 import { useEffect, useState, type ReactNode } from 'react';
-import {
-	Card,
-	CardHeader,
-	Grid,
-	Table,
-	TableBody,
-	TableCell,
-	TableContainer,
-	TableHead,
-	TableRow
-} from '@mui/material';
-import { PageOverlay } from '@/plugins';
 import { getServerData } from '@/service';
 
 type KV = { label: string; value: string };
 
+const tableCls = 'w-full border-collapse text-sm';
+const thCls =
+	'border border-gray-200 bg-[#fafafa] px-2 py-1 text-left font-semibold whitespace-nowrap';
+const tdCls = 'border border-gray-200 px-2 py-1';
+const labelTdCls =
+	'border border-gray-200 bg-[#fafafa] px-2 py-1 font-semibold whitespace-nowrap w-[120px]';
+
 const Panel = ({ title, children }: { title: string; children: ReactNode }) => (
-	<Card variant='outlined'>
-		<CardHeader
-			title={title}
-			slotProps={{
-				title: {
-					variant: 'subtitle2'
-				}
-			}}
-			sx={{
-				paddingY: '8px',
-				borderBottom: '1px solid',
-				borderColor: 'divider'
-			}}
-		/>
+	<Card title={title} size='small'>
 		{children}
 	</Card>
 );
-
-const tableSx = {
-	'& .MuiTableCell-root': {
-		borderRight: '1px solid',
-		borderBottom: '1px solid',
-		borderColor: 'divider'
-	},
-	'& .MuiTableRow-root:last-child .MuiTableCell-root': {
-		borderBottom: 'none'
-	},
-	'& .MuiTableCell-root:last-child': {
-		borderRight: 'none'
-	}
-};
-
-const headCellSx = {
-	bgcolor: '#fafafa',
-	fontWeight: 600,
-	whiteSpace: 'nowrap'
-};
-
-const labelCellSx = {
-	width: 120,
-	bgcolor: '#fafafa',
-	fontWeight: 600,
-	whiteSpace: 'nowrap'
-};
 
 const InfoTable = ({
 	title,
@@ -71,45 +27,43 @@ const InfoTable = ({
 	rows: (string | number)[][];
 }) => (
 	<Panel title={title}>
-		<TableContainer>
-			<Table size='small' sx={tableSx}>
-				<TableHead>
-					<TableRow>
-						{columns.map((c) => (
-							<TableCell key={c} sx={headCellSx}>
-								{c}
-							</TableCell>
-						))}
-					</TableRow>
-				</TableHead>
-				<TableBody>
-					{rows.map((row, i) => (
-						<TableRow key={i}>
-							{row.map((cell, j) => (
-								<TableCell key={j}>{cell}</TableCell>
-							))}
-						</TableRow>
+		<table className={tableCls}>
+			<thead>
+				<tr>
+					{columns.map((c) => (
+						<th key={c} className={thCls}>
+							{c}
+						</th>
 					))}
-				</TableBody>
-			</Table>
-		</TableContainer>
+				</tr>
+			</thead>
+			<tbody>
+				{rows.map((row, i) => (
+					<tr key={i}>
+						{row.map((cell, j) => (
+							<td key={j} className={tdCls}>
+								{cell}
+							</td>
+						))}
+					</tr>
+				))}
+			</tbody>
+		</table>
 	</Panel>
 );
 
 const InfoCard = ({ title, items }: { title: string; items: KV[] }) => (
 	<Panel title={title}>
-		<TableContainer>
-			<Table size='small' sx={tableSx}>
-				<TableBody>
-					{items.map((item) => (
-						<TableRow key={item.label}>
-							<TableCell sx={labelCellSx}>{item.label}</TableCell>
-							<TableCell>{item.value || '--'}</TableCell>
-						</TableRow>
-					))}
-				</TableBody>
-			</Table>
-		</TableContainer>
+		<table className={tableCls}>
+			<tbody>
+				{items.map((item) => (
+					<tr key={item.label}>
+						<td className={labelTdCls}>{item.label}</td>
+						<td className={tdCls}>{item.value || '--'}</td>
+					</tr>
+				))}
+			</tbody>
+		</table>
 	</Panel>
 );
 
@@ -129,9 +83,9 @@ export const Component = () => {
 	const sysFiles: AnyObject[] = data?.sysFiles ?? [];
 
 	return (
-		<PageOverlay>
-			<Grid container spacing={2}>
-				<Grid size={{ xs: 12, md: 6 }}>
+		<div className='p-4'>
+			<Row gutter={[16, 16]}>
+				<Col xs={24} md={12}>
 					<InfoTable
 						title='CPU'
 						columns={['属性', '值']}
@@ -142,8 +96,8 @@ export const Component = () => {
 							['空闲率', cpu ? `${cpu.free}%` : '--']
 						]}
 					/>
-				</Grid>
-				<Grid size={{ xs: 12, md: 6 }}>
+				</Col>
+				<Col xs={24} md={12}>
 					<InfoTable
 						title='内存'
 						columns={['属性', '内存', 'JVM']}
@@ -170,8 +124,8 @@ export const Component = () => {
 							]
 						]}
 					/>
-				</Grid>
-				<Grid size={{ xs: 12 }}>
+				</Col>
+				<Col span={24}>
 					<InfoCard
 						title='服务器信息'
 						items={[
@@ -182,8 +136,8 @@ export const Component = () => {
 							{ label: '项目路径', value: sys?.userDir }
 						]}
 					/>
-				</Grid>
-				<Grid size={{ xs: 12 }}>
+				</Col>
+				<Col span={24}>
 					<InfoCard
 						title='Java虚拟机信息'
 						items={[
@@ -195,8 +149,8 @@ export const Component = () => {
 							{ label: '运行参数', value: jvm?.inputArgs }
 						]}
 					/>
-				</Grid>
-				<Grid size={{ xs: 12 }}>
+				</Col>
+				<Col span={24}>
 					<InfoTable
 						title='磁盘状态'
 						columns={[
@@ -218,8 +172,8 @@ export const Component = () => {
 							`${f.usage}%`
 						])}
 					/>
-				</Grid>
-			</Grid>
-		</PageOverlay>
+				</Col>
+			</Row>
+		</div>
 	);
 };

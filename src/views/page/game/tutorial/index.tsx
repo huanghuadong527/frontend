@@ -1,27 +1,24 @@
-import * as Yup from 'yup';
 import { useEffect, useState } from 'react';
-import { Button, IconButton, RadioGroup, Stack } from '@mui/material';
-import type { GridRowId } from '@mui/x-data-grid';
-import { useFormik, type FormikValues } from 'formik';
 import {
-	AddRegular,
-	EditRegular,
-	DeleteRegular,
-	SearchRegular,
-	CheckmarkRegular
-} from '@fluentui/react-icons';
+	CheckOutlined,
+	DeleteOutlined,
+	EditOutlined,
+	PlusOutlined,
+	SearchOutlined
+} from '@ant-design/icons';
 import {
+	App,
+	Button,
 	Form,
-	getColumnData,
-	PageOverlay,
 	Input,
 	Modal,
 	Radio,
+	Space,
 	Table,
-	MarkdownEditor,
-	confirm,
-	message
-} from '@/plugins';
+	Tag
+} from 'antd';
+import type { TableColumnsType } from 'antd';
+import { MarkdownEditor } from '@/components/markdown-editor';
 import { useTable } from '@/core';
 import {
 	addTutorial,
@@ -39,70 +36,59 @@ const renderContent = (value: unknown) => {
 };
 
 export const Component = () => {
+	const { message, modal } = App.useApp();
+	const [searchForm] = Form.useForm();
+	const [form] = Form.useForm();
 	const [isOpen, setIsOpen] = useState(false);
 	const [editId, setEditId] = useState<string | number>('');
-	const [selectKeys, setSelectKeys] = useState<GridRowId[]>([]);
+	const [selectKeys, setSelectKeys] = useState<(string | number)[]>([]);
 
-	const { tableProps, getData } = useTable('/game/wm/tutorial/list');
+	const { tableProps, getData } = useTable('/game/wm/tutorial/list', () => searchForm.getFieldsValue());
 
-	const search = useFormik<FormikValues>({
-		initialValues: { title: '', author: '' },
-		onSubmit(values) {
-			getData({
-				title: values.title || undefined,
-				author: values.author || undefined
+	const onSearch = (values: AnyObject) => {
+		getData({
+			title: values.title || undefined,
+			author: values.author || undefined
+		});
+	};
+
+	const onReset = () => {
+		searchForm.resetFields();
+		getData();
+	};
+
+	const onFinish = (values: AnyObject) => {
+		const params = {
+			title: values.title,
+			author: values.author || undefined,
+			content: values.content || undefined,
+			publishTime: values.publishTime || undefined,
+			isShelf: Number(values.isShelf),
+			sort: values.sort === '' ? null : Number(values.sort),
+			isAudit: 1
+		};
+		if (editId) {
+			updateTutorial({ ...params, id: editId }).then(() => {
+				message.success('修改成功');
+				onCancel();
+				getData();
 			});
-		},
-		onReset() {
-			getData();
+		} else {
+			addTutorial(params).then(() => {
+				message.success('新增成功');
+				onCancel();
+				getData();
+			});
 		}
-	});
-
-	const formik = useFormik<FormikValues>({
-		initialValues: {
-			title: '',
-			author: '',
-			content: '',
-			publishTime: '',
-			isShelf: '1',
-			sort: ''
-		},
-		validationSchema: Yup.object().shape({
-			title: Yup.string().required('请输入教程标题')
-		}),
-		onSubmit(values) {
-			const params = {
-				title: values.title,
-				author: values.author || undefined,
-				content: values.content || undefined,
-				publishTime: values.publishTime || undefined,
-				isShelf: Number(values.isShelf),
-				sort: values.sort === '' ? null : Number(values.sort),
-				isAudit: 1
-			};
-			if (editId) {
-				updateTutorial({ ...params, id: editId }).then(() => {
-					message.success('修改成功');
-					onCancel();
-					getData();
-				});
-			} else {
-				addTutorial(params).then(() => {
-					message.success('新增成功');
-					onCancel();
-					getData();
-				});
-			}
-		}
-	});
+	};
 
 	const onEdit = (id?: string | number) => {
 		if (id) {
 			setEditId(id);
 			getTutorialById(id).then((result) => {
 				const record = result.data;
-				formik.resetForm();
-				formik.setValues({
+				form.resetFields();
+				form.setFieldsValue({
 					title: record.title ?? '',
 					author: record.author ?? '',
 					content: record.content ?? '',
@@ -114,24 +100,23 @@ export const Component = () => {
 			});
 		} else {
 			setEditId('');
-			formik.resetForm();
+			form.resetFields();
 			setIsOpen(true);
 		}
 	};
 
 	const onSave = () => {
-		formik.handleSubmit();
+		form.submit();
 	};
 
 	const onCancel = () => {
 		setIsOpen(false);
 		setEditId('');
-		formik.resetForm();
+		form.resetFields();
 	};
 
 	const onDelete = (id: string | number) => {
-		confirm({
-			type: 'warning',
+		modal.confirm({
 			title: '系统提示',
 			content: '是否确认删除该教程?',
 			onOk() {
@@ -148,8 +133,7 @@ export const Component = () => {
 			message.warning('请选择要删除的教程');
 			return;
 		}
-		confirm({
-			type: 'warning',
+		modal.confirm({
 			title: '系统提示',
 			content: `是否确认删除选中的 ${selectKeys.length} 项数据?`,
 			onOk() {
@@ -163,12 +147,11 @@ export const Component = () => {
 	};
 
 	const onAudit = (row: AnyObject) => {
-		confirm({
-			type: 'warning',
+		modal.confirm({
 			title: '审核',
 			content: '请选择审核结果',
-			confirmationText: '通过',
-			cancellationText: '拒绝',
+			okText: '通过',
+			cancelText: '拒绝',
 			onOk() {
 				updateTutorial({ ...row, isAudit: 1 }).then(() => {
 					message.success('已通过审核');
@@ -188,150 +171,150 @@ export const Component = () => {
 		getData();
 	}, []);
 
+	const columns: TableColumnsType<AnyObject> = [
+		{ title: '编号', dataIndex: 'id' },
+		{ title: '教程标题', dataIndex: 'title' },
+		{ title: '作者', dataIndex: 'author' },
+		{ title: '日期', dataIndex: 'publishTime' },
+		{
+			title: '是否上架',
+			dataIndex: 'isShelf',
+			render: (value) => renderYesNo(value)
+		},
+		{ title: '排序', dataIndex: 'sort' },
+		{
+			title: '审核状态',
+			dataIndex: 'isAudit',
+			render: (value) => {
+				if (value == 2) return <Tag color='error'>已拒绝</Tag>;
+				return value == 1 ? <Tag color='success'>已通过</Tag> : <Tag color='warning'>待审核</Tag>;
+			}
+		},
+		{
+			title: '内容',
+			dataIndex: 'content',
+			render: (value) => renderContent(value)
+		},
+		{
+			title: '操作',
+			dataIndex: 'action',
+			width: 160,
+			render: (_v, row) => (
+				<>
+					{row.isAudit == 0 && (
+						<Button
+							type='link'
+							size='small'
+							icon={<CheckOutlined />}
+							title='审核'
+							onClick={() => onAudit(row)}
+						/>
+					)}
+					<Button
+						type='link'
+						size='small'
+						icon={<EditOutlined />}
+						title='编辑'
+						onClick={() => onEdit(row.id)}
+					/>
+					<Button
+						type='link'
+						size='small'
+						danger
+						icon={<DeleteOutlined />}
+						title='删除'
+						onClick={() => onDelete(row.id)}
+					/>
+				</>
+			)
+		}
+	];
+
 	return (
-		<PageOverlay>
+		<div className='p-4 flex flex-col gap-4'>
 			<div className='flex items-center justify-between'>
-				<Form layout='inline' formik={search}>
+				<Form form={searchForm} layout='inline' onFinish={onSearch}>
 					<Form.Item name='title' label='教程标题'>
-						<Input size='small' placeholder='请输入教程标题' />
+						<Input placeholder='请输入教程标题' />
 					</Form.Item>
 					<Form.Item name='author' label='作者'>
-						<Input size='small' placeholder='请输入作者' />
+						<Input placeholder='请输入作者' />
 					</Form.Item>
 					<Form.Item>
-						<Stack direction='row' spacing={2}>
-							<Button
-								variant='contained'
-								type='submit'
-								startIcon={<SearchRegular />}
-							>
+						<Space>
+							<Button type='primary' htmlType='submit' icon={<SearchOutlined />}>
 								查询
 							</Button>
-							<Button variant='outlined' type='reset'>
-								重置
-							</Button>
-						</Stack>
+							<Button onClick={onReset}>重置</Button>
+						</Space>
 					</Form.Item>
 				</Form>
-				<Stack direction='row' spacing={2}>
-					<Button
-						variant='contained'
-						startIcon={<AddRegular />}
-						onClick={() => onEdit()}
-					>
+				<Space>
+					<Button type='primary' icon={<PlusOutlined />} onClick={() => onEdit()}>
 						新建
 					</Button>
 					<Button
-						color='error'
-						variant='contained'
-						startIcon={<DeleteRegular />}
+						type='primary'
+						danger
+						icon={<DeleteOutlined />}
 						disabled={selectKeys.length == 0}
 						onClick={onBatchDelete}
 					>
 						批量删除
 					</Button>
-				</Stack>
+				</Space>
 			</div>
 			<Table
 				{...tableProps}
-				checkboxSelection
-				onRowSelectionModelChange={(model) =>
-					setSelectKeys(Array.from(model.ids))
-				}
-				columns={getColumnData([
-					{ field: 'id', headerName: '编号' },
-					{ field: 'title', headerName: '教程标题', flex: 1 },
-					{ field: 'author', headerName: '作者' },
-					{ field: 'publishTime', headerName: '日期' },
-					{
-						field: 'isShelf',
-						headerName: '是否上架',
-						renderCell({ value }) {
-							return renderYesNo(value);
-						}
-					},
-					{ field: 'sort', headerName: '排序' },
-					{
-						field: 'isAudit',
-						headerName: '审核状态',
-						renderCell({ value }) {
-							if (value == 2) return '已拒绝';
-							return value == 1 ? '已通过' : '待审核';
-						}
-					},
-					{
-						field: 'content',
-						headerName: '内容',
-						flex: 2,
-						renderCell({ value }) {
-							return renderContent(value);
-						}
-					},
-					{
-						field: 'action',
-						headerName: '操作',
-						flex: 0,
-						width: 160,
-						renderCell({ row }) {
-							return (
-								<>
-									{row.isAudit == 0 && (
-										<IconButton
-											color='primary'
-											size='small'
-											title='审核'
-											onClick={() => onAudit(row)}
-										>
-											<CheckmarkRegular />
-										</IconButton>
-									)}
-									<IconButton
-										color='primary'
-										size='small'
-										title='编辑'
-										onClick={() => onEdit(row.id)}
-									>
-										<EditRegular />
-									</IconButton>
-									<IconButton
-										color='error'
-										size='small'
-										title='删除'
-										onClick={() => onDelete(row.id)}
-									>
-										<DeleteRegular />
-									</IconButton>
-								</>
-							);
-						}
-					}
-				])}
+				rowSelection={{
+					selectedRowKeys: selectKeys,
+					onChange: (keys) => setSelectKeys(keys as (string | number)[])
+				}}
+				columns={columns}
 			/>
 			<Modal
 				title={editId ? '编辑教程' : '新增教程'}
 				open={isOpen}
-				width='lg'
+				width={900}
 				onOk={onSave}
-				onClose={onCancel}
+				onCancel={onCancel}
+				destroyOnHidden
+				forceRender
 			>
-				<Form labelCol={{ flex: '0 0 100px' }} formik={formik}>
-					<Form.Item required name='title' label='教程标题'>
-						<Input size='small' placeholder='请输入教程标题' />
+				<Form
+					form={form}
+					labelCol={{ flex: '0 0 100px' }}
+					onFinish={onFinish}
+					initialValues={{
+						title: '',
+						author: '',
+						content: '',
+						publishTime: '',
+						isShelf: '1',
+						sort: ''
+					}}
+				>
+					<Form.Item
+						name='title'
+						label='教程标题'
+						rules={[{ required: true, message: '请输入教程标题' }]}
+					>
+						<Input placeholder='请输入教程标题' />
 					</Form.Item>
 					<Form.Item name='author' label='作者'>
-						<Input size='small' placeholder='请输入作者' />
+						<Input placeholder='请输入作者' />
 					</Form.Item>
 					<Form.Item name='publishTime' label='日期'>
-						<Input size='small' placeholder='请输入日期，如 2026-09-30' />
+						<Input placeholder='请输入日期，如 2026-09-30' />
 					</Form.Item>
 					<Form.Item name='isShelf' label='是否上架'>
-						<RadioGroup row>
-							<Radio value='1' label='是' />
-							<Radio value='0' label='否' />
-						</RadioGroup>
+						<Radio.Group>
+							<Radio value='1'>是</Radio>
+							<Radio value='0'>否</Radio>
+						</Radio.Group>
 					</Form.Item>
 					<Form.Item name='sort' label='排序'>
-						<Input size='small' placeholder='请输入排序' />
+						<Input placeholder='请输入排序' />
 					</Form.Item>
 					<Form.Item name='content' label='教程内容'>
 						<MarkdownEditor
@@ -341,6 +324,6 @@ export const Component = () => {
 					</Form.Item>
 				</Form>
 			</Modal>
-		</PageOverlay>
+		</div>
 	);
 };

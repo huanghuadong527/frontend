@@ -1,28 +1,23 @@
-import * as Yup from 'yup';
 import xe from 'xe-utils';
 import { useEffect, useState } from 'react';
-import { Button, IconButton, RadioGroup, Stack } from '@mui/material';
-import type { GridRowId } from '@mui/x-data-grid';
-import { useFormik, type FormikValues } from 'formik';
 import {
-	AddRegular,
-	EditRegular,
-	DeleteRegular,
-	SearchRegular
-} from '@fluentui/react-icons';
-import {
+	App,
+	Button,
 	Form,
-	getColumnData,
-	PageOverlay,
 	Input,
 	Modal,
 	Radio,
+	Space,
 	Table,
 	Tree,
-	TreeSelect,
-	confirm,
-	message
-} from '@/plugins';
+	TreeSelect
+} from 'antd';
+import {
+	DeleteOutlined,
+	EditOutlined,
+	PlusOutlined,
+	SearchOutlined
+} from '@ant-design/icons';
 import {
 	addUser,
 	deleteUser,
@@ -35,82 +30,66 @@ import { DICT_STATUS, DICT_USER_SEX, useTable } from '@/core';
 import { usePermission } from '@/authority';
 
 export const Component = () => {
+	const { message, modal } = App.useApp();
 	const { hasPermi } = usePermission();
 	const [isOpen, setIsOpen] = useState(false);
 	const [editId, setEditId] = useState<string | number>('');
 	const [selectKey, setSelectKey] = useState<string>();
-	const [selectKeys, setSelectKeys] = useState<GridRowId[]>([]);
+	const [selectKeys, setSelectKeys] = useState<(string | number)[]>([]);
 	const [dicts, setDicts] = useState<AnyObject>();
 	const [expanedKey, setExpandKey] = useState<string[]>([]);
 	const [deptTree, setDeptTree] = useState<TreeItemsType[]>([]);
 
-	const { tableProps, getData } = useTable('/system/user/list');
+	const { tableProps, getData } = useTable('/system/user/list', () => searchForm.getFieldsValue());
 
-	const search = useFormik<FormikValues>({
-		initialValues: {
-			userName: ''
-		},
-		onSubmit(values) {
-			getData({ deptId: selectKey, ...values });
-		},
-		onReset() {
-			getData({ deptId: selectKey });
-		}
-	});
+	const [searchForm] = Form.useForm();
+	const [form] = Form.useForm();
 
-	const formik = useFormik<FormikValues>({
-		initialValues: {
-			userName: '',
-			nickName: '',
-			deptId: '',
-			password: '',
-			email: '',
-			phonenumber: '',
-			sex: '0',
-			status: '0',
-			remark: ''
-		},
-		validationSchema: Yup.object().shape({
-			userName: Yup.string().required('请输入用户名称'),
-			nickName: Yup.string().required('请输入用户昵称')
-		}),
-		onSubmit(values) {
-			const params: AnyObject = {
-				userName: values.userName,
-				nickName: values.nickName,
-				deptId:
-					values.deptId === '' || values.deptId == null
-						? null
-						: Number(values.deptId),
-				email: values.email || undefined,
-				phonenumber: values.phonenumber || undefined,
-				sex: Number(values.sex),
-				status: Number(values.status),
-				remark: values.remark || undefined
-			};
-			if (editId) {
-				updateUser({ ...params, id: editId }).then(() => {
-					message.success('修改成功');
-					onCancel();
-					getData();
-				});
-			} else {
-				if (!values.password) {
-					message.warning('请输入密码');
-					return;
-				}
-				if (values.password.length < 6) {
-					message.warning('密码不能少于6个字符');
-					return;
-				}
-				addUser({ ...params, password: values.password }).then(() => {
-					message.success('新增成功');
-					onCancel();
-					getData();
-				});
+	const onSearch = (values: AnyObject) => {
+		getData({ deptId: selectKey, ...values });
+	};
+
+	const onReset = () => {
+		searchForm.resetFields();
+		getData({ deptId: selectKey });
+	};
+
+	const onFinish = (values: AnyObject) => {
+		const params: AnyObject = {
+			userName: values.userName,
+			nickName: values.nickName,
+			deptId:
+				values.deptId === '' || values.deptId == null
+					? null
+					: Number(values.deptId),
+			email: values.email || undefined,
+			phonenumber: values.phonenumber || undefined,
+			sex: Number(values.sex),
+			status: Number(values.status),
+			remark: values.remark || undefined
+		};
+		if (editId) {
+			updateUser({ ...params, id: editId }).then(() => {
+				message.success('修改成功');
+				onCancel();
+				getData();
+			});
+		} else {
+			if (!values.password) {
+				message.warning('请输入密码');
+				return;
 			}
+			if (values.password.length < 6) {
+				message.warning('密码不能少于6个字符');
+				return;
+			}
+			addUser({ ...params, password: values.password }).then(() => {
+				message.success('新增成功');
+				onCancel();
+				getData();
+			});
 		}
-	});
+	};
 
 	const getDictLabel = (type: string, value: any) => {
 		if (dicts && dicts[type]) {
@@ -146,8 +125,7 @@ export const Component = () => {
 			setEditId(id);
 			getUserById(id).then((result) => {
 				const record = result.data;
-				formik.resetForm();
-				formik.setValues({
+				form.setFieldsValue({
 					userName: record.userName ?? '',
 					nickName: record.nickName ?? '',
 					deptId: record.deptId != null ? String(record.deptId) : '',
@@ -162,24 +140,19 @@ export const Component = () => {
 			});
 		} else {
 			setEditId('');
-			formik.resetForm();
+			form.resetFields();
 			setIsOpen(true);
 		}
-	};
-
-	const onSave = () => {
-		formik.handleSubmit();
 	};
 
 	const onCancel = () => {
 		setIsOpen(false);
 		setEditId('');
-		formik.resetForm();
+		form.resetFields();
 	};
 
 	const onDelete = (id: string | number) => {
-		confirm({
-			type: 'warning',
+		modal.confirm({
 			title: '系统提示',
 			content: '是否确认删除该用户?',
 			onOk() {
@@ -196,8 +169,7 @@ export const Component = () => {
 			message.warning('请选择要删除的用户');
 			return;
 		}
-		confirm({
-			type: 'warning',
+		modal.confirm({
 			title: '系统提示',
 			content: `是否确认删除选中的 ${selectKeys.length} 项数据?`,
 			onOk() {
@@ -210,8 +182,82 @@ export const Component = () => {
 		});
 	};
 
+	const columns = [
+		{
+			title: '用户名',
+			dataIndex: 'userName'
+		},
+		{
+			title: '用户昵称',
+			dataIndex: 'nickName'
+		},
+		{
+			title: '部门',
+			dataIndex: 'deptId',
+			render: (value: any) => {
+				if (deptTree) {
+					const mi = xe.findTree(deptTree, (item) => item.id == value);
+					if (mi && mi.item) {
+						return mi.item.label;
+					}
+				}
+				return '';
+			}
+		},
+		{
+			title: '性别',
+			dataIndex: 'sex',
+			render: (value: any) => {
+				return getDictLabel(DICT_USER_SEX, value);
+			}
+		},
+		{
+			title: '手机号',
+			dataIndex: 'phonenumber'
+		},
+		{
+			title: '状态',
+			dataIndex: 'status',
+			render: (value: any) => {
+				return getDictLabel(DICT_STATUS, value);
+			}
+		},
+		{
+			title: '创建时间',
+			dataIndex: 'createTime'
+		},
+		{
+			title: '操作',
+			dataIndex: 'action',
+			width: 100,
+			render: (_: any, row: AnyObject) => (
+				<>
+					{hasPermi('system:user:edit') && (
+						<Button
+							type='link'
+							size='small'
+							icon={<EditOutlined />}
+							title='编辑'
+							onClick={() => onEdit(row.id)}
+						/>
+					)}
+					{hasPermi('system:user:remove') && (
+						<Button
+							type='link'
+							size='small'
+							danger
+							icon={<DeleteOutlined />}
+							title='删除'
+							onClick={() => onDelete(row.id)}
+						/>
+					)}
+				</>
+			)
+		}
+	];
+
 	useEffect(() => {
-		getData({ deptId: selectKey, ...search.values });
+		getData({ deptId: selectKey, ...searchForm.getFieldsValue() });
 	}, [selectKey]);
 
 	useEffect(() => {
@@ -220,48 +266,45 @@ export const Component = () => {
 	}, []);
 
 	return (
-		<PageOverlay direction='row'>
+		<div className='p-4 flex gap-4'>
 			<div className='w-3xs flex flex-col gap-4'>
 				<Input
-					fullWidth
-					size='small'
 					placeholder='请输入部门名称'
-					startAdornment={<SearchRegular />}
+					prefix={<SearchOutlined />}
 				/>
 				<div className='flex-1 overflow-y-auto'>
 					<Tree
 						showLine
-						expandedItems={expanedKey}
-						items={deptTree}
-						onItemSelectionToggle={(_, id, isSelected) =>
-							isSelected && onSelectedChange(id)
-						}
-						onExpandedItemsChange={(_, keys) => setExpandKey(keys)}
+						treeData={deptTree as AnyObject[]}
+						fieldNames={{ title: 'label', key: 'id', children: 'children' }}
+						expandedKeys={expanedKey}
+						onExpand={(keys) => setExpandKey(keys as string[])}
+						onSelect={(keys) => {
+							if (keys.length) onSelectedChange(String(keys[0]));
+						}}
 					/>
 				</div>
 			</div>
-			<PageOverlay sx={{ flex: 1 }}>
+			<div className='p-4 flex flex-col gap-4 flex-1'>
 				<div className='flex items-center justify-between'>
-					<Form layout='inline' formik={search}>
+					<Form form={searchForm} layout='inline' onFinish={onSearch}>
 						<Form.Item name='userName' label='用户名'>
-							<Input size='small' placeholder='请输入' />
+							<Input placeholder='请输入' />
 						</Form.Item>
 						<Form.Item>
-							<Stack direction='row' spacing={2}>
-								<Button variant='contained' type='submit'>
+							<Space>
+								<Button type='primary' htmlType='submit'>
 									查询
 								</Button>
-								<Button variant='outlined' type='reset'>
-									重置
-								</Button>
-							</Stack>
+								<Button onClick={onReset}>重置</Button>
+							</Space>
 						</Form.Item>
 					</Form>
-					<Stack direction='row' spacing={2}>
+					<Space>
 						{hasPermi('system:user:add') && (
 							<Button
-								variant='contained'
-								startIcon={<AddRegular />}
+								type='primary'
+								icon={<PlusOutlined />}
 								onClick={() => onEdit()}
 							>
 								新建
@@ -269,159 +312,107 @@ export const Component = () => {
 						)}
 						{hasPermi('system:user:remove') && (
 							<Button
-								color='error'
-								variant='contained'
-								startIcon={<DeleteRegular />}
+								danger
+								type='primary'
+								icon={<DeleteOutlined />}
 								disabled={selectKeys.length == 0}
 								onClick={onBatchDelete}
 							>
 								批量删除
 							</Button>
 						)}
-					</Stack>
+					</Space>
 				</div>
 				<Table
 					{...tableProps}
-					checkboxSelection
-					getRowId={(row) => row.id}
-					onRowSelectionModelChange={(model) =>
-						setSelectKeys(Array.from(model.ids))
-					}
-					columns={getColumnData([
-						{
-							field: 'userName',
-							headerName: '用户名'
-						},
-						{
-							field: 'nickName',
-							headerName: '用户昵称'
-						},
-						{
-							field: 'deptId',
-							headerName: '部门',
-							renderCell({ value }) {
-								if (deptTree) {
-									const mi = xe.findTree(deptTree, (item) => item.id == value);
-									if (mi && mi.item) {
-										return mi.item.label;
-									}
-								}
-								return '';
-							}
-						},
-						{
-							field: 'sex',
-							headerName: '性别',
-							renderCell({ value }) {
-								return getDictLabel(DICT_USER_SEX, value);
-							}
-						},
-						{
-							field: 'phonenumber',
-							headerName: '手机号'
-						},
-						{
-							field: 'status',
-							headerName: '状态',
-							renderCell({ value }) {
-								return getDictLabel(DICT_STATUS, value);
-							}
-						},
-						{
-							field: 'createTime',
-							headerName: '创建时间'
-						},
-						{
-							field: 'action',
-							headerName: '操作',
-							flex: 0,
-							width: 100,
-							renderCell({ row }) {
-								return (
-									<>
-										{hasPermi('system:user:edit') && (
-											<IconButton
-												color='primary'
-												size='small'
-												title='编辑'
-												onClick={() => onEdit(row.id)}
-											>
-												<EditRegular />
-											</IconButton>
-										)}
-										{hasPermi('system:user:remove') && (
-											<IconButton
-												color='error'
-												size='small'
-												title='删除'
-												onClick={() => onDelete(row.id)}
-											>
-												<DeleteRegular />
-											</IconButton>
-										)}
-									</>
-								);
-							}
-						}
-					])}
+					rowSelection={{
+						selectedRowKeys: selectKeys,
+						onChange: (keys) => setSelectKeys(keys as (string | number)[])
+					}}
+					columns={columns}
 				/>
-			</PageOverlay>
+			</div>
 			<Modal
 				title={editId ? '编辑用户' : '新增用户'}
 				open={isOpen}
-				onOk={onSave}
-				onClose={onCancel}
+				destroyOnHidden
+				forceRender
+				onOk={() => form.submit()}
+				onCancel={onCancel}
 			>
-				<Form labelCol={{ flex: '0 0 100px' }} formik={formik}>
-					<Form.Item required name='userName' label='用户名称'>
-						<Input size='small' placeholder='请输入名称' />
+				<Form
+					form={form}
+					labelCol={{ flex: '0 0 100px' }}
+					initialValues={{
+						userName: '',
+						nickName: '',
+						deptId: '',
+						password: '',
+						email: '',
+						phonenumber: '',
+						sex: '0',
+						status: '0',
+						remark: ''
+					}}
+					onFinish={onFinish}
+				>
+					<Form.Item
+						name='userName'
+						label='用户名称'
+						rules={[{ required: true, message: '请输入用户名称' }]}
+					>
+						<Input placeholder='请输入名称' />
 					</Form.Item>
-					<Form.Item required name='nickName' label='用户昵称'>
-						<Input size='small' placeholder='请输入昵称' />
+					<Form.Item
+						name='nickName'
+						label='用户昵称'
+						rules={[{ required: true, message: '请输入用户昵称' }]}
+					>
+						<Input placeholder='请输入昵称' />
 					</Form.Item>
 					{!editId && (
-						<Form.Item required name='password' label='密码'>
-							<Input size='small' type='password' placeholder='请输入密码' />
+						<Form.Item name='password' label='密码' required>
+							<Input.Password placeholder='请输入密码' />
 						</Form.Item>
 					)}
 					<Form.Item name='deptId' label='部门'>
-						<TreeSelect placeholder='请选择部门' treeData={deptTree} />
+						<TreeSelect
+							placeholder='请选择部门'
+							treeData={deptTree as AnyObject[]}
+							fieldNames={{ value: 'id' }}
+						/>
 					</Form.Item>
 					<Form.Item name='email' label='邮箱'>
-						<Input size='small' placeholder='请输入邮箱' />
+						<Input placeholder='请输入邮箱' />
 					</Form.Item>
 					<Form.Item name='phonenumber' label='手机号码'>
-						<Input size='small' placeholder='请输入手机号码' />
+						<Input placeholder='请输入手机号码' />
 					</Form.Item>
 					<Form.Item name='sex' label='性别'>
-						<RadioGroup row>
+						<Radio.Group>
 							{dicts &&
 								dicts[DICT_USER_SEX].map((item: any) => (
-									<Radio
-										key={item.id}
-										value={item.dictValue}
-										label={item.dictLabel}
-									/>
+									<Radio key={item.id} value={item.dictValue}>
+										{item.dictLabel}
+									</Radio>
 								))}
-						</RadioGroup>
+						</Radio.Group>
 					</Form.Item>
 					<Form.Item name='status' label='状态'>
-						<RadioGroup row>
+						<Radio.Group>
 							{dicts &&
 								dicts[DICT_STATUS].map((item: any) => (
-									<Radio
-										key={item.id}
-										value={item.dictValue}
-										label={item.dictLabel}
-									/>
+									<Radio key={item.id} value={item.dictValue}>
+										{item.dictLabel}
+									</Radio>
 								))}
-						</RadioGroup>
+						</Radio.Group>
 					</Form.Item>
 					<Form.Item name='remark' label='备注'>
 						<Input.TextArea placeholder='请输入备注' />
 					</Form.Item>
 				</Form>
 			</Modal>
-		</PageOverlay>
+		</div>
 	);
 };

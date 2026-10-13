@@ -1,1 +1,34 @@
 @import 'tailwindcss';
+
+/* 页面根节点撑满内容卡片 */
+.page-card > * {
+	height: 100%;
+}
+
+/* 表格页：表格占满剩余高度，分页固定到底部 */
+.page-card .ant-table-wrapper {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	min-height: 0;
+}
+.page-card .ant-table-wrapper .ant-spin,
+.page-card .ant-table-wrapper .ant-spin-container {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	min-height: 0;
+}
+.page-card .ant-table-wrapper .ant-table {
+	flex: 1;
+	min-height: 0;
+	overflow: auto;
+}
+
+/* 布局页签：去掉底部整条分割线，改为每个页签自带完整底边框 */
+.layout-tabs .ant-tabs-nav::before {
+	display: none;
+}
+.layout-tabs.ant-tabs-card.ant-tabs-top > .ant-tabs-nav .ant-tabs-tab {
+	border-bottom-color: var(--ant-color-border-secondary);
+}

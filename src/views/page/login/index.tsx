@@ -1,70 +1,43 @@
 import src_login from '@/assets/image/login-bg.webp';
 import src_left from '@/assets/image/card-left-1.webp';
+import { LockOutlined, UserOutlined } from '@ant-design/icons';
+import { Button, Checkbox, Form, Input, Typography } from 'antd';
 import utils from 'xe-utils';
-import * as Yup from 'yup';
-import {
-	useEffect,
-	useState,
-	type ChangeEvent } from 'react';
-import {
-	Button,
-	Checkbox,
-	FormControl,
-	FormControlLabel,
-	IconButton,
-	InputAdornment,
-	Link,
-	TextField,
-	Typography
-} from '@mui/material';
-import {
-	PersonRegular,
-	LockClosedRegular,
-	EyeRegular,
-	EyeOffRegular
-} from '@fluentui/react-icons';
-import { useFormik } from 'formik';
+import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router';
 import { login } from '@/service';
 import { setToken } from '@/store';
 
+const { Link, Text } = Typography;
+
 export const Login = () => {
 	const dispatch = useDispatch();
 	const navigate = useNavigate();
-	const [showPassword, setShowPassword] = useState(false);
+	const [form] = Form.useForm();
+	const [remember, setRemember] = useState(false);
 
-	const formik = useFormik({
-		initialValues: {
-			username: '',
-			password: '',
-			checked: false
-		},
-		validationSchema: Yup.object().shape({
-			username: Yup.string().required('请输入用户名'),
-			password: Yup.string().required('请输入密码')
-		}),
-		onSubmit(values) {
-			login(values).then((result) => {
-				dispatch(setToken(result.data));
-				navigate('/index');
-			});
-		}
-	});
+	const onRememberChange = (e: { target: { checked: boolean } }) => {
+		const checked = e.target.checked;
+		setRemember(checked);
 
-	const onChange = (e: ChangeEvent<HTMLInputElement>) => {
-		formik.handleChange(e);
-
-		utils.cookie.set('checked', e.target.checked, { expires: '7d' });
-
-		if (e.target.checked) {
-			utils.cookie.set('username', formik.values.username);
-			utils.cookie.set('password', formik.values.password);
+		if (checked) {
+			const values = form.getFieldsValue();
+			utils.cookie.set('checked', checked, { expires: '7d' });
+			utils.cookie.set('username', values.username ?? '');
+			utils.cookie.set('password', values.password ?? '');
 		} else {
 			utils.cookie.remove('checked');
 			utils.cookie.remove('username');
 			utils.cookie.remove('password');
 		}
+	};
+
+	const onFinish = (values: AnyObject) => {
+		login(values).then((result) => {
+			dispatch(setToken(result.data));
+			navigate('/index');
+		});
 	};
 
 	useEffect(() => {
@@ -73,12 +46,10 @@ export const Login = () => {
 		const password = utils.cookie.get('password') || '';
 
 		if (checked === 'true') {
-			formik.setValues({
-				username,
-				password,
-				checked: true
-			});
+			setRemember(true);
+			form.setFieldsValue({ username, password });
 		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
 	return (
@@ -96,96 +67,44 @@ export const Login = () => {
 					<div className='flex-1'>
 						<div className='px-16 py-20'>
 							<div className='text-2xl mb-6'>欢迎登录</div>
-							<form onSubmit={formik.handleSubmit}>
-								<FormControl fullWidth>
-									<TextField
-										size='small'
-										variant='outlined'
+							<Form form={form} onFinish={onFinish}>
+								<Form.Item
+									name='username'
+									rules={[{ required: true, message: '请输入用户名' }]}
+								>
+									<Input
+										prefix={<UserOutlined />}
 										placeholder='请输入用户名'
-										name='username'
-										value={formik.values.username}
-										error={
-											!!(formik.touched.username && formik.errors.username)
-										}
-										helperText={formik.errors.username ?? ' '}
-										onChange={formik.handleChange}
-										slotProps={{
-											input: {
-												startAdornment: (
-													<InputAdornment position='start'>
-														<PersonRegular />
-													</InputAdornment>
-												)
-											}
-										}}
 									/>
-								</FormControl>
-								<FormControl fullWidth>
-									<TextField
-										size='small'
-										variant='outlined'
+								</Form.Item>
+								<Form.Item
+									name='password'
+									rules={[{ required: true, message: '请输入密码' }]}
+								>
+									<Input.Password
+										prefix={<LockOutlined />}
 										placeholder='请输入密码'
-										name='password'
-										type={showPassword ? 'text' : 'password'}
-										value={formik.values.password}
-										error={
-											!!(formik.touched.password && formik.errors.password)
-										}
-										helperText={formik.errors.password ?? ' '}
-										onChange={formik.handleChange}
-										slotProps={{
-											input: {
-												startAdornment: (
-													<InputAdornment position='start'>
-														<LockClosedRegular />
-													</InputAdornment>
-												),
-												endAdornment: (
-													<InputAdornment position='end' aria-label='密码'>
-														<IconButton
-															edge='end'
-															onClick={() => setShowPassword(!showPassword)}
-														>
-															{showPassword ? (
-																<EyeOffRegular />
-															) : (
-																<EyeRegular />
-															)}
-														</IconButton>
-													</InputAdornment>
-												)
-											}
-										}}
 									/>
-								</FormControl>
-								<div className='flex flex-row items-center justify-between mb-10'>
-									<FormControlLabel
-										control={
-											<Checkbox
-												name='checked'
-												size='small'
-												checked={formik.values.checked}
-												onChange={onChange}
-											/>
-										}
-										label={<Typography variant='button'>记住密码</Typography>}
-									/>
-									<Link className='text-sm cursor-pointer' underline='hover'>
-										忘记密码?
-									</Link>
+								</Form.Item>
+								<div className='flex items-center justify-between mb-10'>
+									<Checkbox
+										checked={remember}
+										onChange={onRememberChange}
+									>
+										记住密码
+									</Checkbox>
+									<Link className='text-sm'>忘记密码?</Link>
 								</div>
-								<Button fullWidth variant='contained' type='submit'>
+								<Button block type='primary' htmlType='submit'>
 									立即登录
 								</Button>
 								<div className='text-center mt-6'>
-									<Typography className='space-x-1' variant='caption'>
+									<Text type='secondary'>
 										<span>您还没有账号吗?</span>
-										<Link className='cursor-pointer' underline='hover'>
-											立即注册
-										</Link>
-									</Typography>
+										<Link className='ml-1'>立即注册</Link>
+									</Text>
 								</div>
-							</form>
+							</Form>
 						</div>
 					</div>
 				</div>

@@ -10,8 +10,7 @@ import {
 	TOKEN_COOKIE_KEY
 } from '@/core';
 import { CACHE, isEmpty, tansParams } from '@/utils';
-import { confirm } from '@/plugins/confirm';
-import { message } from '@/plugins/message';
+import { Modal, message } from 'antd';
 
 axios.defaults.headers['Content-Type'] = 'application/json;charset=utf-8';
 
@@ -103,11 +102,10 @@ service.interceptors.response.use(
 		}
 
 		if (code === 401) {
-			confirm({
-				type: 'info',
+			Modal.confirm({
 				title: '系统提示',
 				content: '登录状态已过期，您可以继续留在该页面，或者重新登录',
-				confirmationText: '重新登录',
+				okText: '重新登录',
 				onOk() {
 					store.dispatch(clear());
 					window.location.href = '/login';

@@ -1,45 +1,28 @@
-import {
-	useEffect,
-	useState } from 'react';
-import { Button,
-	Chip,
-	Stack } from '@mui/material';
-import type { GridRowId } from '@mui/x-data-grid';
-import { useFormik,
-	type FormikValues } from 'formik';
-import {
-	DeleteRegular,
-	SearchRegular
-} from '@fluentui/react-icons';
-import {
-	Form,
-	getColumnData,
-	PageOverlay,
-	Input,
-	Table,
-	confirm,
-	message
-} from '@/plugins';
+import { useEffect, useState } from 'react';
+import { App, Button, Form, Input, Space, Table, Tag } from 'antd';
+import { DeleteOutlined, SearchOutlined } from '@ant-design/icons';
 import { DICT_OPER_TYPE, useTable } from '@/core';
 import { usePermission } from '@/authority';
 import { cleanOperlog, deleteOperlog, getDictDataByType } from '@/service';
 
 export const Component = () => {
+	const { message, modal } = App.useApp();
 	const { hasPermi } = usePermission();
-	const [selectKeys, setSelectKeys] = useState<GridRowId[]>([]);
+	const [selectKeys, setSelectKeys] = useState<(string | number)[]>([]);
 	const [operTypeDict, setOperTypeDict] = useState<AnyObject[]>([]);
 
-	const { tableProps, getData } = useTable('/monitor/operlog/list');
+	const { tableProps, getData } = useTable('/monitor/operlog/list', () => searchForm.getFieldsValue());
 
-	const search = useFormik<FormikValues>({
-		initialValues: { title: '', operName: '' },
-		onSubmit(values) {
-			getData(values);
-		},
-		onReset() {
-			getData();
-		}
-	});
+	const [searchForm] = Form.useForm();
+
+	const onSearch = (values: AnyObject) => {
+		getData(values);
+	};
+
+	const onReset = () => {
+		searchForm.resetFields();
+		getData();
+	};
 
 	const getDictLabel = (value: any) => {
 		const dict = operTypeDict.find((item: any) => item.dictValue == value);
@@ -47,8 +30,7 @@ export const Component = () => {
 	};
 
 	const onDelete = (ids: string | number) => {
-		confirm({
-			type: 'warning',
+		modal.confirm({
 			title: '系统提示',
 			content: '是否确认删除所选操作日志?',
 			onOk() {
@@ -70,8 +52,7 @@ export const Component = () => {
 	};
 
 	const onClean = () => {
-		confirm({
-			type: 'warning',
+		modal.confirm({
 			title: '系统提示',
 			content: '是否确认清空所有操作日志数据?',
 			onOk() {
@@ -84,6 +65,53 @@ export const Component = () => {
 		});
 	};
 
+	const columns = [
+		{
+			title: '操作编号',
+			dataIndex: 'operId'
+		},
+		{
+			title: '操作模块',
+			dataIndex: 'title'
+		},
+		{
+			title: '业务类型',
+			dataIndex: 'businessType',
+			render: (value: any) => {
+				return getDictLabel(value);
+			}
+		},
+		{
+			title: '操作人员',
+			dataIndex: 'operName'
+		},
+		{
+			title: '请求方式',
+			dataIndex: 'requestMethod'
+		},
+		{
+			title: '操作地址',
+			dataIndex: 'operUrl'
+		},
+		{
+			title: '操作IP',
+			dataIndex: 'operIp'
+		},
+		{
+			title: '操作状态',
+			dataIndex: 'status',
+			render: (value: any) => (
+				<Tag color={value == 0 ? 'success' : 'error'}>
+					{value == 0 ? '正常' : '异常'}
+				</Tag>
+			)
+		},
+		{
+			title: '操作时间',
+			dataIndex: 'operTime'
+		}
+	];
+
 	useEffect(() => {
 		getData();
 	}, []);
@@ -95,101 +123,52 @@ export const Component = () => {
 	}, []);
 
 	return (
-		<PageOverlay>
+		<div className='p-4 flex flex-col gap-4'>
 			<div className='flex items-center justify-between'>
-				<Form layout='inline' formik={search}>
+				<Form form={searchForm} layout='inline' onFinish={onSearch}>
 					<Form.Item name='title' label='操作模块'>
-						<Input size='small' placeholder='请输入操作模块' />
+						<Input placeholder='请输入操作模块' />
 					</Form.Item>
 					<Form.Item name='operName' label='操作人员'>
-						<Input size='small' placeholder='请输入操作人员' />
+						<Input placeholder='请输入操作人员' />
 					</Form.Item>
 					<Form.Item>
-						<Stack direction='row' spacing={2}>
-							<Button variant='contained' type='submit' startIcon={<SearchRegular />}>
+						<Space>
+							<Button type='primary' htmlType='submit' icon={<SearchOutlined />}>
 								查询
 							</Button>
-							<Button variant='outlined' type='reset'>
-								重置
-							</Button>
-						</Stack>
+							<Button onClick={onReset}>重置</Button>
+						</Space>
 					</Form.Item>
 				</Form>
-				<Stack direction='row' spacing={2}>
+				<Space>
 					{hasPermi('monitor:operlog:remove') && (
-						<Button color='warning' variant='contained' onClick={onClean}>
+						<Button danger type='primary' onClick={onClean}>
 							清空
 						</Button>
 					)}
 					{hasPermi('monitor:operlog:remove') && (
 						<Button
-							color='error'
-							variant='contained'
-							startIcon={<DeleteRegular />}
+							danger
+							type='primary'
+							icon={<DeleteOutlined />}
 							disabled={selectKeys.length == 0}
 							onClick={onBatchDelete}
 						>
 							批量删除
 						</Button>
 					)}
-				</Stack>
+				</Space>
 			</div>
 			<Table
 				{...tableProps}
-				getRowId={(row) => row.operId}
-				checkboxSelection
-				onRowSelectionModelChange={(model) => setSelectKeys(Array.from(model.ids))}
-				columns={getColumnData([
-					{
-						field: 'operId',
-						headerName: '操作编号'
-					},
-					{
-						field: 'title',
-						headerName: '操作模块'
-					},
-					{
-						field: 'businessType',
-						headerName: '业务类型',
-						renderCell({ value }) {
-							return getDictLabel(value);
-						}
-					},
-					{
-						field: 'operName',
-						headerName: '操作人员'
-					},
-					{
-						field: 'requestMethod',
-						headerName: '请求方式'
-					},
-					{
-						field: 'operUrl',
-						headerName: '操作地址'
-					},
-					{
-						field: 'operIp',
-						headerName: '操作IP'
-					},
-					{
-						field: 'status',
-						headerName: '操作状态',
-						renderCell({ value }) {
-							return (
-								<Chip
-									size='small'
-									color={value == 0 ? 'success' : 'error'}
-									label={value == 0 ? '正常' : '异常'}
-								/>
-							);
-						}
-					},
-					{
-						field: 'operTime',
-						headerName: '操作时间'
-					}
-				])}
+				rowKey='operId'
+				rowSelection={{
+					selectedRowKeys: selectKeys,
+					onChange: (keys) => setSelectKeys(keys as (string | number)[])
+				}}
+				columns={columns}
 			/>
-		</PageOverlay>
+		</div>
 	);
 };

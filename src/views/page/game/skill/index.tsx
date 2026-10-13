@@ -1,28 +1,25 @@
-import * as Yup from 'yup';
 import { useEffect, useState } from 'react';
-import { Button, IconButton, MenuItem, Stack } from '@mui/material';
-import type { GridRowId } from '@mui/x-data-grid';
-import { useFormik, type FormikValues } from 'formik';
 import {
-	AddRegular,
-	EditRegular,
-	DeleteRegular,
-	SearchRegular,
-	CheckmarkRegular,
-	ArrowUpRegular,
-	ArrowDownRegular
-} from '@fluentui/react-icons';
+	ArrowDownOutlined,
+	ArrowUpOutlined,
+	CheckOutlined,
+	DeleteOutlined,
+	EditOutlined,
+	PlusOutlined,
+	SearchOutlined
+} from '@ant-design/icons';
 import {
+	App,
+	Button,
 	Form,
-	getColumnData,
-	PageOverlay,
 	Input,
 	Modal,
 	Select,
+	Space,
 	Table,
-	confirm,
-	message
-} from '@/plugins';
+	Tag
+} from 'antd';
+import type { TableColumnsType } from 'antd';
 import { useTable } from '@/core';
 import {
 	addSkill,
@@ -47,74 +44,56 @@ const CATEGORY_OPTIONS = [
 ];
 
 export const Component = () => {
+	const { message, modal } = App.useApp();
+	const [searchForm] = Form.useForm();
+	const [form] = Form.useForm();
 	const [isOpen, setIsOpen] = useState(false);
 	const [editId, setEditId] = useState<string | number>('');
-	const [selectKeys, setSelectKeys] = useState<GridRowId[]>([]);
+	const [selectKeys, setSelectKeys] = useState<(string | number)[]>([]);
 
-	const { tableProps, getData } = useTable('/game/wm/skill/list');
+	const { tableProps, getData } = useTable('/game/wm/skill/list', () => searchForm.getFieldsValue());
 
-	const search = useFormik<FormikValues>({
-		initialValues: { profession: '', category: '', name: '' },
-		onSubmit(values) {
-			getData({
-				profession: values.profession || undefined,
-				category: values.category || undefined,
-				name: values.name || undefined
+	const onSearch = (values: AnyObject) => {
+		getData({
+			profession: values.profession || undefined,
+			category: values.category || undefined,
+			name: values.name || undefined
+		});
+	};
+
+	const onReset = () => {
+		searchForm.resetFields();
+		getData();
+	};
+
+	const onFinish = (values: AnyObject) => {
+		const params = {
+			...values,
+			maxLevel: values.maxLevel === '' ? null : Number(values.maxLevel),
+			isAudit: 1
+		};
+		if (editId) {
+			updateSkill({ ...params, id: editId }).then(() => {
+				message.success('修改成功');
+				onCancel();
+				getData();
 			});
-		},
-		onReset() {
-			getData();
+		} else {
+			addSkill({ ...params, isShelf: 1 }).then(() => {
+				message.success('新增成功');
+				onCancel();
+				getData();
+			});
 		}
-	});
-
-	const formik = useFormik<FormikValues>({
-		initialValues: {
-			profession: '',
-			category: '',
-			name: '',
-			description: '',
-			weapon: '',
-			prerequisite: '',
-			xiudaoLevel: '',
-			skillType: '',
-			maxLevel: '',
-			learnLevel: '',
-			upgradeLevels: '',
-			brief: '',
-			icon: ''
-		},
-		validationSchema: Yup.object().shape({
-			name: Yup.string().required('请输入技能名称')
-		}),
-		onSubmit(values) {
-			const params = {
-				...values,
-				maxLevel: values.maxLevel === '' ? null : Number(values.maxLevel),
-				isAudit: 1
-			};
-			if (editId) {
-				updateSkill({ ...params, id: editId }).then(() => {
-					message.success('修改成功');
-					onCancel();
-					getData();
-				});
-			} else {
-				addSkill({ ...params, isShelf: 1 }).then(() => {
-					message.success('新增成功');
-					onCancel();
-					getData();
-				});
-			}
-		}
-	});
+	};
 
 	const onEdit = (id?: string | number) => {
 		if (id) {
 			setEditId(id);
 			getSkillById(id).then((result) => {
 				const record = result.data;
-				formik.resetForm();
-				formik.setValues({
+				form.resetFields();
+				form.setFieldsValue({
 					profession: record.profession ?? '',
 					category: record.category ?? '',
 					name: record.name ?? '',
@@ -133,24 +112,23 @@ export const Component = () => {
 			});
 		} else {
 			setEditId('');
-			formik.resetForm();
+			form.resetFields();
 			setIsOpen(true);
 		}
 	};
 
 	const onSave = () => {
-		formik.handleSubmit();
+		form.submit();
 	};
 
 	const onCancel = () => {
 		setIsOpen(false);
 		setEditId('');
-		formik.resetForm();
+		form.resetFields();
 	};
 
 	const onDelete = (id: string | number) => {
-		confirm({
-			type: 'warning',
+		modal.confirm({
 			title: '系统提示',
 			content: '是否确认删除该技能?',
 			onOk() {
@@ -167,8 +145,7 @@ export const Component = () => {
 			message.warning('请选择要删除的技能');
 			return;
 		}
-		confirm({
-			type: 'warning',
+		modal.confirm({
 			title: '系统提示',
 			content: `是否确认删除选中的 ${selectKeys.length} 项数据?`,
 			onOk() {
@@ -182,12 +159,11 @@ export const Component = () => {
 	};
 
 	const onAudit = (row: AnyObject) => {
-		confirm({
-			type: 'warning',
+		modal.confirm({
 			title: '审核',
 			content: '请选择审核结果',
-			confirmationText: '通过',
-			cancellationText: '拒绝',
+			okText: '通过',
+			cancelText: '拒绝',
 			onOk() {
 				updateSkill({ ...row, isAudit: 1 }).then(() => {
 					message.success('已通过审核');
@@ -215,195 +191,215 @@ export const Component = () => {
 		getData();
 	}, []);
 
+	const columns: TableColumnsType<AnyObject> = [
+		{ title: '编号', dataIndex: 'id' },
+		{ title: '职业', dataIndex: 'profession' },
+		{ title: '技能分类', dataIndex: 'category' },
+		{ title: '技能名称', dataIndex: 'name' },
+		{ title: '技能类型', dataIndex: 'skillType' },
+		{ title: '最高等级', dataIndex: 'maxLevel' },
+		{ title: '学习等级', dataIndex: 'learnLevel' },
+		{ title: '修真期', dataIndex: 'xiudaoLevel' },
+		{ title: '武器限制', dataIndex: 'weapon' },
+		{ title: '技能简介', dataIndex: 'brief' },
+		{
+			title: '审核状态',
+			dataIndex: 'isAudit',
+			render: (value) => {
+				if (value == 2) return <Tag color='error'>已拒绝</Tag>;
+				return value == 1 ? <Tag color='success'>已通过</Tag> : <Tag color='warning'>待审核</Tag>;
+			}
+		},
+		{
+			title: '是否上架',
+			dataIndex: 'isShelf',
+			render: (value) => (value == 1 ? <Tag color='success'>已上架</Tag> : <Tag color='default'>已下架</Tag>)
+		},
+		{
+			title: '操作',
+			dataIndex: 'action',
+			width: 220,
+			render: (_v, row) => (
+				<>
+					{row.isAudit == 0 && (
+						<Button
+							type='link'
+							size='small'
+							icon={<CheckOutlined />}
+							title='审核'
+							onClick={() => onAudit(row)}
+						/>
+					)}
+					<Button
+						type='link'
+						size='small'
+						danger={row.isShelf == 1}
+						icon={row.isShelf == 1 ? <ArrowDownOutlined /> : <ArrowUpOutlined />}
+						title={row.isShelf == 1 ? '下架' : '上架'}
+						onClick={() => onShelf(row)}
+					/>
+					<Button
+						type='link'
+						size='small'
+						icon={<EditOutlined />}
+						title='编辑'
+						onClick={() => onEdit(row.id)}
+					/>
+					<Button
+						type='link'
+						size='small'
+						danger
+						icon={<DeleteOutlined />}
+						title='删除'
+						onClick={() => onDelete(row.id)}
+					/>
+				</>
+			)
+		}
+	];
+
 	return (
-		<PageOverlay>
+		<div className='p-4 flex flex-col gap-4'>
 			<div className='flex items-center justify-between'>
-				<Form layout='inline' formik={search}>
+				<Form form={searchForm} layout='inline' onFinish={onSearch}>
 					<Form.Item name='profession' label='职业'>
-						<Select placeholder='请选择职业'>
-							{PROFESSION_OPTIONS.map((item) => (
-								<MenuItem key={item.value} value={item.value}>
-									{item.label}
-								</MenuItem>
-							))}
-						</Select>
+						<Select
+							placeholder='请选择职业'
+							options={PROFESSION_OPTIONS.map((item) => ({
+								value: item.value,
+								label: item.label
+							}))}
+						/>
 					</Form.Item>
 					<Form.Item name='category' label='技能分类'>
-						<Select placeholder='请选择技能分类'>
-							{CATEGORY_OPTIONS.map((item) => (
-								<MenuItem key={item.value} value={item.value}>
-									{item.label}
-								</MenuItem>
-							))}
-						</Select>
+						<Select
+							placeholder='请选择技能分类'
+							options={CATEGORY_OPTIONS.map((item) => ({
+								value: item.value,
+								label: item.label
+							}))}
+						/>
 					</Form.Item>
 					<Form.Item name='name' label='技能名称'>
-						<Input size='small' placeholder='请输入技能名称' />
+						<Input placeholder='请输入技能名称' />
 					</Form.Item>
 					<Form.Item>
-						<Stack direction='row' spacing={2}>
-							<Button variant='contained' type='submit' startIcon={<SearchRegular />}>
+						<Space>
+							<Button type='primary' htmlType='submit' icon={<SearchOutlined />}>
 								查询
 							</Button>
-							<Button variant='outlined' type='reset'>
-								重置
-							</Button>
-						</Stack>
+							<Button onClick={onReset}>重置</Button>
+						</Space>
 					</Form.Item>
 				</Form>
-				<Stack direction='row' spacing={2}>
-					<Button variant='contained' startIcon={<AddRegular />} onClick={() => onEdit()}>
+				<Space>
+					<Button type='primary' icon={<PlusOutlined />} onClick={() => onEdit()}>
 						新建
 					</Button>
 					<Button
-						color='error'
-						variant='contained'
-						startIcon={<DeleteRegular />}
+						type='primary'
+						danger
+						icon={<DeleteOutlined />}
 						disabled={selectKeys.length == 0}
 						onClick={onBatchDelete}
 					>
 						批量删除
 					</Button>
-				</Stack>
+				</Space>
 			</div>
 			<Table
 				{...tableProps}
-				checkboxSelection
-				onRowSelectionModelChange={(model) => setSelectKeys(Array.from(model.ids))}
-				columns={getColumnData([
-					{ field: 'id', headerName: '编号' },
-					{ field: 'profession', headerName: '职业' },
-					{ field: 'category', headerName: '技能分类' },
-					{ field: 'name', headerName: '技能名称' },
-					{ field: 'skillType', headerName: '技能类型' },
-					{ field: 'maxLevel', headerName: '最高等级' },
-					{ field: 'learnLevel', headerName: '学习等级' },
-					{ field: 'xiudaoLevel', headerName: '修真期' },
-					{ field: 'weapon', headerName: '武器限制' },
-					{ field: 'brief', headerName: '技能简介', flex: 1 },
-					{
-						field: 'isAudit',
-						headerName: '审核状态',
-						renderCell({ value }) {
-							if (value == 2) return '已拒绝';
-							return value == 1 ? '已通过' : '待审核';
-						}
-					},
-					{
-						field: 'isShelf',
-						headerName: '是否上架',
-						renderCell({ value }) {
-							return value == 1 ? '上架' : '下架';
-						}
-					},
-					{
-						field: 'action',
-						headerName: '操作',
-						flex: 0,
-						width: 220,
-						renderCell({ row }) {
-							return (
-								<>
-									{row.isAudit == 0 && (
-										<IconButton
-											color='primary'
-											size='small'
-											title='审核'
-											onClick={() => onAudit(row)}
-										>
-											<CheckmarkRegular />
-										</IconButton>
-									)}
-									<IconButton
-										color={row.isShelf == 1 ? 'warning' : 'success'}
-										size='small'
-										title={row.isShelf == 1 ? '下架' : '上架'}
-										onClick={() => onShelf(row)}
-									>
-										{row.isShelf == 1 ? <ArrowDownRegular /> : <ArrowUpRegular />}
-									</IconButton>
-									<IconButton
-										color='primary'
-										size='small'
-										title='编辑'
-										onClick={() => onEdit(row.id)}
-									>
-										<EditRegular />
-									</IconButton>
-									<IconButton
-										color='error'
-										size='small'
-										title='删除'
-										onClick={() => onDelete(row.id)}
-									>
-										<DeleteRegular />
-									</IconButton>
-								</>
-							);
-						}
-					}
-				])}
+				rowSelection={{
+					selectedRowKeys: selectKeys,
+					onChange: (keys) => setSelectKeys(keys as (string | number)[])
+				}}
+				columns={columns}
 			/>
 			<Modal
 				title={editId ? '编辑技能' : '新增技能'}
 				open={isOpen}
 				onOk={onSave}
-				onClose={onCancel}
+				onCancel={onCancel}
+				destroyOnHidden
+				forceRender
 			>
-				<Form labelCol={{ flex: '0 0 100px' }} formik={formik}>
+				<Form
+					form={form}
+					labelCol={{ flex: '0 0 100px' }}
+					onFinish={onFinish}
+					initialValues={{
+						profession: '',
+						category: '',
+						name: '',
+						description: '',
+						weapon: '',
+						prerequisite: '',
+						xiudaoLevel: '',
+						skillType: '',
+						maxLevel: '',
+						learnLevel: '',
+						upgradeLevels: '',
+						brief: '',
+						icon: ''
+					}}
+				>
 					<Form.Item required name='profession' label='职业'>
-						<Select placeholder='请选择职业'>
-							{PROFESSION_OPTIONS.map((item) => (
-								<MenuItem key={item.value} value={item.value}>
-									{item.label}
-								</MenuItem>
-							))}
-						</Select>
+						<Select
+							placeholder='请选择职业'
+							options={PROFESSION_OPTIONS.map((item) => ({
+								value: item.value,
+								label: item.label
+							}))}
+						/>
 					</Form.Item>
 					<Form.Item required name='category' label='技能分类'>
-						<Select placeholder='请选择技能分类'>
-							{CATEGORY_OPTIONS.map((item) => (
-								<MenuItem key={item.value} value={item.value}>
-									{item.label}
-								</MenuItem>
-							))}
-						</Select>
+						<Select
+							placeholder='请选择技能分类'
+							options={CATEGORY_OPTIONS.map((item) => ({
+								value: item.value,
+								label: item.label
+							}))}
+						/>
 					</Form.Item>
-					<Form.Item required name='name' label='技能名称'>
-						<Input size='small' placeholder='请输入技能名称' />
+					<Form.Item
+						name='name'
+						label='技能名称'
+						rules={[{ required: true, message: '请输入技能名称' }]}
+					>
+						<Input placeholder='请输入技能名称' />
 					</Form.Item>
 					<Form.Item name='description' label='技能描述'>
-						<Input.TextArea minRows={6} placeholder='请输入技能描述' />
+						<Input.TextArea rows={6} placeholder='请输入技能描述' />
 					</Form.Item>
 					<Form.Item name='weapon' label='武器限制'>
-						<Input size='small' placeholder='请输入武器限制' />
+						<Input placeholder='请输入武器限制' />
 					</Form.Item>
 					<Form.Item name='prerequisite' label='前置技能'>
-						<Input size='small' placeholder='请输入前置技能' />
+						<Input placeholder='请输入前置技能' />
 					</Form.Item>
 					<Form.Item name='xiudaoLevel' label='修真期'>
-						<Input size='small' placeholder='请输入修真期要求' />
+						<Input placeholder='请输入修真期要求' />
 					</Form.Item>
 					<Form.Item name='skillType' label='技能类型'>
-						<Input size='small' placeholder='请输入技能类型' />
+						<Input placeholder='请输入技能类型' />
 					</Form.Item>
 					<Form.Item name='maxLevel' label='最高等级'>
-						<Input size='small' placeholder='请输入最高等级' />
+						<Input placeholder='请输入最高等级' />
 					</Form.Item>
 					<Form.Item name='learnLevel' label='学习等级'>
-						<Input size='small' placeholder='请输入学习等级' />
+						<Input placeholder='请输入学习等级' />
 					</Form.Item>
 					<Form.Item name='upgradeLevels' label='升级等级'>
-						<Input size='small' placeholder='请输入升级等级' />
+						<Input placeholder='请输入升级等级' />
 					</Form.Item>
 					<Form.Item name='brief' label='技能简介'>
-						<Input size='small' placeholder='请输入技能简介' />
+						<Input placeholder='请输入技能简介' />
 					</Form.Item>
 					<Form.Item name='icon' label='技能图标'>
-						<Input size='small' placeholder='请输入技能图标' />
+						<Input placeholder='请输入技能图标' />
 					</Form.Item>
 				</Form>
 			</Modal>
-		</PageOverlay>
+		</div>
 	);
 };

@@ -1,3 +1,4 @@
+import 'antd/dist/reset.css';
 import './index.css';
 import store from '@/store';
 import { createRoot } from 'react-dom/client';

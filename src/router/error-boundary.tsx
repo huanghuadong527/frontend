@@ -1,4 +1,4 @@
-import { Button, Stack, Typography } from '@mui/material';
+import { Button, Typography } from 'antd';
 import { isRouteErrorResponse, useNavigate, useRouteError } from 'react-router';
 
 export const RootErrorBoundary = () => {
@@ -26,17 +26,11 @@ export const RootErrorBoundary = () => {
 	return (
 		<div className='h-screen flex flex-col items-center justify-center gap-3'>
 			<img className='w-md' src={src} />
-			<Typography gutterBottom variant='body1' sx={{ color: 'error.main' }}>
-				{tooltip}
-			</Typography>
-			<Stack direction='row' spacing={5}>
-				<Button variant='outlined' onClick={() => navigate('/index')}>
-					返回首页
-				</Button>
-				<Button variant='outlined' onClick={() => navigate(-1)}>
-					返回上一页
-				</Button>
-			</Stack>
+			<Typography.Text type='danger'>{tooltip}</Typography.Text>
+			<div className='flex gap-5'>
+				<Button onClick={() => navigate('/index')}>返回首页</Button>
+				<Button onClick={() => navigate(-1)}>返回上一页</Button>
+			</div>
 		</div>
 	);
 };

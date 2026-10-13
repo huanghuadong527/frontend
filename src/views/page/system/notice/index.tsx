@@ -1,32 +1,21 @@
-import * as Yup from 'yup';
+import { useEffect, useState } from 'react';
 import {
-	useEffect,
-	useState } from 'react';
-import { Button,
-	Chip,
-	IconButton,
-	RadioGroup,
-	Stack } from '@mui/material';
-import type { GridRowId } from '@mui/x-data-grid';
-import { useFormik,
-	type FormikValues } from 'formik';
-import {
-	AddRegular,
-	EditRegular,
-	DeleteRegular,
-	SearchRegular
-} from '@fluentui/react-icons';
-import {
+	App,
+	Button,
 	Form,
-	getColumnData,
-	PageOverlay,
 	Input,
 	Modal,
 	Radio,
+	Space,
 	Table,
-	confirm,
-	message
-} from '@/plugins';
+	Tag
+} from 'antd';
+import {
+	DeleteOutlined,
+	EditOutlined,
+	PlusOutlined,
+	SearchOutlined
+} from '@ant-design/icons';
 import { useTable, DICT_NOTICE_STATUS, DICT_NOTICE_TYPE } from '@/core';
 import { usePermission } from '@/authority';
 import {
@@ -38,50 +27,42 @@ import {
 } from '@/service';
 
 export const Component = () => {
+	const { message, modal } = App.useApp();
 	const { hasPermi } = usePermission();
 	const [isOpen, setIsOpen] = useState(false);
 	const [editId, setEditId] = useState<string | number>('');
 	const [dicts, setDicts] = useState<AnyObject>();
-	const [selectKeys, setSelectKeys] = useState<GridRowId[]>([]);
+	const [selectKeys, setSelectKeys] = useState<(string | number)[]>([]);
 
-	const { tableProps, getData } = useTable('/system/notice/list');
+	const { tableProps, getData } = useTable('/system/notice/list', () => searchForm.getFieldsValue());
 
-	const search = useFormik<FormikValues>({
-		initialValues: { noticeTitle: '', noticeType: '' },
-		onSubmit(values) {
-			getData(values);
-		},
-		onReset() {
-			getData();
+	const [searchForm] = Form.useForm();
+	const [form] = Form.useForm();
+
+	const onSearch = (values: AnyObject) => {
+		getData(values);
+	};
+
+	const onReset = () => {
+		searchForm.resetFields();
+		getData();
+	};
+
+	const onFinish = (values: AnyObject) => {
+		if (editId) {
+			updateNotice({ ...values, id: editId }).then(() => {
+				message.success('修改成功');
+				onCancel();
+				getData();
+			});
+		} else {
+			addNotice(values).then(() => {
+				message.success('新增成功');
+				onCancel();
+				getData();
+			});
 		}
-	});
-
-	const formik = useFormik<FormikValues>({
-		initialValues: {
-			noticeTitle: '',
-			noticeType: '1',
-			status: '0',
-			noticeContent: ''
-		},
-		validationSchema: Yup.object().shape({
-			noticeTitle: Yup.string().required('请输入公告标题')
-		}),
-		onSubmit(values) {
-			if (editId) {
-				updateNotice({ ...values, id: editId }).then(() => {
-					message.success('修改成功');
-					onCancel();
-					getData();
-				});
-			} else {
-				addNotice(values).then(() => {
-					message.success('新增成功');
-					onCancel();
-					getData();
-				});
-			}
-		}
-	});
+	};
 
 	const getDictLabel = (type: string, value: any) => {
 		if (dicts && dicts[type]) {
@@ -97,30 +78,24 @@ export const Component = () => {
 		if (id) {
 			setEditId(id);
 			getNoticeById(id).then((result) => {
-				formik.resetForm();
-				formik.setValues(result.data);
+				form.setFieldsValue(result.data);
 				setIsOpen(true);
 			});
 		} else {
 			setEditId('');
-			formik.resetForm();
+			form.resetFields();
 			setIsOpen(true);
 		}
-	};
-
-	const onSave = () => {
-		formik.handleSubmit();
 	};
 
 	const onCancel = () => {
 		setIsOpen(false);
 		setEditId('');
-		formik.resetForm();
+		form.resetFields();
 	};
 
 	const onDelete = (id: string | number) => {
-		confirm({
-			type: 'warning',
+		modal.confirm({
 			title: '系统提示',
 			content: '是否确认删除该公告?',
 			onOk() {
@@ -137,8 +112,7 @@ export const Component = () => {
 			message.warning('请选择要删除的公告');
 			return;
 		}
-		confirm({
-			type: 'warning',
+		modal.confirm({
 			title: '系统提示',
 			content: `是否确认删除选中的 ${selectKeys.length} 项数据?`,
 			onOk() {
@@ -150,6 +124,67 @@ export const Component = () => {
 			}
 		});
 	};
+
+	const columns = [
+		{
+			title: '公告标题',
+			dataIndex: 'noticeTitle'
+		},
+		{
+			title: '公告类型',
+			dataIndex: 'noticeType',
+			render: (value: any) => (
+				<Tag color={value == '1' ? 'success' : 'blue'}>
+					{getDictLabel(DICT_NOTICE_TYPE, value)}
+				</Tag>
+			)
+		},
+		{
+			title: '状态',
+			dataIndex: 'status',
+			render: (value: any) => (
+				<Tag color={value == '0' ? 'success' : 'error'}>
+					{getDictLabel(DICT_NOTICE_STATUS, value)}
+				</Tag>
+			)
+		},
+		{
+			title: '创建者',
+			dataIndex: 'createBy'
+		},
+		{
+			title: '创建时间',
+			dataIndex: 'createTime'
+		},
+		{
+			title: '操作',
+			dataIndex: 'action',
+			width: 100,
+			render: (_: any, row: AnyObject) => (
+				<>
+					{hasPermi('system:notice:edit') && (
+						<Button
+							type='link'
+							size='small'
+							icon={<EditOutlined />}
+							title='编辑'
+							onClick={() => onEdit(row.id)}
+						/>
+					)}
+					{hasPermi('system:notice:remove') && (
+						<Button
+							type='link'
+							size='small'
+							danger
+							icon={<DeleteOutlined />}
+							title='删除'
+							onClick={() => onDelete(row.id)}
+						/>
+					)}
+				</>
+			)
+		}
+	];
 
 	useEffect(() => {
 		getData();
@@ -164,28 +199,26 @@ export const Component = () => {
 	}, []);
 
 	return (
-		<PageOverlay>
+		<div className='p-4 flex flex-col gap-4'>
 			<div className='flex items-center justify-between'>
-				<Form layout='inline' formik={search}>
+				<Form form={searchForm} layout='inline' onFinish={onSearch}>
 					<Form.Item name='noticeTitle' label='公告标题'>
-						<Input size='small' placeholder='请输入公告标题' />
+						<Input placeholder='请输入公告标题' />
 					</Form.Item>
 					<Form.Item>
-						<Stack direction='row' spacing={2}>
-							<Button variant='contained' type='submit' startIcon={<SearchRegular />}>
+						<Space>
+							<Button type='primary' htmlType='submit' icon={<SearchOutlined />}>
 								查询
 							</Button>
-							<Button variant='outlined' type='reset'>
-								重置
-							</Button>
-						</Stack>
+							<Button onClick={onReset}>重置</Button>
+						</Space>
 					</Form.Item>
 				</Form>
-				<Stack direction='row' spacing={2}>
+				<Space>
 					{hasPermi('system:notice:add') && (
 						<Button
-							variant='contained'
-							startIcon={<AddRegular />}
+							type='primary'
+							icon={<PlusOutlined />}
 							onClick={() => onEdit()}
 						>
 							新建
@@ -193,133 +226,76 @@ export const Component = () => {
 					)}
 					{hasPermi('system:notice:remove') && (
 						<Button
-							color='error'
-							variant='contained'
-							startIcon={<DeleteRegular />}
+							danger
+							type='primary'
+							icon={<DeleteOutlined />}
 							disabled={selectKeys.length == 0}
 							onClick={onBatchDelete}
 						>
 							批量删除
 						</Button>
 					)}
-				</Stack>
+				</Space>
 			</div>
 			<Table
 				{...tableProps}
-				checkboxSelection
-				onRowSelectionModelChange={(model) => setSelectKeys(Array.from(model.ids))}
-				columns={getColumnData([
-					{
-						field: 'noticeTitle',
-						headerName: '公告标题'
-					},
-					{
-						field: 'noticeType',
-						headerName: '公告类型',
-						renderCell({ value }) {
-							return (
-								<Chip
-									size='small'
-									color={value == '1' ? 'success' : 'info'}
-									label={getDictLabel(DICT_NOTICE_TYPE, value)}
-								/>
-							);
-						}
-					},
-					{
-						field: 'status',
-						headerName: '状态',
-						renderCell({ value }) {
-							return (
-								<Chip
-									size='small'
-									color={value == '0' ? 'success' : 'error'}
-									label={getDictLabel(DICT_NOTICE_STATUS, value)}
-								/>
-							);
-						}
-					},
-					{
-						field: 'createBy',
-						headerName: '创建者'
-					},
-					{
-						field: 'createTime',
-						headerName: '创建时间'
-					},
-					{
-						field: 'id',
-						headerName: '操作',
-						flex: 0,
-						width: 100,
-						renderCell({ row }) {
-							return (
-								<>
-									{hasPermi('system:notice:edit') && (
-										<IconButton
-											color='primary'
-											size='small'
-											title='编辑'
-											onClick={() => onEdit(row.id)}
-										>
-											<EditRegular />
-										</IconButton>
-									)}
-									{hasPermi('system:notice:remove') && (
-										<IconButton
-											color='error'
-											size='small'
-											title='删除'
-											onClick={() => onDelete(row.id)}
-										>
-											<DeleteRegular />
-										</IconButton>
-									)}
-								</>
-							);
-						}
-					}
-				])}
+				rowSelection={{
+					selectedRowKeys: selectKeys,
+					onChange: (keys) => setSelectKeys(keys as (string | number)[])
+				}}
+				columns={columns}
 			/>
 			<Modal
 				title={editId ? '编辑公告' : '新增公告'}
 				open={isOpen}
-				onOk={onSave}
-				onClose={onCancel}
+				destroyOnHidden
+				forceRender
+				onOk={() => form.submit()}
+				onCancel={onCancel}
 			>
-				<Form labelCol={{ flex: '0 0 100px' }} formik={formik}>
-					<Form.Item required name='noticeTitle' label='公告标题'>
-						<Input size='small' placeholder='请输入公告标题' />
+				<Form
+					form={form}
+					labelCol={{ flex: '0 0 100px' }}
+					initialValues={{
+						noticeTitle: '',
+						noticeType: '1',
+						status: '0',
+						noticeContent: ''
+					}}
+					onFinish={onFinish}
+				>
+					<Form.Item
+						name='noticeTitle'
+						label='公告标题'
+						rules={[{ required: true, message: '请输入公告标题' }]}
+					>
+						<Input placeholder='请输入公告标题' />
 					</Form.Item>
 					<Form.Item name='noticeType' label='公告类型'>
-						<RadioGroup row>
+						<Radio.Group>
 							{dicts &&
 								dicts[DICT_NOTICE_TYPE].map((item: any) => (
-									<Radio
-										key={item.id}
-										value={item.dictValue}
-										label={item.dictLabel}
-									/>
+									<Radio key={item.id} value={item.dictValue}>
+										{item.dictLabel}
+									</Radio>
 								))}
-						</RadioGroup>
+						</Radio.Group>
 					</Form.Item>
 					<Form.Item name='status' label='状态'>
-						<RadioGroup row>
+						<Radio.Group>
 							{dicts &&
 								dicts[DICT_NOTICE_STATUS].map((item: any) => (
-									<Radio
-										key={item.id}
-										value={item.dictValue}
-										label={item.dictLabel}
-									/>
+									<Radio key={item.id} value={item.dictValue}>
+										{item.dictLabel}
+									</Radio>
 								))}
-						</RadioGroup>
+						</Radio.Group>
 					</Form.Item>
 					<Form.Item name='noticeContent' label='公告内容'>
 						<Input.TextArea placeholder='请输入公告内容' />
 					</Form.Item>
 				</Form>
 			</Modal>
-		</PageOverlay>
+		</div>
 	);
 };
