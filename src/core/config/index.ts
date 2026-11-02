@@ -32,6 +32,8 @@ export const DICT_OPER_TYPE = 'sys_oper_type';
 export const DICT_TITLE_AREA = 'game_wm_title_area';
 /** 置顶所属模块 */
 export const DICT_TOP_MODULE = 'game_wm_top_module';
+/** 区服 */
+export const DICT_WM_SERVER = 'game_wm_server';
 
 /** 接口请求超时时间 */
 export const SERVICE_TIMEOUT = 10000;

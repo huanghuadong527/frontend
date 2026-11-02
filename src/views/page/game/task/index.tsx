@@ -43,7 +43,12 @@ export const Component = () => {
 	const [nameMap, setNameMap] = useState<CObject>({});
 	const [categories, setCategories] = useState<AnyObject[]>([]);
 	const selectKeyRef = useRef('');
-	const { tableProps, getData } = useTable('/game/wm/task/list', () => searchForm.getFieldsValue());
+	const { tableProps, getData } = useTable('/game/wm/task/list', () => ({
+		...searchForm.getFieldsValue(),
+		categoryId: selectKeyRef.current
+			? Number(selectKeyRef.current)
+			: undefined
+	}));
 	const categoryMap: CObject = categories.reduce((acc: CObject, c) => {
 		acc[c.id] = c.name;
 		return acc;
@@ -61,12 +66,7 @@ export const Component = () => {
 	);
 
 	const loadData = (params: AnyObject = {}) => {
-		getData({
-			...params,
-			categoryId: selectKeyRef.current
-				? Number(selectKeyRef.current)
-				: undefined
-		});
+		getData(params);
 	};
 
 	const getCategoryData = () => {
@@ -288,14 +288,23 @@ export const Component = () => {
 			width: 110,
 			render: (value) => {
 				if (value == 2) return <Tag color='error'>已拒绝</Tag>;
-				return value == 1 ? <Tag color='success'>已通过</Tag> : <Tag color='warning'>待审核</Tag>;
+				return value == 1 ? (
+					<Tag color='success'>已通过</Tag>
+				) : (
+					<Tag color='warning'>待审核</Tag>
+				);
 			}
 		},
 		{
 			title: '是否上架',
 			dataIndex: 'isShelf',
 			width: 110,
-			render: (value) => (value == 1 ? <Tag color='success'>已上架</Tag> : <Tag color='default'>已下架</Tag>)
+			render: (value) =>
+				value == 1 ? (
+					<Tag color='success'>已上架</Tag>
+				) : (
+					<Tag color='default'>已下架</Tag>
+				)
 		},
 		{
 			title: '操作',
@@ -316,7 +325,9 @@ export const Component = () => {
 						type='link'
 						size='small'
 						danger={row.isShelf == 1}
-						icon={row.isShelf == 1 ? <ArrowDownOutlined /> : <ArrowUpOutlined />}
+						icon={
+							row.isShelf == 1 ? <ArrowDownOutlined /> : <ArrowUpOutlined />
+						}
 						title={row.isShelf == 1 ? '下架' : '上架'}
 						onClick={() => onShelf(row)}
 					/>
@@ -366,7 +377,11 @@ export const Component = () => {
 						</Form.Item>
 						<Form.Item>
 							<Space>
-								<Button type='primary' htmlType='submit' icon={<SearchOutlined />}>
+								<Button
+									type='primary'
+									htmlType='submit'
+									icon={<SearchOutlined />}
+								>
 									查询
 								</Button>
 								<Button onClick={onReset}>重置</Button>
@@ -374,7 +389,11 @@ export const Component = () => {
 						</Form.Item>
 					</Form>
 					<Space>
-						<Button type='primary' icon={<PlusOutlined />} onClick={() => onEdit()}>
+						<Button
+							type='primary'
+							icon={<PlusOutlined />}
+							onClick={() => onEdit()}
+						>
 							新建
 						</Button>
 						<Button

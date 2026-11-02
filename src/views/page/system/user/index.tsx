@@ -40,18 +40,21 @@ export const Component = () => {
 	const [expanedKey, setExpandKey] = useState<string[]>([]);
 	const [deptTree, setDeptTree] = useState<TreeItemsType[]>([]);
 
-	const { tableProps, getData } = useTable('/system/user/list', () => searchForm.getFieldsValue());
+	const { tableProps, getData } = useTable('/system/user/list', () => ({
+		...searchForm.getFieldsValue(),
+		deptId: selectKey
+	}));
 
 	const [searchForm] = Form.useForm();
 	const [form] = Form.useForm();
 
 	const onSearch = (values: AnyObject) => {
-		getData({ deptId: selectKey, ...values });
+		getData(values);
 	};
 
 	const onReset = () => {
 		searchForm.resetFields();
-		getData({ deptId: selectKey });
+		getData();
 	};
 
 	const onFinish = (values: AnyObject) => {
@@ -257,7 +260,7 @@ export const Component = () => {
 	];
 
 	useEffect(() => {
-		getData({ deptId: selectKey, ...searchForm.getFieldsValue() });
+		getData();
 	}, [selectKey]);
 
 	useEffect(() => {

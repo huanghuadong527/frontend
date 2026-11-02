@@ -55,6 +55,22 @@ export const ROUTER_GAME: RouteObject[] = [
 			{
 				path: 'mount-pet',
 				lazy: () => import('@/views/page/game/mount-pet')
+			},
+			{
+				path: 'production',
+				lazy: () => import('@/views/page/game/production')
+			},
+			{
+				path: 'home',
+				lazy: () => import('@/views/page/game/home')
+			},
+			{
+				path: 'timer',
+				lazy: () => import('@/views/page/game/timer')
+			},
+			{
+				path: 'currency-price',
+				lazy: () => import('@/views/page/game/currency-price')
 			}
 		]
 	}

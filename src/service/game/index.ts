@@ -276,3 +276,97 @@ export const updateMerchantBusiness = (params: object) =>
 /** 删除常用业务 */
 export const deleteMerchantBusiness = (ids: string | number) =>
 	service.delete(`/game/merchant/business/${ids}`);
+
+/** 生产列表 */
+export const getProductionList = (params: object) =>
+	service.get(`/game/wm/production/list`, { params });
+
+/** 生产详情 */
+export const getProductionById = (id: string | number) =>
+	service.get(`/game/wm/production/${id}`);
+
+/** 新增生产 */
+export const addProduction = (params: object) =>
+	service.post(`/game/wm/production`, params);
+
+/** 修改生产 */
+export const updateProduction = (params: object) =>
+	service.put(`/game/wm/production`, params);
+
+/** 删除生产 */
+export const deleteProduction = (ids: string | number) =>
+	service.delete(`/game/wm/production/${ids}`);
+
+/** 家园列表 */
+export const getHomeList = (params: object) =>
+	service.get(`/game/wm/home/list`, { params });
+
+/** 家园详情 */
+export const getHomeById = (id: string | number) =>
+	service.get(`/game/wm/home/${id}`);
+
+/** 新增家园 */
+export const addHome = (params: object) => service.post(`/game/wm/home`, params);
+
+/** 修改家园 */
+export const updateHome = (params: object) => service.put(`/game/wm/home`, params);
+
+/** 删除家园 */
+export const deleteHome = (ids: string | number) =>
+	service.delete(`/game/wm/home/${ids}`);
+
+/** 计时器分组列表 */
+export const getTimerGroupList = (params?: object) =>
+	service.get(`/game/wm/timer/group/list`, { params });
+
+/** 新增计时器分组 */
+export const addTimerGroup = (params: object) =>
+	service.post(`/game/wm/timer/group`, params);
+
+/** 修改计时器分组 */
+export const updateTimerGroup = (params: object) =>
+	service.put(`/game/wm/timer/group`, params);
+
+/** 删除计时器分组 */
+export const deleteTimerGroup = (ids: string | number) =>
+	service.delete(`/game/wm/timer/group/${ids}`);
+
+/** 计时器BOSS列表 */
+export const getTimerBossList = (params?: object) =>
+	service.get(`/game/wm/timer/boss/list`, { params });
+
+/** 计时器BOSS详情 */
+export const getTimerBossById = (id: string | number) =>
+	service.get(`/game/wm/timer/boss/${id}`);
+
+/** 新增计时器BOSS */
+export const addTimerBoss = (params: object) =>
+	service.post(`/game/wm/timer/boss`, params);
+
+/** 修改计时器BOSS */
+export const updateTimerBoss = (params: object) =>
+	service.put(`/game/wm/timer/boss`, params);
+
+/** 删除计时器BOSS */
+export const deleteTimerBoss = (ids: string | number) =>
+	service.delete(`/game/wm/timer/boss/${ids}`);
+
+/** 币价列表 */
+export const getCurrencyPriceList = (params: object) =>
+	service.get(`/game/wm/currency-price/list`, { params });
+
+/** 币价详情 */
+export const getCurrencyPriceById = (id: string | number) =>
+	service.get(`/game/wm/currency-price/${id}`);
+
+/** 新增币价 */
+export const addCurrencyPrice = (params: object) =>
+	service.post(`/game/wm/currency-price`, params);
+
+/** 修改币价 */
+export const updateCurrencyPrice = (params: object) =>
+	service.put(`/game/wm/currency-price`, params);
+
+/** 删除币价 */
+export const deleteCurrencyPrice = (ids: string | number) =>
+	service.delete(`/game/wm/currency-price/${ids}`);

@@ -1,6 +1,16 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { TablePaginationConfig } from 'antd';
 import { service } from '@/utils';
+
+const buildQueryKey = (query: AnyObject) =>
+	Object.keys(query)
+		.filter((key) => {
+			const value = query[key];
+			return value !== undefined && value !== null && value !== '';
+		})
+		.sort()
+		.map((key) => `${key}=${JSON.stringify(query[key])}`)
+		.join('&');
 
 export const useTable = (url: string, getSearchParams?: () => AnyObject) => {
 	const [loading, setLoading] = useState(false);
@@ -8,14 +18,22 @@ export const useTable = (url: string, getSearchParams?: () => AnyObject) => {
 	const [pageSize, setPageSize] = useState(10);
 	const [total, setTotal] = useState(0);
 	const [dataSource, setDataSource] = useState([]);
+	const lastQueryKeyRef = useRef('');
 
 	const getData = (param: AnyObject = {}) => {
 		const { pageNum: paramPageNum, pageSize: paramPageSize, ...query } = param;
 		const search = getSearchParams ? getSearchParams() : {};
+		const mergedQuery = { ...search, ...query };
+		const queryKey = buildQueryKey(mergedQuery);
 		setLoading(true);
 		setDataSource([]);
-		const page = paramPageNum ?? pageNum;
+		// 查询条件变化(搜索/筛选/树节点切换)时回到第一页；
+		// 条件未变(如新增/编辑/删除后的刷新)时保持当前页；翻页显式传入 pageNum 优先。
+		const page = paramPageNum ?? (queryKey !== lastQueryKeyRef.current ? 1 : pageNum);
+		lastQueryKeyRef.current = queryKey;
 		const size = paramPageSize ?? pageSize;
+		setPageNum(page);
+		setPageSize(size);
 		service
 			.get(url, {
 				params: {
@@ -29,9 +47,7 @@ export const useTable = (url: string, getSearchParams?: () => AnyObject) => {
 				(result) => {
 					setLoading(false);
 					if (result.data) {
-						if (result.data.total) {
-							setTotal(result.data.total);
-						}
+						setTotal(result.data.total ?? 0);
 						if (result.data.data) {
 							setDataSource(result.data.data);
 						}
@@ -44,8 +60,6 @@ export const useTable = (url: string, getSearchParams?: () => AnyObject) => {
 	const onChange = (pagination: TablePaginationConfig) => {
 		const page = pagination.current ?? 1;
 		const size = pagination.pageSize ?? 10;
-		setPageNum(page);
-		setPageSize(size);
 		getData({ pageNum: page, pageSize: size });
 	};
 
